@@ -92,6 +92,16 @@ DEFAULT_RUNTIME_OPTIMIZATION = {
 }
 
 
+DEFAULT_SECTOR_SETTINGS = {
+    "enable_sectors": True,
+    "sector_size_meters": 768.0,
+    "neighbor_load_radius": 1,
+    "max_resources_per_sector": 1800,
+    "max_npc_spawns_per_sector": 96,
+    "max_mob_zones_per_sector": 48,
+}
+
+
 def clamp01(value: float) -> float:
     return max(0.0, min(1.0, value))
 
@@ -184,6 +194,8 @@ def apply_biome_climate(height, moisture, temperature, x, z, world_size, sea_lev
 def estimate_runtime_streaming(result, config):
     opt = dict(DEFAULT_RUNTIME_OPTIMIZATION)
     opt.update(config.get("runtime_optimization", {}))
+    sectors = dict(DEFAULT_SECTOR_SETTINGS)
+    sectors.update(config.get("sector_settings", {}))
 
     full_total = (
         result["city_count"]
@@ -205,7 +217,11 @@ def estimate_runtime_streaming(result, config):
 
     center = result["world_size"] * 0.5
     focus = (center, center)
-    radius_sq = opt["streaming_radius_meters"] ** 2
+    streaming_radius = opt["streaming_radius_meters"]
+    if sectors["enable_sectors"] and sectors["neighbor_load_radius"] > 0:
+        sector_based = (sectors["neighbor_load_radius"] + 0.5) * max(64.0, sectors["sector_size_meters"])
+        streaming_radius = max(streaming_radius, sector_based)
+    radius_sq = streaming_radius ** 2
     keep_cities = bool(opt["keep_cities_always_loaded"])
     max_active = max(100, int(opt["max_active_objects"]))
     max_resources = max(0, int(opt["max_active_resources"]))
@@ -286,6 +302,94 @@ def estimate_runtime_streaming(result, config):
         "active_total": active_total,
         "active_resources": active_resources,
     }
+
+
+def build_sector_payload(result, config):
+    settings = dict(DEFAULT_SECTOR_SETTINGS)
+    settings.update(config.get("sector_settings", {}))
+    if not settings["enable_sectors"]:
+        return []
+
+    world_size = result["world_size"]
+    sector_size = max(64.0, settings["sector_size_meters"])
+    sectors_x = max(1, int(math.ceil(world_size / sector_size)))
+    sectors_z = max(1, int(math.ceil(world_size / sector_size)))
+    max_resources = max(0, int(settings["max_resources_per_sector"]))
+    max_npc = max(0, int(settings["max_npc_spawns_per_sector"]))
+    max_mob = max(0, int(settings["max_mob_zones_per_sector"]))
+
+    sectors = []
+    for z in range(sectors_z):
+        for x in range(sectors_x):
+            sectors.append(
+                {
+                    "sector_id": f"sector_{x}_{z}",
+                    "sector_x": x,
+                    "sector_z": z,
+                    "min": [x * sector_size, z * sector_size],
+                    "max": [min(world_size, (x + 1) * sector_size), min(world_size, (z + 1) * sector_size)],
+                    "city_count": 0,
+                    "road_count": 0,
+                    "cave_count": 0,
+                    "resource_count": 0,
+                    "npc_spawn_count": 0,
+                    "player_spawn_count": 0,
+                    "mob_zone_count": 0,
+                    "resource_overflow": 0,
+                    "npc_overflow": 0,
+                    "mob_zone_overflow": 0,
+                }
+            )
+
+    def sector_for_point(x, z):
+        sx = min(max(int(math.floor(x / sector_size)), 0), sectors_x - 1)
+        sz = min(max(int(math.floor(z / sector_size)), 0), sectors_z - 1)
+        return sectors[sz * sectors_x + sx]
+
+    for city in result["cities"]:
+        x, _, z = city["center"]
+        sector_for_point(x, z)["city_count"] += 1
+
+    for road in result["world_roads"]:
+        ax, _, az = road["from"]
+        bx, _, bz = road["to"]
+        mx = (ax + bx) * 0.5
+        mz = (az + bz) * 0.5
+        sector_for_point(mx, mz)["road_count"] += 1
+
+    for cave in result["caves"]:
+        x, _, z = cave["entrance"]
+        sector_for_point(x, z)["cave_count"] += 1
+
+    for node in result["resources"]:
+        x, _, z = node["position"]
+        sector = sector_for_point(x, z)
+        if sector["resource_count"] < max_resources:
+            sector["resource_count"] += 1
+        else:
+            sector["resource_overflow"] += 1
+
+    for point in result["player_spawns"]:
+        x, _, z = point["position"]
+        sector_for_point(x, z)["player_spawn_count"] += 1
+
+    for point in result["npc_spawns"]:
+        x, _, z = point["position"]
+        sector = sector_for_point(x, z)
+        if sector["npc_spawn_count"] < max_npc:
+            sector["npc_spawn_count"] += 1
+        else:
+            sector["npc_overflow"] += 1
+
+    for zone in result["mob_zones"]:
+        x, _, z = zone["center"]
+        sector = sector_for_point(x, z)
+        if sector["mob_zone_count"] < max_mob:
+            sector["mob_zone_count"] += 1
+        else:
+            sector["mob_zone_overflow"] += 1
+
+    return sectors
 
 
 def pair_key(a: int, b: int):
@@ -646,6 +750,7 @@ def generate_world(config: dict):
         "mob_zones": mob_zones,
     }
     result["runtime_estimate"] = estimate_runtime_streaming(result, config)
+    result["sectors"] = build_sector_payload(result, config)
     return result
 
 
@@ -673,6 +778,7 @@ def main():
     print(f"mob_zone_count={result['mob_zone_count']}")
     print(f"runtime_active_total_estimate={result['runtime_estimate']['active_total']}")
     print(f"runtime_full_total={result['runtime_estimate']['full_total']}")
+    print(f"sector_count={len(result['sectors'])}")
 
 
 if __name__ == "__main__":

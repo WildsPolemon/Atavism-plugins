@@ -12,6 +12,7 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 - Cave generation **Variant A** (stamp-based cave prefabs + entrances).
 - Resource distribution by biome with exclusion zones.
 - MMORPG-ready spawn generation (player, NPC, wilderness mob zones).
+- Sectorized world data for MMO server/AOI partitioning.
 - Runtime FPS optimization via distance streaming + active object budgets.
 - Runtime prefab spawning + JSON export for generated layout.
 
@@ -45,6 +46,17 @@ Use `runtimeOptimization` in `WorldGeneratorConfig`:
 - `maxActiveObjects` - hard cap of active runtime objects.
 - `maxActiveResources` - specific cap for resource props (largest category).
 - `streamingTarget` - optional transform to follow (player/camera rig).
+
+## Sector mode for Atavism/MMO backend
+
+Use `sectorSettings` in `WorldGeneratorConfig`:
+
+- `sectorSizeMeters` - fixed world partition size.
+- `neighborLoadRadius` - recommended number of neighboring sectors to keep loaded.
+- `maxResourcesPerSector`, `maxNpcSpawnsPerSector`, `maxMobZonesPerSector` - per-sector spawn budgets.
+
+Generated result includes `sectors` with per-sector spawn/resource lists and overflow counters.
+This is intended for Atavism-style AOI/interest management where server and client both operate on the same sector grid.
 
 ## Editor UX
 

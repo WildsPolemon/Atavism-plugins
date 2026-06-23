@@ -16,10 +16,13 @@ namespace AaaWorldGen
         private readonly Dictionary<int, RuntimeSpawnKind> activeStreamingKinds = new Dictionary<int, RuntimeSpawnKind>();
         private readonly Dictionary<Vector2Int, List<RuntimeSpawnInstruction>> instructionsByCell = new Dictionary<Vector2Int, List<RuntimeSpawnInstruction>>();
         private readonly List<RuntimeSpawnInstruction> alwaysLoadedInstructions = new List<RuntimeSpawnInstruction>();
+        private readonly Dictionary<long, WorldSector> sectorsByCoord = new Dictionary<long, WorldSector>();
         private RuntimeOptimizationSettings runtimeOptimization;
         private bool streamingEnabled;
         private int nextStreamingInstructionId = 1;
         private float streamingRefreshTimer;
+        private float effectiveStreamingCellSize = 220f;
+        private float effectiveStreamingRadius = 1400f;
 
         private enum RuntimeSpawnKind
         {
@@ -54,6 +57,51 @@ namespace AaaWorldGen
         }
 
         public WorldGenerationResult LastResult => lastResult;
+
+        public bool TryGetSectorAt(Vector3 worldPosition, out WorldSector sector)
+        {
+            sector = null;
+            if (lastResult == null || lastResult.sectors == null || lastResult.sectors.Count == 0 || config == null)
+            {
+                return false;
+            }
+
+            SectorGenerationSettings settings = config.sectorSettings ?? new SectorGenerationSettings();
+            if (!settings.enableSectors)
+            {
+                return false;
+            }
+
+            float sectorSize = Mathf.Max(64f, settings.sectorSizeMeters);
+            int sx = Mathf.FloorToInt(worldPosition.x / sectorSize);
+            int sz = Mathf.FloorToInt(worldPosition.z / sectorSize);
+            return sectorsByCoord.TryGetValue(MakeSectorKey(sx, sz), out sector);
+        }
+
+        public List<WorldSector> GetSectorsAround(Vector3 worldPosition, int neighborRadius)
+        {
+            List<WorldSector> output = new List<WorldSector>();
+            if (!TryGetSectorAt(worldPosition, out WorldSector center))
+            {
+                return output;
+            }
+
+            int radius = Mathf.Max(0, neighborRadius);
+            for (int z = -radius; z <= radius; z++)
+            {
+                for (int x = -radius; x <= radius; x++)
+                {
+                    int sx = center.sectorX + x;
+                    int sz = center.sectorZ + z;
+                    if (sectorsByCoord.TryGetValue(MakeSectorKey(sx, sz), out WorldSector sector))
+                    {
+                        output.Add(sector);
+                    }
+                }
+            }
+
+            return output;
+        }
 
         private void Update()
         {
@@ -123,6 +171,15 @@ namespace AaaWorldGen
                 out List<SpawnPointPlacement> playerSpawns,
                 out List<SpawnPointPlacement> npcSpawns,
                 out List<SpawnZonePlacement> mobSpawnZones);
+            List<WorldSector> sectors = SectorGenerator.Build(
+                config,
+                cities,
+                worldRoads,
+                caves,
+                resources,
+                playerSpawns,
+                npcSpawns,
+                mobSpawnZones);
 
             lastResult = new WorldGenerationResult
             {
@@ -135,8 +192,10 @@ namespace AaaWorldGen
                 resources = resources,
                 playerSpawns = playerSpawns,
                 npcSpawns = npcSpawns,
-                mobSpawnZones = mobSpawnZones
+                mobSpawnZones = mobSpawnZones,
+                sectors = sectors
             };
+            BuildSectorLookup(lastResult.sectors);
 
             if (spawnRuntimePrefabs)
             {
@@ -177,6 +236,19 @@ namespace AaaWorldGen
         private void SpawnRuntime(WorldGenerationResult result)
         {
             runtimeOptimization = config.runtimeOptimization ?? new RuntimeOptimizationSettings();
+            effectiveStreamingCellSize = runtimeOptimization.cellSizeMeters;
+            effectiveStreamingRadius = runtimeOptimization.streamingRadiusMeters;
+            SectorGenerationSettings sectorSettings = config.sectorSettings ?? new SectorGenerationSettings();
+            if (sectorSettings.enableSectors)
+            {
+                effectiveStreamingCellSize = Mathf.Max(64f, sectorSettings.sectorSizeMeters);
+                if (sectorSettings.neighborLoadRadius > 0)
+                {
+                    float sectorBasedRadius = (sectorSettings.neighborLoadRadius + 0.5f) * effectiveStreamingCellSize;
+                    effectiveStreamingRadius = Mathf.Max(effectiveStreamingRadius, sectorBasedRadius);
+                }
+            }
+
             ClearStreamingState(!config.clearRootsBeforeSpawn);
 
             if (config.clearRootsBeforeSpawn)
@@ -394,7 +466,7 @@ namespace AaaWorldGen
                 return;
             }
 
-            float cellSize = Mathf.Max(10f, runtimeOptimization != null ? runtimeOptimization.cellSizeMeters : 220f);
+            float cellSize = Mathf.Max(10f, effectiveStreamingCellSize);
             Vector2Int cell = WorldToCell(instruction.position, cellSize);
             if (!instructionsByCell.TryGetValue(cell, out List<RuntimeSpawnInstruction> list))
             {
@@ -413,11 +485,11 @@ namespace AaaWorldGen
             }
 
             Vector3 focus = ResolveStreamingFocusPosition();
-            float innerRadius = Mathf.Max(50f, runtimeOptimization.streamingRadiusMeters);
+            float innerRadius = Mathf.Max(50f, effectiveStreamingRadius);
             float outerRadius = innerRadius + Mathf.Max(0f, runtimeOptimization.unloadPaddingMeters);
             float innerRadiusSq = innerRadius * innerRadius;
             float outerRadiusSq = outerRadius * outerRadius;
-            float cellSize = Mathf.Max(10f, runtimeOptimization.cellSizeMeters);
+            float cellSize = Mathf.Max(10f, effectiveStreamingCellSize);
             int cellRadius = Mathf.CeilToInt(outerRadius / cellSize);
             Vector2Int centerCell = WorldToCell(focus, cellSize);
 
@@ -669,6 +741,26 @@ namespace AaaWorldGen
             alwaysLoadedInstructions.Clear();
             streamingEnabled = false;
             streamingRefreshTimer = 0f;
+        }
+
+        private void BuildSectorLookup(List<WorldSector> sectors)
+        {
+            sectorsByCoord.Clear();
+            if (sectors == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < sectors.Count; i++)
+            {
+                WorldSector sector = sectors[i];
+                sectorsByCoord[MakeSectorKey(sector.sectorX, sector.sectorZ)] = sector;
+            }
+        }
+
+        private static long MakeSectorKey(int x, int z)
+        {
+            return ((long)x << 32) | (uint)z;
         }
 
         private void SpawnCities(List<CityPlacement> cities)

@@ -65,6 +65,14 @@
     "city_spawn_exclusion_radius": 300.0,
     "cave_spawn_exclusion_radius": 110.0
   },
+  "sector_settings": {
+    "enable_sectors": true,
+    "sector_size_meters": 768.0,
+    "neighbor_load_radius": 1,
+    "max_resources_per_sector": 1800,
+    "max_npc_spawns_per_sector": 96,
+    "max_mob_zones_per_sector": 48
+  },
   "runtime_optimization": {
     "enable_distance_streaming": true,
     "streaming_radius_meters": 1400.0,

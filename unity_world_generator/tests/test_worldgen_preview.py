@@ -87,6 +87,21 @@ class WorldGenPreviewTests(unittest.TestCase):
         self.assertLessEqual(runtime["active_total"], runtime_cfg["max_active_objects"])
         self.assertLessEqual(runtime["active_resources"], runtime_cfg["max_active_resources"])
 
+    def test_sector_payload_generated(self):
+        result = generate_world(self.config)
+        sectors = result["sectors"]
+        self.assertGreater(len(sectors), 20)
+        self.assertEqual(sum(sector["city_count"] for sector in sectors), result["city_count"])
+
+    def test_sector_spawn_caps_respected(self):
+        result = generate_world(self.config)
+        sectors = result["sectors"]
+        caps = self.config["sector_settings"]
+        for sector in sectors:
+            self.assertLessEqual(sector["resource_count"], caps["max_resources_per_sector"])
+            self.assertLessEqual(sector["npc_spawn_count"], caps["max_npc_spawns_per_sector"])
+            self.assertLessEqual(sector["mob_zone_count"], caps["max_mob_zones_per_sector"])
+
 
 if __name__ == "__main__":
     unittest.main()

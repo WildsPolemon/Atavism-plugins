@@ -17,6 +17,7 @@ namespace AaaWorldGen
         public List<SpawnPointPlacement> playerSpawns = new List<SpawnPointPlacement>();
         public List<SpawnPointPlacement> npcSpawns = new List<SpawnPointPlacement>();
         public List<SpawnZonePlacement> mobSpawnZones = new List<SpawnZonePlacement>();
+        public List<WorldSector> sectors = new List<WorldSector>();
     }
 
     [Serializable]
@@ -83,5 +84,25 @@ namespace AaaWorldGen
         public int tier;
         public Vector3 center;
         public float radius;
+    }
+
+    [Serializable]
+    public sealed class WorldSector
+    {
+        public string sectorId;
+        public int sectorX;
+        public int sectorZ;
+        public Vector2 min;
+        public Vector2 max;
+        public int resourceOverflow;
+        public int npcOverflow;
+        public int mobZoneOverflow;
+        public List<CityPlacement> cities = new List<CityPlacement>();
+        public List<RoadSegment> roads = new List<RoadSegment>();
+        public List<CavePlacement> caves = new List<CavePlacement>();
+        public List<ResourceNodePlacement> resources = new List<ResourceNodePlacement>();
+        public List<SpawnPointPlacement> playerSpawns = new List<SpawnPointPlacement>();
+        public List<SpawnPointPlacement> npcSpawns = new List<SpawnPointPlacement>();
+        public List<SpawnZonePlacement> mobSpawnZones = new List<SpawnZonePlacement>();
     }
 }

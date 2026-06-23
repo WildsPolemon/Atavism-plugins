@@ -203,6 +203,12 @@ namespace AaaWorldGen.Editor
                 DrawProperty("citySettings");
             });
 
+            DrawCard("World Sectors", () =>
+            {
+                EditorGUILayout.HelpBox("Sector grid for MMO streaming and server-side spawn partitioning.", MessageType.None);
+                DrawProperty("sectorSettings");
+            });
+
             DrawCard("Intercity Roads", () =>
             {
                 EditorGUILayout.HelpBox("Road network auto-builds an MST backbone plus extra city connections.", MessageType.None);
@@ -265,6 +271,7 @@ namespace AaaWorldGen.Editor
                 EditorGUILayout.LabelField("Player Spawns", result.playerSpawns.Count.ToString());
                 EditorGUILayout.LabelField("NPC Spawns", result.npcSpawns.Count.ToString());
                 EditorGUILayout.LabelField("Mob Zones", result.mobSpawnZones.Count.ToString());
+                EditorGUILayout.LabelField("Sectors", result.sectors.Count.ToString());
             });
         }
 

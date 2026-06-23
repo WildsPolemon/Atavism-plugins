@@ -40,6 +40,9 @@ namespace AaaWorldGen
         [Header("MMORPG Spawns")]
         public SpawnGenerationSettings spawnSettings = new SpawnGenerationSettings();
 
+        [Header("Sectors")]
+        public SectorGenerationSettings sectorSettings = new SectorGenerationSettings();
+
         [Header("Spawn Parents")]
         public Transform cityRoot;
         public Transform caveRoot;
@@ -149,6 +152,33 @@ namespace AaaWorldGen
             if (spawnSettings.maxMobZones < 0)
             {
                 messages.Add("spawnSettings.maxMobZones should be >= 0.");
+            }
+
+            if (sectorSettings == null)
+            {
+                messages.Add("sectorSettings should be assigned.");
+            }
+            else
+            {
+                if (sectorSettings.sectorSizeMeters < 64f)
+                {
+                    messages.Add("sectorSettings.sectorSizeMeters should be >= 64.");
+                }
+
+                if (sectorSettings.maxResourcesPerSector < 0)
+                {
+                    messages.Add("sectorSettings.maxResourcesPerSector should be >= 0.");
+                }
+
+                if (sectorSettings.maxNpcSpawnsPerSector < 0)
+                {
+                    messages.Add("sectorSettings.maxNpcSpawnsPerSector should be >= 0.");
+                }
+
+                if (sectorSettings.maxMobZonesPerSector < 0)
+                {
+                    messages.Add("sectorSettings.maxMobZonesPerSector should be >= 0.");
+                }
             }
 
             if (runtimeOptimization == null)
@@ -288,6 +318,17 @@ namespace AaaWorldGen
         public float mobZoneRadius = 55f;
         public float citySpawnExclusionRadius = 300f;
         public float caveSpawnExclusionRadius = 110f;
+    }
+
+    [Serializable]
+    public sealed class SectorGenerationSettings
+    {
+        public bool enableSectors = true;
+        public float sectorSizeMeters = 768f;
+        public int neighborLoadRadius = 1;
+        public int maxResourcesPerSector = 1800;
+        public int maxNpcSpawnsPerSector = 96;
+        public int maxMobZonesPerSector = 48;
     }
 
     [Serializable]

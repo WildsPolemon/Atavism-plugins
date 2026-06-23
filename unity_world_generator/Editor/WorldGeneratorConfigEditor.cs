@@ -58,6 +58,7 @@ namespace AaaWorldGen.Editor
                 DrawProperty("citySettings");
                 DrawProperty("roadSettings");
                 DrawProperty("caveSettings");
+                DrawProperty("sectorSettings");
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
 
