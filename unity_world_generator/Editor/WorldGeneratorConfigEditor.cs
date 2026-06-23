@@ -41,6 +41,7 @@ namespace AaaWorldGen.Editor
                 DrawProperty("heightNoise");
                 DrawProperty("moistureNoise");
                 DrawProperty("temperatureNoise");
+                DrawProperty("biomeClimate");
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
 

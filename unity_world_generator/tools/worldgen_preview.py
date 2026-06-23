@@ -64,6 +64,26 @@ def fbm01(x: float, z: float, seed: int, layer: dict) -> float:
     return max(0.0, min(1.0, total / max(amp_sum, 1e-6)))
 
 
+DEFAULT_BIOME_CLIMATE = {
+    "latitude_temperature_influence": 0.28,
+    "elevation_temperature_drop": 0.22,
+    "coastal_moisture_boost": 0.18,
+    "variation_strength": 0.08,
+    "variation_noise": {
+        "frequency": 0.0032,
+        "octaves": 3,
+        "lacunarity": 2.0,
+        "persistence": 0.5,
+        "offset_x": 57.0,
+        "offset_z": -33.0,
+    },
+}
+
+
+def clamp01(value: float) -> float:
+    return max(0.0, min(1.0, value))
+
+
 def poisson(bounds_w: float, bounds_h: float, min_dist: float, seed: int, k: int = 30):
     if min_dist <= 0:
         return []
@@ -131,6 +151,22 @@ def resolve_biome(height, moisture, temperature, biomes):
             best_score = score
             best = biome
     return best or biomes[0]
+
+
+def apply_biome_climate(height, moisture, temperature, x, z, world_size, sea_level, seed, climate_cfg):
+    latitude = abs((z / max(1.0, world_size)) * 2.0 - 1.0)
+    temperature -= latitude * climate_cfg["latitude_temperature_influence"]
+
+    height_above_sea = max(0.0, height - sea_level)
+    temperature -= height_above_sea * climate_cfg["elevation_temperature_drop"]
+
+    coast_proximity = clamp01(1.0 - abs(height - sea_level) / 0.22)
+    moisture += coast_proximity * climate_cfg["coastal_moisture_boost"]
+
+    variation = fbm01(x, z, seed + 97, climate_cfg["variation_noise"]) - 0.5
+    moisture += variation * climate_cfg["variation_strength"]
+    temperature += variation * climate_cfg["variation_strength"] * 0.45
+    return clamp01(moisture), clamp01(temperature)
 
 
 def pair_key(a: int, b: int):
@@ -312,6 +348,10 @@ def generate_world(config: dict):
     n_height = config["noise"]["height"]
     n_moist = config["noise"]["moisture"]
     n_temp = config["noise"]["temperature"]
+    climate_cfg = dict(DEFAULT_BIOME_CLIMATE)
+    climate_cfg.update(config.get("biome_climate", {}))
+    climate_cfg["variation_noise"] = dict(DEFAULT_BIOME_CLIMATE["variation_noise"])
+    climate_cfg["variation_noise"].update(config.get("biome_climate", {}).get("variation_noise", {}))
 
     def sample_height(x, z):
         return fbm01(x, z, seed, n_height)
@@ -320,6 +360,7 @@ def generate_world(config: dict):
         h = sample_height(x, z)
         m = fbm01(x, z, seed + 17, n_moist)
         t = fbm01(x, z, seed + 53, n_temp)
+        m, t = apply_biome_climate(h, m, t, x, z, world_size, sea, seed, climate_cfg)
         return resolve_biome(h, m, t, config["biomes"])
 
     # Cities

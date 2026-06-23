@@ -6,6 +6,7 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 
 - Deterministic world seed generation.
 - Biome synthesis from height/moisture/temperature noise fields.
+- Climate-aware biome shaping (latitude cooling, elevation cooling, coastal humidity, micro-variation).
 - City placement with spacing constraints and district lot generation.
 - Intercity road network generation (MST backbone + extra links).
 - Cave generation **Variant A** (stamp-based cave prefabs + entrances).
@@ -29,6 +30,7 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 4. Fill biome mappings and prefab arrays with Synty assets from:
    - POLYGON Nature Biomes Season One
    - POLYGON Nature Biomes Season Two
+   - Tune `biomeClimate` values for stronger biome contrast and smoother natural transitions.
 5. Add `WorldGenerator` component to an empty scene object and assign config.
 6. Open **Tools > World Generation > Open Generator Dashboard**.
 7. Click **Generate World** in dashboard (or call `GenerateNow()` at runtime).

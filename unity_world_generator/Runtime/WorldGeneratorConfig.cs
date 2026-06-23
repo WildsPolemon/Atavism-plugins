@@ -19,6 +19,9 @@ namespace AaaWorldGen
         public NoiseLayerSettings moistureNoise = new NoiseLayerSettings(0.0015f, 4, 2.15f, 0.52f, 113f, 71f);
         public NoiseLayerSettings temperatureNoise = new NoiseLayerSettings(0.0011f, 4, 2.05f, 0.49f, -91f, 44f);
 
+        [Header("Biome Climate")]
+        public BiomeClimateSettings biomeClimate = new BiomeClimateSettings();
+
         [Header("Biome Definitions")]
         public List<BiomeDefinition> biomes = new List<BiomeDefinition>();
 
@@ -68,6 +71,11 @@ namespace AaaWorldGen
             if (maxHeightMeters <= 1f)
             {
                 messages.Add("maxHeightMeters should be > 1.");
+            }
+
+            if (biomeClimate == null)
+            {
+                messages.Add("biomeClimate should be assigned.");
             }
 
             if (biomes == null || biomes.Count == 0)
@@ -165,6 +173,16 @@ namespace AaaWorldGen
             this.offsetX = offsetX;
             this.offsetZ = offsetZ;
         }
+    }
+
+    [Serializable]
+    public sealed class BiomeClimateSettings
+    {
+        [Range(0f, 1f)] public float latitudeTemperatureInfluence = 0.28f;
+        [Range(0f, 1f)] public float elevationTemperatureDrop = 0.22f;
+        [Range(0f, 1f)] public float coastalMoistureBoost = 0.18f;
+        public NoiseLayerSettings variationNoise = new NoiseLayerSettings(0.0032f, 3, 2f, 0.5f, 57f, -33f);
+        [Range(0f, 1f)] public float variationStrength = 0.08f;
     }
 
     [Serializable]

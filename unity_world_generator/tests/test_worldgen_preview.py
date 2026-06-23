@@ -1,4 +1,5 @@
 import json
+import statistics
 import unittest
 from pathlib import Path
 
@@ -53,6 +54,29 @@ class WorldGenPreviewTests(unittest.TestCase):
         self.assertGreaterEqual(result["player_spawn_count"], result["city_count"])
         self.assertGreater(result["npc_spawn_count"], result["city_count"])
         self.assertGreater(result["mob_zone_count"], 50)
+
+    def test_resource_biome_variety_present(self):
+        result = generate_world(self.config)
+        biome_ids = {node["biome_id"] for node in result["resources"]}
+        self.assertGreaterEqual(len(biome_ids), 3)
+
+    def test_tundra_is_more_polar_than_desert_in_resources(self):
+        result = generate_world(self.config)
+        world_center_z = (self.config["world_size_chunks"] * self.config["chunk_size_meters"]) * 0.5
+        tundra_latitudes = [
+            abs(node["position"][2] - world_center_z)
+            for node in result["resources"]
+            if node["biome_id"] == "tundra"
+        ]
+        desert_latitudes = [
+            abs(node["position"][2] - world_center_z)
+            for node in result["resources"]
+            if node["biome_id"] == "desert"
+        ]
+        if not tundra_latitudes or not desert_latitudes:
+            self.skipTest("Expected tundra and desert resources for latitude comparison.")
+
+        self.assertGreater(statistics.mean(tundra_latitudes), statistics.mean(desert_latitudes))
 
 
 if __name__ == "__main__":
