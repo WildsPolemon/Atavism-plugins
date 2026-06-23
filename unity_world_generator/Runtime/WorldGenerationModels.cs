@@ -11,13 +11,19 @@ namespace AaaWorldGen
         public float worldWidth;
         public float worldLength;
         public List<CityPlacement> cities = new List<CityPlacement>();
+        public List<RoadSegment> worldRoads = new List<RoadSegment>();
         public List<CavePlacement> caves = new List<CavePlacement>();
         public List<ResourceNodePlacement> resources = new List<ResourceNodePlacement>();
+        public List<SpawnPointPlacement> playerSpawns = new List<SpawnPointPlacement>();
+        public List<SpawnPointPlacement> npcSpawns = new List<SpawnPointPlacement>();
+        public List<SpawnZonePlacement> mobSpawnZones = new List<SpawnZonePlacement>();
     }
 
     [Serializable]
     public sealed class CityPlacement
     {
+        public int cityIndex;
+        public string cityTier;
         public string biomeId;
         public Vector3 center;
         public float coreRadius;
@@ -58,5 +64,24 @@ namespace AaaWorldGen
         public string resourceId;
         public Vector3 position;
         public float yaw;
+    }
+
+    [Serializable]
+    public sealed class SpawnPointPlacement
+    {
+        public string biomeId;
+        public string spawnType;
+        public int cityIndex;
+        public Vector3 position;
+        public float yaw;
+    }
+
+    [Serializable]
+    public sealed class SpawnZonePlacement
+    {
+        public string biomeId;
+        public int tier;
+        public Vector3 center;
+        public float radius;
     }
 }

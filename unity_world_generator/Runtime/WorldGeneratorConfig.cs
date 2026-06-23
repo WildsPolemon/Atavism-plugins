@@ -25,19 +25,31 @@ namespace AaaWorldGen
         [Header("Cities")]
         public CityGenerationSettings citySettings = new CityGenerationSettings();
 
+        [Header("Intercity Roads")]
+        public IntercityRoadSettings roadSettings = new IntercityRoadSettings();
+
         [Header("Caves Variant A")]
         public CaveGenerationSettings caveSettings = new CaveGenerationSettings();
 
         [Header("Resources")]
         public ResourceGenerationSettings resourceSettings = new ResourceGenerationSettings();
 
+        [Header("MMORPG Spawns")]
+        public SpawnGenerationSettings spawnSettings = new SpawnGenerationSettings();
+
         [Header("Spawn Parents")]
         public Transform cityRoot;
         public Transform caveRoot;
         public Transform resourceRoot;
+        public Transform roadRoot;
+        public Transform spawnRoot;
 
         [Header("Runtime")]
         public bool clearRootsBeforeSpawn = true;
+        public GameObject roadMarkerPrefab;
+        public GameObject playerSpawnMarkerPrefab;
+        public GameObject npcSpawnMarkerPrefab;
+        public GameObject mobZoneMarkerPrefab;
 
         public List<string> GetValidationMessages()
         {
@@ -110,9 +122,24 @@ namespace AaaWorldGen
                 messages.Add("At least one cave stamp preset is required.");
             }
 
+            if (roadSettings.extraConnectionsPerCity < 0)
+            {
+                messages.Add("roadSettings.extraConnectionsPerCity should be >= 0.");
+            }
+
             if (resourceSettings.biomeRules == null || resourceSettings.biomeRules.Count == 0)
             {
                 messages.Add("At least one resource biome rule is required.");
+            }
+
+            if (spawnSettings.playerSpawnsPerCity < 1)
+            {
+                messages.Add("spawnSettings.playerSpawnsPerCity should be >= 1.");
+            }
+
+            if (spawnSettings.maxMobZones < 0)
+            {
+                messages.Add("spawnSettings.maxMobZones should be >= 0.");
             }
 
             return messages;
@@ -169,6 +196,14 @@ namespace AaaWorldGen
     }
 
     [Serializable]
+    public sealed class IntercityRoadSettings
+    {
+        public int extraConnectionsPerCity = 1;
+        public float roadHeightOffset = 0.5f;
+        public float maxCurvatureRatio = 0.08f;
+    }
+
+    [Serializable]
     public sealed class CaveGenerationSettings
     {
         public int maxCaves = 220;
@@ -196,6 +231,17 @@ namespace AaaWorldGen
         public float caveResourceExclusionRadius = 120f;
         public float baseNodeSpacing = 30f;
         public List<BiomeResourceRule> biomeRules = new List<BiomeResourceRule>();
+    }
+
+    [Serializable]
+    public sealed class SpawnGenerationSettings
+    {
+        public int playerSpawnsPerCity = 3;
+        public int npcSpawnsPerCity = 24;
+        public int maxMobZones = 360;
+        public float mobZoneRadius = 55f;
+        public float citySpawnExclusionRadius = 300f;
+        public float caveSpawnExclusionRadius = 110f;
     }
 
     [Serializable]

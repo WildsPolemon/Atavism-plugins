@@ -44,6 +44,16 @@ class WorldGenPreviewTests(unittest.TestCase):
         result = generate_world(self.config)
         self.assertGreater(result["resource_count"], 100)
 
+    def test_intercity_roads_generated(self):
+        result = generate_world(self.config)
+        self.assertGreater(result["road_count"], 10)
+
+    def test_mmorpg_spawns_generated(self):
+        result = generate_world(self.config)
+        self.assertGreaterEqual(result["player_spawn_count"], result["city_count"])
+        self.assertGreater(result["npc_spawn_count"], result["city_count"])
+        self.assertGreater(result["mob_zone_count"], 50)
+
 
 if __name__ == "__main__":
     unittest.main()

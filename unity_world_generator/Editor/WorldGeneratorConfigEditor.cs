@@ -13,6 +13,7 @@ namespace AaaWorldGen.Editor
         private bool showBiomes = true;
         private bool showCityCave = true;
         private bool showResources = true;
+        private bool showSpawns = true;
         private bool showRuntime = true;
 
         public override void OnInspectorGUI()
@@ -50,10 +51,11 @@ namespace AaaWorldGen.Editor
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
 
-            showCityCave = EditorGUILayout.BeginFoldoutHeaderGroup(showCityCave, "Cities + Caves");
+            showCityCave = EditorGUILayout.BeginFoldoutHeaderGroup(showCityCave, "Cities + Caves + Roads");
             if (showCityCave)
             {
                 DrawProperty("citySettings");
+                DrawProperty("roadSettings");
                 DrawProperty("caveSettings");
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
@@ -65,13 +67,26 @@ namespace AaaWorldGen.Editor
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
 
+            showSpawns = EditorGUILayout.BeginFoldoutHeaderGroup(showSpawns, "MMORPG Spawns");
+            if (showSpawns)
+            {
+                DrawProperty("spawnSettings");
+            }
+            EditorGUILayout.EndFoldoutHeaderGroup();
+
             showRuntime = EditorGUILayout.BeginFoldoutHeaderGroup(showRuntime, "Runtime");
             if (showRuntime)
             {
                 DrawProperty("cityRoot");
                 DrawProperty("caveRoot");
                 DrawProperty("resourceRoot");
+                DrawProperty("roadRoot");
+                DrawProperty("spawnRoot");
                 DrawProperty("clearRootsBeforeSpawn");
+                DrawProperty("roadMarkerPrefab");
+                DrawProperty("playerSpawnMarkerPrefab");
+                DrawProperty("npcSpawnMarkerPrefab");
+                DrawProperty("mobZoneMarkerPrefab");
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
 

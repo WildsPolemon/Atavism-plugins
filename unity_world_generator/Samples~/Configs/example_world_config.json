@@ -23,6 +23,11 @@
     "road_block_size": 40.0,
     "target_lots_per_city": 120
   },
+  "roads": {
+    "extra_connections_per_city": 1,
+    "road_height_offset": 0.5,
+    "max_curvature_ratio": 0.08
+  },
   "caves_variant_a": {
     "max_caves": 220,
     "min_distance_between_entrances": 180.0,
@@ -44,5 +49,13 @@
       "tundra": {"nodes_per_square_km": 350, "entries": [{"resource_id": "ore_t1", "weight": 0.65}, {"resource_id": "wood_t1", "weight": 0.35}]},
       "swamp": {"nodes_per_square_km": 500, "entries": [{"resource_id": "fiber_t1", "weight": 0.70}, {"resource_id": "wood_t1", "weight": 0.30}]}
     }
+  },
+  "spawns": {
+    "player_spawns_per_city": 3,
+    "npc_spawns_per_city": 24,
+    "max_mob_zones": 360,
+    "mob_zone_radius": 55.0,
+    "city_spawn_exclusion_radius": 300.0,
+    "cave_spawn_exclusion_radius": 110.0
   }
 }

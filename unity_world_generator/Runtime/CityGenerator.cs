@@ -42,6 +42,8 @@ namespace AaaWorldGen
 
                 CityPlacement city = new CityPlacement
                 {
+                    cityIndex = i,
+                    cityTier = ResolveCityTier(i),
                     biomeId = biome != null ? biome.biomeId : "unknown",
                     center = new Vector3(point.x, h, point.y),
                     coreRadius = config.citySettings.cityCoreRadius,
@@ -54,6 +56,26 @@ namespace AaaWorldGen
             }
 
             return cities;
+        }
+
+        private static string ResolveCityTier(int sortedIndex)
+        {
+            if (sortedIndex == 0)
+            {
+                return "Capital";
+            }
+
+            if (sortedIndex < 5)
+            {
+                return "MajorCity";
+            }
+
+            if (sortedIndex < 12)
+            {
+                return "Town";
+            }
+
+            return "Village";
         }
 
         private static void BuildRoadGrid(CityPlacement city, float roadBlockSize)

@@ -8,7 +8,7 @@ namespace AaaWorldGen.Editor
 {
     public sealed class WorldGeneratorDashboardWindow : EditorWindow
     {
-        private static readonly string[] Tabs = { "Overview", "Biomes", "Cities + Caves", "Resources", "Diagnostics" };
+        private static readonly string[] Tabs = { "Overview", "Biomes", "Cities + Caves + Roads", "Resources + Spawns", "Diagnostics" };
 
         private WorldGenerator generator;
         private WorldGeneratorConfig config;
@@ -175,7 +175,13 @@ namespace AaaWorldGen.Editor
                 DrawProperty("cityRoot");
                 DrawProperty("caveRoot");
                 DrawProperty("resourceRoot");
+                DrawProperty("roadRoot");
+                DrawProperty("spawnRoot");
                 DrawProperty("clearRootsBeforeSpawn");
+                DrawProperty("roadMarkerPrefab");
+                DrawProperty("playerSpawnMarkerPrefab");
+                DrawProperty("npcSpawnMarkerPrefab");
+                DrawProperty("mobZoneMarkerPrefab");
             });
         }
 
@@ -195,6 +201,12 @@ namespace AaaWorldGen.Editor
                 DrawProperty("citySettings");
             });
 
+            DrawCard("Intercity Roads", () =>
+            {
+                EditorGUILayout.HelpBox("Road network auto-builds an MST backbone plus extra city connections.", MessageType.None);
+                DrawProperty("roadSettings");
+            });
+
             DrawCard("Cave Generation (Variant A)", () =>
             {
                 EditorGUILayout.HelpBox("Stamp-based cave entrances and corridor chains with weighted presets.", MessageType.None);
@@ -207,6 +219,12 @@ namespace AaaWorldGen.Editor
             DrawCard("Resource Distribution", () =>
             {
                 DrawProperty("resourceSettings");
+            });
+
+            DrawCard("MMORPG Spawn Generation", () =>
+            {
+                EditorGUILayout.HelpBox("Auto-generates player, NPC, and wilderness mob spawn zones for full MMO loops.", MessageType.None);
+                DrawProperty("spawnSettings");
             });
         }
 
@@ -239,8 +257,12 @@ namespace AaaWorldGen.Editor
                 EditorGUILayout.LabelField("Seed", result.worldSeed.ToString());
                 EditorGUILayout.LabelField("World Size", $"{result.worldWidth:0}m x {result.worldLength:0}m");
                 EditorGUILayout.LabelField("Cities", result.cities.Count.ToString());
+                EditorGUILayout.LabelField("Intercity Roads", result.worldRoads.Count.ToString());
                 EditorGUILayout.LabelField("Caves", result.caves.Count.ToString());
                 EditorGUILayout.LabelField("Resources", result.resources.Count.ToString());
+                EditorGUILayout.LabelField("Player Spawns", result.playerSpawns.Count.ToString());
+                EditorGUILayout.LabelField("NPC Spawns", result.npcSpawns.Count.ToString());
+                EditorGUILayout.LabelField("Mob Zones", result.mobSpawnZones.Count.ToString());
             });
         }
 
@@ -263,7 +285,7 @@ namespace AaaWorldGen.Editor
                 Undo.RecordObject(generator, "Generate World");
                 generator.Config = config;
                 WorldGenerationResult result = generator.GenerateNow();
-                statusLine = $"Generated: {result.cities.Count} cities, {result.caves.Count} caves, {result.resources.Count} resources.";
+                statusLine = $"Generated: {result.cities.Count} cities, {result.worldRoads.Count} roads, {result.caves.Count} caves, {result.resources.Count} resources, {result.mobSpawnZones.Count} mob zones.";
             }
             catch (Exception ex)
             {

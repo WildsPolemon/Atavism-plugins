@@ -133,6 +133,177 @@ def resolve_biome(height, moisture, temperature, biomes):
     return best or biomes[0]
 
 
+def pair_key(a: int, b: int):
+    return (a, b) if a < b else (b, a)
+
+
+def build_intercity_roads(cities, sample_height, max_height, cfg, seed):
+    if len(cities) < 2:
+        return []
+
+    roads = []
+    connected = set()
+
+    # MST backbone
+    in_tree = {0}
+    while len(in_tree) < len(cities):
+        best = None
+        best_pair = None
+        for i in in_tree:
+            ax, _, az = cities[i]["center"]
+            for j in range(len(cities)):
+                if j in in_tree or i == j:
+                    continue
+                bx, _, bz = cities[j]["center"]
+                d = (ax - bx) ** 2 + (az - bz) ** 2
+                if best is None or d < best:
+                    best = d
+                    best_pair = (i, j)
+        if best_pair is None:
+            break
+        in_tree.add(best_pair[1])
+        add_curved_road(cities, sample_height, max_height, cfg, seed, best_pair[0], best_pair[1], connected, roads)
+
+    # Extra nearest-neighbor links
+    extra = max(0, cfg.get("extra_connections_per_city", 0))
+    for i in range(len(cities)):
+        ax, _, az = cities[i]["center"]
+        neighbors = []
+        for j in range(len(cities)):
+            if i == j:
+                continue
+            bx, _, bz = cities[j]["center"]
+            d = (ax - bx) ** 2 + (az - bz) ** 2
+            neighbors.append((d, j))
+        neighbors.sort(key=lambda x: x[0])
+        for _, j in neighbors[:extra]:
+            add_curved_road(cities, sample_height, max_height, cfg, seed, i, j, connected, roads)
+    return roads
+
+
+def add_curved_road(cities, sample_height, max_height, cfg, seed, a_idx, b_idx, connected, roads):
+    key = pair_key(a_idx, b_idx)
+    if key in connected:
+        return
+    connected.add(key)
+
+    ax, _, az = cities[a_idx]["center"]
+    bx, _, bz = cities[b_idx]["center"]
+    dx = bx - ax
+    dz = bz - az
+    length = math.sqrt(dx * dx + dz * dz)
+    if length <= 1e-3:
+        return
+
+    dirx = dx / length
+    dirz = dz / length
+    perpx = -dirz
+    perpz = dirx
+    curvature_ratio = cfg.get("max_curvature_ratio", 0.08)
+    h = math.sin((a_idx + 1) * 12.9898 + (b_idx + 1) * 78.233 + seed * 0.131)
+    curve = length * curvature_ratio * max(-1.0, min(1.0, h))
+
+    mx = (ax + bx) * 0.5 + perpx * curve
+    mz = (az + bz) * 0.5 + perpz * curve
+    y_off = cfg.get("road_height_offset", 0.5)
+
+    a = [ax, sample_height(ax, az) * max_height + y_off, az]
+    m = [mx, sample_height(mx, mz) * max_height + y_off, mz]
+    b = [bx, sample_height(bx, bz) * max_height + y_off, bz]
+    roads.append({"from": a, "to": m, "type": "intercity"})
+    roads.append({"from": m, "to": b, "type": "intercity"})
+
+
+def generate_spawns(config, cities, caves, sample_height, sample_biome):
+    spawn_cfg = config["spawns"]
+    player_spawns = []
+    npc_spawns = []
+    mob_zones = []
+
+    # City player + npc spawns
+    for city in cities:
+        city_index = city["city_index"]
+        cx, _, cz = city["center"]
+        player_spawns.append({
+            "city_index": city_index,
+            "biome_id": city["biome_id"],
+            "spawn_type": "Player",
+            "position": [cx, sample_height(cx, cz) * config["max_height_meters"] + 1.0, cz],
+            "yaw": 0.0,
+        })
+
+        extra = max(0, spawn_cfg["player_spawns_per_city"] - 1)
+        for p in range(extra):
+            angle = (p / max(1, extra)) * math.tau
+            px = cx + math.cos(angle) * max(city["core_radius"] * 0.8, 15.0)
+            pz = cz + math.sin(angle) * max(city["core_radius"] * 0.8, 15.0)
+            player_spawns.append({
+                "city_index": city_index,
+                "biome_id": city["biome_id"],
+                "spawn_type": "Player",
+                "position": [px, sample_height(px, pz) * config["max_height_meters"] + 1.0, pz],
+                "yaw": math.degrees(angle) + 180.0,
+            })
+
+        lots = city.get("lots", [])
+        for lot in lots[: spawn_cfg["npc_spawns_per_city"]]:
+            lx, lz = lot["center"]
+            npc_spawns.append({
+                "city_index": city_index,
+                "biome_id": city["biome_id"],
+                "spawn_type": "NPC",
+                "position": [lx, sample_height(lx, lz) * config["max_height_meters"] + 1.0, lz],
+                "yaw": float(lot["district_index"] * 90),
+            })
+
+    # Wilderness mob zones
+    world_size = config["world_size_chunks"] * config["chunk_size_meters"]
+    spacing = max(spawn_cfg["mob_zone_radius"] * 1.6, 20.0)
+    points = poisson(world_size, world_size, spacing, config["world_seed"] + 4507, k=24)
+    city_r2 = spawn_cfg["city_spawn_exclusion_radius"] ** 2
+    cave_r2 = spawn_cfg["cave_spawn_exclusion_radius"] ** 2
+
+    for x, z in points:
+        if len(mob_zones) >= spawn_cfg["max_mob_zones"]:
+            break
+
+        blocked = False
+        for city in cities:
+            cx, _, cz = city["center"]
+            if (cx - x) ** 2 + (cz - z) ** 2 < city_r2:
+                blocked = True
+                break
+        if blocked:
+            continue
+
+        for cave in caves:
+            ex, _, ez = cave["entrance"]
+            if (ex - x) ** 2 + (ez - z) ** 2 < cave_r2:
+                blocked = True
+                break
+        if blocked:
+            continue
+
+        h = sample_height(x, z)
+        if h < config["sea_level01"] + 0.01:
+            continue
+
+        nearest = min(
+            math.sqrt((city["center"][0] - x) ** 2 + (city["center"][2] - z) ** 2)
+            for city in cities
+        )
+        tier = 3 if nearest > 3500 else 2 if nearest > 1800 else 1
+        biome = sample_biome(x, z)
+        mob_zones.append({
+            "biome_id": biome["biome_id"],
+            "tier": tier,
+            "center": [x, h * config["max_height_meters"], z],
+            "radius": spawn_cfg["mob_zone_radius"],
+        })
+
+    return player_spawns, npc_spawns, mob_zones
+
+
 def generate_world(config: dict):
     seed = config["world_seed"]
     world_size = config["world_size_chunks"] * config["chunk_size_meters"]
@@ -163,14 +334,34 @@ def generate_world(config: dict):
     ranked.sort(key=lambda v: v[0])
 
     cities = []
-    for _, x, z in ranked[: city_cfg["max_cities"]]:
+    for idx, (_, x, z) in enumerate(ranked[: city_cfg["max_cities"]]):
         b = sample_biome(x, z)
         cities.append({
+            "city_index": idx,
+            "city_tier": "Capital" if idx == 0 else "MajorCity" if idx < 5 else "Town" if idx < 12 else "Village",
             "biome_id": b["biome_id"],
             "center": [x, sample_height(x, z) * config["max_height_meters"], z],
             "core_radius": city_cfg["city_core_radius"],
             "district_radius": city_cfg["district_ring_radius"],
+            "lots": [],
         })
+
+    # Minimal district lots for spawn planning
+    lot_rng = random.Random(seed + 2049)
+    for city in cities:
+        cx, _, cz = city["center"]
+        inner = city["core_radius"] + city_cfg["road_block_size"]
+        outer = city["district_radius"] - city_cfg["road_block_size"]
+        for _ in range(city_cfg["target_lots_per_city"]):
+            angle = lot_rng.random() * math.tau
+            radius = inner + (outer - inner) * lot_rng.random()
+            lx = cx + math.cos(angle) * radius
+            lz = cz + math.sin(angle) * radius
+            district = int((angle / (math.pi / 2)) % 4)
+            city["lots"].append({"center": [lx, lz], "district_index": district})
+
+    road_cfg = config.get("roads", {"extra_connections_per_city": 1, "road_height_offset": 0.5, "max_curvature_ratio": 0.08})
+    world_roads = build_intercity_roads(cities, sample_height, config["max_height_meters"], road_cfg, seed)
 
     # Caves Variant A
     cave_cfg = config["caves_variant_a"]
@@ -274,15 +465,25 @@ def generate_world(config: dict):
             "yaw": rng.random() * 360.0,
         })
 
+    player_spawns, npc_spawns, mob_zones = generate_spawns(config, cities, caves, sample_height, sample_biome)
+
     return {
         "world_seed": seed,
         "world_size": world_size,
         "city_count": len(cities),
+        "road_count": len(world_roads),
         "cave_count": len(caves),
         "resource_count": len(resources),
+        "player_spawn_count": len(player_spawns),
+        "npc_spawn_count": len(npc_spawns),
+        "mob_zone_count": len(mob_zones),
         "cities": cities,
+        "world_roads": world_roads,
         "caves": caves,
         "resources": resources,
+        "player_spawns": player_spawns,
+        "npc_spawns": npc_spawns,
+        "mob_zones": mob_zones,
     }
 
 
@@ -302,8 +503,12 @@ def main():
 
     print(f"world_seed={result['world_seed']}")
     print(f"city_count={result['city_count']}")
+    print(f"road_count={result['road_count']}")
     print(f"cave_count={result['cave_count']}")
     print(f"resource_count={result['resource_count']}")
+    print(f"player_spawn_count={result['player_spawn_count']}")
+    print(f"npc_spawn_count={result['npc_spawn_count']}")
+    print(f"mob_zone_count={result['mob_zone_count']}")
 
 
 if __name__ == "__main__":

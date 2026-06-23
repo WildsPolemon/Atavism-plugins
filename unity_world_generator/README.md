@@ -7,8 +7,10 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 - Deterministic world seed generation.
 - Biome synthesis from height/moisture/temperature noise fields.
 - City placement with spacing constraints and district lot generation.
+- Intercity road network generation (MST backbone + extra links).
 - Cave generation **Variant A** (stamp-based cave prefabs + entrances).
 - Resource distribution by biome with exclusion zones.
+- MMORPG-ready spawn generation (player, NPC, wilderness mob zones).
 - Runtime prefab spawning + JSON export for generated layout.
 
 ## Folder layout
@@ -35,10 +37,10 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 
 `WorldGeneratorDashboardWindow` provides a centralized control panel:
 
-- tabbed workflow (Overview, Biomes, Cities + Caves, Resources, Diagnostics)
+- tabbed workflow (Overview, Biomes, Cities + Caves + Roads, Resources + Spawns, Diagnostics)
 - one-click generation and JSON export
 - inline configuration validation warnings
-- generation summary counters (cities/caves/resources)
+- generation summary counters (cities/roads/caves/resources/spawns)
 
 `WorldGeneratorConfigEditor` provides a polished inspector with grouped foldouts and quick actions.
 
