@@ -23,13 +23,13 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 
 1. Copy `unity_world_generator/Runtime` into your Unity project's `Assets/WorldGen/Runtime`.
 2. Copy `unity_world_generator/Editor` into `Assets/WorldGen/Editor` for dashboard tooling.
-2. Create `WorldGeneratorConfig` asset (`Create > World Generation > AAA World Generator Config`).
-3. Fill biome mappings and prefab arrays with Synty assets from:
+3. Create `WorldGeneratorConfig` asset (`Create > World Generation > AAA World Generator Config`).
+4. Fill biome mappings and prefab arrays with Synty assets from:
    - POLYGON Nature Biomes Season One
    - POLYGON Nature Biomes Season Two
-4. Add `WorldGenerator` component to an empty scene object and assign config.
-5. Open **Tools > World Generation > Open Generator Dashboard**.
-6. Click **Generate World** in dashboard (or call `GenerateNow()` at runtime).
+5. Add `WorldGenerator` component to an empty scene object and assign config.
+6. Open **Tools > World Generation > Open Generator Dashboard**.
+7. Click **Generate World** in dashboard (or call `GenerateNow()` at runtime).
 
 ## Editor UX
 
