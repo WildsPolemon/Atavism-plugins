@@ -1,0 +1,139 @@
+<div class="actions__container">
+  <h2>{{ this.tableKey + '.TITLE' | translate }}</h2>
+
+  <div fxLayout="row" fxLayoutAlign="start">
+    <button mat-raised-button color="accent" (click)="executeAction(DatabaseAction.wipeCharacters)">
+      {{ this.tableKey + '.WIPE_CHARACTERS' | translate }}
+    </button>
+    <button mat-raised-button color="accent" (click)="executeAction(DatabaseAction.wipeCharactersAccounts)">
+      {{ this.tableKey + '.WIPE_CHARACTERS_ACCOUNTS' | translate }}
+    </button>
+  </div>
+  <mat-divider></mat-divider>
+  <div class="width-100">
+    <div class="width-100" fxLayout="row" fxLayoutAlign="start">
+      <button mat-raised-button color="accent" (click)="showInstancesForAction(DatabaseAction.disableSpawnedMobs)">
+        {{ this.tableKey + '.DISABLE_SPAWNED_MOBS' | translate }}
+      </button>
+      <button mat-raised-button color="accent" (click)="showInstancesForAction(DatabaseAction.enableSpawnedMobs)">
+        {{ this.tableKey + '.ENABLE_SPAWNED_MOBS' | translate }}
+      </button>
+      <button mat-raised-button color="accent" (click)="showInstancesForAction(DatabaseAction.deleteSpawnedMobs)">
+        {{ this.tableKey + '.DELETE_SPAWNED_MOBS' | translate }}
+      </button>
+    </div>
+    <ng-container *ngIf="visibleInstances">
+      <mat-divider></mat-divider>
+      <div class="my-12 mx-12" fxLayout="row" fxLayoutAlign="start">
+        {{ this.tableKey + '.EXECUTE_FOR_ALL' | translate }} &nbsp;&nbsp;
+        <mat-slide-toggle [(ngModel)]="allInstances"></mat-slide-toggle>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        {{ this.tableKey + '.SELECTED_ACTION' | translate }}
+        <ng-container *ngIf="activeAction == DatabaseAction.disableSpawnedMobs">{{ this.tableKey + '.DISABLE_SPAWNED_MOBS' | translate }}</ng-container>
+        <ng-container *ngIf="activeAction == DatabaseAction.enableSpawnedMobs">{{ this.tableKey + '.ENABLE_SPAWNED_MOBS' | translate }}</ng-container>
+        <ng-container *ngIf="activeAction == DatabaseAction.deleteSpawnedMobs">{{ this.tableKey + '.DELETE_SPAWNED_MOBS' | translate }}</ng-container>
+      </div>
+      <div class="my-12 mx-12" fxLayout="row" style="align-items: flex-start">
+        <mat-form-field appearance="outline" style="width: 360px">
+          <mat-label>{{ this.tableKey + '.INSTANCES' | translate }}</mat-label>
+          <mat-select [formControl]="instancesControl" multiple [disabled]="allInstances">
+            <mat-option *ngFor="let instance of instances" [value]="instance.id">{{ instance.value }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <button
+          class="mt-4"
+          mat-raised-button
+          color="primary"
+          type="button"
+          *ngIf="activeAction"
+          [disabled]="!allInstances && (!instancesControl.value || instancesControl.value.length === 0)"
+          (click)="executeAction(activeAction)"
+        >{{ this.tableKey + '.EXECUTE_ACTION' | translate }}</button>
+      </div>
+    </ng-container>
+  </div>
+  <mat-divider></mat-divider>
+  <div class="width-100" fxLayout="row" fxLayoutAlign="start">
+    <button mat-raised-button color="accent" (click)="showBackupPreview = true">
+      {{ this.tableKey + '.MAKE_BACKUP' | translate }}
+    </button>
+    <button mat-raised-button color="accent" (click)="executeAction(DatabaseAction.checkBackupSize)">
+      {{ this.tableKey + '.CHECK_BACKUP_SIZE' | translate }}
+    </button>
+    <button mat-raised-button color="accent" (click)="executeAction(DatabaseAction.cleanupHistoryObjectStore)">
+      {{ this.tableKey + '.CLEANUP_HISTORY' | translate }}
+    </button>
+  </div>
+  <ng-container *ngIf="backupSizeResult">
+    <div class="width-100 mt-10 mx-10">
+      <div><strong>{{ 'PROFILES.DATABASE_TYPE.ADMIN' | translate }}:</strong> {{ backupSizeResult.admin | number: '0.0-2' }} MB</div>
+      <div><strong>{{ 'PROFILES.DATABASE_TYPE.ATAVISM' | translate }}:</strong> {{ backupSizeResult.atavism | number: '0.0-2' }} MB</div>
+      <div><strong>{{ 'PROFILES.DATABASE_TYPE.MASTER' | translate }}:</strong> {{ backupSizeResult.master | number: '0.0-2' }} MB</div>
+      <div><strong>{{ 'PROFILES.DATABASE_TYPE.WORLD_CONTENT' | translate }}:</strong> {{ backupSizeResult.world_content | number: '0.0-2' }} MB</div>
+    </div>
+    <button mat-raised-button color="accent" (click)="hideDBSizes()">{{ this.tableKey + '.HIDE' | translate }}</button>
+  </ng-container>
+  <ng-container *ngIf="showBackupPreview">
+    <div class="width-100 mt-10 mx-10">
+      <form [formGroup]="backupForm" (submit)="madeBackup()">
+        <mat-radio-group class="mb-10" fxLayout="column" aria-label="Select an option" formControlName="db" required>
+          <mat-radio-button [value]="dataBaseType.admin">{{ 'PROFILES.DATABASE_TYPE.ADMIN' | translate }}</mat-radio-button>
+          <mat-radio-button [value]="dataBaseType.atavism">{{ 'PROFILES.DATABASE_TYPE.ATAVISM' | translate }}</mat-radio-button>
+          <mat-radio-button [value]="dataBaseType.master">{{ 'PROFILES.DATABASE_TYPE.MASTER' | translate }}</mat-radio-button>
+          <mat-radio-button [value]="dataBaseType.world_content">{{ 'PROFILES.DATABASE_TYPE.WORLD_CONTENT' | translate }}</mat-radio-button>
+        </mat-radio-group>
+        <div fxLayout="row nowrap" fxLayoutAlign="start start" class="width-100 field-input-one-row">
+          <mat-form-field appearance="outline" fxFlex>
+            <mat-label>{{ this.tableKey + '.CHOOSE_FILE_TITLE' | translate }}</mat-label>
+            <input type="text" readonly formControlName="destination" matInput required />
+          </mat-form-field>
+          <button class="mt-4" mat-raised-button color="primary" type="button" (click)="chooseBackupFile()">{{ this.tableKey + '.CHOOSE_FILE_TITLE' | translate }}</button>
+        </div>
+        <div fxLayout="row">
+          <button
+            mat-raised-button
+            color="primary"
+            type="submit"
+            [disabled]="!backupForm.valid"
+          >{{ this.tableKey + '.MAKE_BACKUP' | translate }}</button>
+          <button mat-raised-button color="accent" (click)="showBackupPreview = false">{{ this.tableKey + '.HIDE' | translate }}</button>
+        </div>
+      </form>
+    </div>
+  </ng-container>
+  <mat-divider></mat-divider>
+  <button mat-raised-button color="accent" (click)="showQueryField = !showQueryField">
+    {{ this.tableKey + '.SHOW_HIDE_CUSTOM_FORM' | translate }}
+  </button>
+
+  <div class="width-100 mr-10 ml-10" fxLayout="column" fxLayoutAlign="start start" *ngIf="showQueryField">
+    <h3>{{ this.tableKey + '.RUN_CUSTOM_QUERY' | translate }}</h3>
+    <mat-form-field class="min-width-250" appearance="outline" fxFlex>
+      <mat-label>{{ this.tableKey + '.CHOOSE_DATABASE' | translate }}</mat-label>
+      <mat-select [(ngModel)]="selectedDatabase">
+        <mat-option *ngFor="let base of dataBase" [value]="base">
+          {{ base }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-slide-toggle [(ngModel)]="showTextareaScript">Show Textarea script container</mat-slide-toggle>
+    <mat-form-field *ngIf="showTextareaScript" class="database-actions__container_textarea" appearance="outline" fxFlex>
+      <textarea [(ngModel)]="customQuery" [maxLength]="'1000000'" matInput placeholder="{{ this.tableKey + '.QUERY' | translate }}"></textarea>
+      <mat-hint>{{ this.tableKey + '.QUERY_HINT' | translate }}</mat-hint>
+    </mat-form-field>
+    <div *ngIf="!showTextareaScript" fxLayout="row nowrap" fxLayoutAlign="start start" class="field-input-one-row width-100">
+      <mat-form-field appearance="outline" fxFlex>
+        <mat-label>{{ this.tableKey + '.SQL_SCRIPT_FILE' | translate }}</mat-label>
+        <input type="text" readonly [formControl]="sqlScriptControl" matInput required />
+      </mat-form-field>
+      <button class="mt-4" mat-raised-button color="primary" type="button" (click)="chooseFile()">{{ this.tableKey + '.SQL_SCRIPT_FILE' | translate }}</button>
+    </div>
+    <div fxLayout="row" fxLayoutAlign="start">
+      <button mat-raised-button color="primary" (click)="executeCustomQuery()">
+        {{ 'ACTIONS.EXECUTE_QUERY' | translate }}
+      </button>
+      <button mat-raised-button color="accent" (click)="cancelCustom()">{{ 'ACTIONS.CANCEL' | translate }}</button>
+    </div>
+  </div>
+</div>

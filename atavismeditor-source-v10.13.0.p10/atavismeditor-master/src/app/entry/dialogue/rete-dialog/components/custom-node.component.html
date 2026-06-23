@@ -1,0 +1,79 @@
+<div class="node" [ngClass]="[selected(), node.name] | kebab">
+  <div class="title">{{ node.data.name }}</div>
+  <div class="node-header-rows" *ngIf="node.data.type === actionTypes.Dialogue">
+    <ng-container *ngIf="node.data.parsedDialogue as parsedDialogue">
+      <div class="node-header-row">
+        <b>{{ 'DIALOGUE.OPENINGDIALOGUE' | translate }}:</b>
+        {{ $any(parsedDialogue).openingDialogue ? ('SETTINGS.YES' | translate) : ('SETTINGS.NO' | translate) }}
+      </div>
+      <div class="node-header-row">
+        <b>{{ 'DIALOGUE.REPEATABLE' | translate }}:</b>
+        {{ $any(parsedDialogue).repeatable ? ('SETTINGS.YES' | translate) : ('SETTINGS.NO' | translate) }}
+      </div>
+      <div class="node-header-row">
+        <b>{{ 'DIALOGUE.PREREQDIALOGUE' | translate }}:</b> {{ $any(parsedDialogue).prereqDialogue }}
+      </div>
+      <div class="node-header-row">
+        <b>{{ 'DIALOGUE.PREREQQUEST' | translate }}:</b> {{ $any(parsedDialogue).prereqQuest }}
+      </div>
+      <div class="node-header-row">
+        <b>{{ 'DIALOGUE.PREREQFACTION' | translate }}:</b> {{ $any(parsedDialogue).prereqFaction }}
+      </div>
+      <div class="node-header-row">
+        <b>{{ 'DIALOGUE.PREREQFACTIONSTANCE' | translate }}:</b> {{ $any(parsedDialogue).prereqFactionStance }}
+      </div>
+      <div class="node-header-row node-header-text">
+        <b>{{ 'DIALOGUE.AUDIOCLIP' | translate }}:</b> {{ $any(parsedDialogue).audioClip }}
+      </div>
+      <div class="node-header-row node-header-text">
+        <b>{{ 'DIALOGUE.TEXT' | translate }}:</b> {{ $any(parsedDialogue).text }}
+      </div>
+    </ng-container>
+  </div>
+  <div class="node-header-rows" *ngIf="node.data.type !== actionTypes.Dialogue">
+    <ng-container *ngIf="node.data.parsedAction as parsedAction">
+      <div class="node-header-row"><b>{{ 'DIALOGUE.ACTIONORDER' | translate }}:</b> {{ $any(parsedAction).actionOrder }}</div>
+      <div class="node-header-row"><b>{{ 'DIALOGUE.REQOPENEDQUEST' | translate }}
+        :</b> {{ $any(parsedAction).reqOpenedQuest }}
+      </div>
+      <div class="node-header-row">
+        <b>{{ 'DIALOGUE.REQCOMPLETEDQUEST' | translate }}:</b> {{ $any(parsedAction).reqCompletedQuest }}
+      </div>
+      <div class="node-header-row">
+        <b>{{ 'DIALOGUE.EXCLUDINGQUEST' | translate }}:</b> {{ $any(parsedAction).excludingQuest }}
+      </div>
+      <div class="node-header-row"><b>{{ 'DIALOGUE.AUDIOCLIP' | translate }}:</b> {{ $any(parsedAction).audioClip }}</div>
+      <div class="node-header-row"><b>{{ 'DIALOGUE.ITEMREQ' | translate }}:</b> {{ $any(parsedAction).itemReq }}</div>
+      <div class="node-header-row">
+        <b>{{ 'DIALOGUE.ITEMREQCONSUME' | translate }}:</b> {{ $any(parsedAction).itemReqConsume }}
+      </div>
+      <div class="node-header-row"><b>{{ 'DIALOGUE.CURRENCY' | translate }}:</b> {{ $any(parsedAction).currency }}</div>
+      <div class="node-header-row">
+        <b>{{ 'DIALOGUE.CURRENCYAMOUNT' | translate }}:</b> {{ $any(parsedAction).currencyAmount }}
+      </div>
+      <div class="node-header-row"><b>{{ 'DIALOGUE.REQUIREMENTS' | translate }}:</b> {{ $any(parsedAction).requirements }}
+      </div>
+    </ng-container>
+  </div>
+  <div class="input" *ngFor="let input of inputs">
+    <rete-socket rete-socket [io]="input" [socket]="input.socket"></rete-socket>
+    <div class="input-title" *ngIf="!input.showControl()"></div>
+    <div class="input-control" *ngIf="input.showControl()" [rete-control]="input.control"></div>
+  </div>
+  <div class="output-control-container">
+    <div class="control-container">
+      <ng-container *ngFor="let control of controls">
+        <div class="control-sub-container">
+          <mat-icon (click)="removeOutput(control)">remove_circle</mat-icon>
+          <div class="control" [rete-control]="control"></div>
+        </div>
+      </ng-container>
+    </div>
+    <div class="output-container">
+      <div class="output output-sub-container" *ngFor="let output of outputs">
+        <div class="output-title">{{ output.name }}</div>
+        <rete-socket rete-socket [io]="output" [socket]="output.socket"></rete-socket>
+      </div>
+    </div>
+  </div>
+</div>

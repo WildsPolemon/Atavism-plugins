@@ -1,0 +1,130 @@
+<div *ngIf="subForm === -1 && subFormParent === -1" fxLayout="column" fxLayoutAlign="start" [formGroup]="form" [hidden]="isHidden">
+  <mat-form-field
+    appearance="outline"
+    fxFlex
+    [popover]="overrideTooltip ? overrideTooltip : (field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate))"
+    [popoverPlacement]="'top'"
+    [popoverSize]="'large'"
+    [appendToBody]="true"
+    [popoverDisabled]="this.disableTooltip"
+    [popoverCloseOnMouseOutside]="true"
+  >
+    <mat-label>{{ overrideLabel ? overrideLabel : field.label ? field.label : (tableType + '.' + field.name | uppercase | translate) }}</mat-label>
+    <input
+      matInput
+      type="text"
+      *ngIf="field.type === FormFieldType.input"
+      [formControlName]="field.name"
+      [readonly]="fieldReadonly"
+      [maxlength]="field.length ? field.length : '16'"
+      [required]="requireOverride || (field.require ? field.require : false)"
+    />
+    <input
+      matInput
+      type="text"
+      *ngIf="field.type === FormFieldType.integer || field.type === FormFieldType.decimal"
+      digitOnly
+      [decimal]="field.type === FormFieldType.decimal"
+      [formControlName]="field.name"
+      [readonly]="fieldReadonly"
+      [maxlength]="field.length ? field.length : '16'"
+      [required]="requireOverride || (field.require ? field.require : false)"
+    />
+  </mat-form-field>
+  <ng-container *ngIf="form.get(field.name)?.enabled">
+    <div class="errors-container" *ngIf="errors as list">
+      <mat-error *ngFor="let error of list">{{ 'ERROR.' + error | translate: getParams() }}</mat-error>
+    </div>
+  </ng-container>
+</div>
+
+<div *ngIf="subForm !== -1 && subFormParent === -1" [formGroup]="form" [hidden]="isHidden">
+  <div fxLayout="column" fxLayoutAlign="start" [formArrayName]="subFormType">
+    <mat-form-field
+      [formGroupName]="subForm"
+      appearance="outline"
+      fxFlex
+      [popover]="overrideTooltip ? overrideTooltip : (field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate))"
+      [popoverPlacement]="'top'"
+      [popoverSize]="'large'"
+      [appendToBody]="true"
+      [popoverDisabled]="this.disableTooltip"
+      [popoverCloseOnClickOutside]="true"
+      [popoverCloseOnMouseOutside]="true"
+    >
+      <mat-label>{{
+        overrideLabel ? overrideLabel : field.label ? field.label : (tableType + '.' + field.name | uppercase | translate)
+      }}</mat-label>
+      <input
+        matInput
+        type="text"
+        *ngIf="field.type === FormFieldType.input"
+        [formControlName]="field.name"
+        [readonly]="fieldReadonly"
+        [maxlength]="field.length ? field.length : '16'"
+        [required]="requireOverride || (field.require ? field.require : false)"
+      />
+      <input
+        matInput
+        type="text"
+        *ngIf="field.type === FormFieldType.integer || field.type === FormFieldType.decimal"
+        digitOnly
+        [decimal]="field.type === FormFieldType.decimal"
+        [readonly]="fieldReadonly"
+        [formControlName]="field.name"
+        [maxlength]="field.length ? field.length : '16'"
+        [required]="requireOverride || (field.require ? field.require : false)"
+      />
+    </mat-form-field>
+    <div class="errors-container" *ngIf="errors as list">
+      <mat-error *ngFor="let error of list">{{ 'ERROR.' + error | translate: getParams() }}</mat-error>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="subForm !== -1 && subFormParent !== -1" [formGroup]="form" [hidden]="isHidden">
+  <div [formArrayName]="subFormTypeParent">
+    <div [formGroupName]="subFormParent">
+      <div [formArrayName]="subFormType" fxLayout="column" fxLayoutAlign="start">
+        <mat-form-field
+          [formGroupName]="subForm"
+          appearance="outline"
+          fxFlex
+          [popover]="overrideTooltip ? overrideTooltip : (field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate))"
+          [popoverPlacement]="'top'"
+          [popoverSize]="'large'"
+          [appendToBody]="true"
+          [popoverDisabled]="this.disableTooltip"
+          [popoverCloseOnMouseOutside]="true"
+        >
+          <mat-label>{{
+            overrideLabel ? overrideLabel : field.label ? field.label : (tableType + '.' + field.name | uppercase | translate)
+          }}</mat-label>
+          <input
+            matInput
+            type="text"
+            *ngIf="field.type === FormFieldType.input"
+            [readonly]="fieldReadonly"
+            [formControlName]="field.name"
+            [maxlength]="field.length ? field.length : '16'"
+            [required]="requireOverride || (field.require ? field.require : false)"
+          />
+          <input
+            matInput
+            type="text"
+            *ngIf="field.type === FormFieldType.integer || field.type === FormFieldType.decimal"
+            digitOnly
+            [decimal]="field.type === FormFieldType.decimal"
+            [readonly]="fieldReadonly"
+            [formControlName]="field.name"
+            [maxlength]="field.length ? field.length : '16'"
+            [required]="requireOverride || (field.require ? field.require : false)"
+          />
+        </mat-form-field>
+        <div class="errors-container" *ngIf="errors as list">
+          <mat-error *ngFor="let error of list">{{ 'ERROR.' + error | translate: getParams() }}</mat-error>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

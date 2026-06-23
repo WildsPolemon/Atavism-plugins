@@ -1,0 +1,199 @@
+<div class="dialog-content-wrapper dialog-form-container">
+  <mat-toolbar matDialogTitle class="mat-accent m-0">
+    <mat-toolbar-row fxLayout="row" fxLayoutAlign="space-between center">
+      <span class="title dialog-title">{{ 'THEMES.TITLE_' + (action | uppercase) | translate }}</span>
+      <button mat-icon-button (click)="matDialogRef.close()" aria-label="Close dialog">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-toolbar-row>
+  </mat-toolbar>
+
+  <div class="content" mat-dialog-content class="p-12 pb-0 m-0">
+    <form [formGroup]="form" fxLayout="column">
+      <div fxLayout="column">
+        <div fxLayout="row" fxLayoutAlign="start start">
+          <mat-form-field appearance="outline" fxFlex>
+            <mat-label>{{ 'THEMES.NAME' | translate }}</mat-label>
+            <input type="text" formControlName="name" matInput required />
+          </mat-form-field>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="start start">
+          <div class="group">
+            <h2 class="group-title">{{ 'THEMES.FONT_SIZE' | translate }}</h2>
+            <mat-radio-group fxLayout="column" fxLayoutAlign="start start" formControlName="size">
+              <mat-radio-button class="mb-12" value="font-size-small">
+                {{ 'THEMES.FONT_SIZE_SMALL' | translate }} <span class="example-small-text">({{ 'THEMES.EXAMPLE_TEXT' | translate }})</span>
+              </mat-radio-button>
+              <mat-radio-button class="mb-12" value="font-size-normal">
+                {{ 'THEMES.FONT_SIZE_NORMAL' | translate }}
+                <span class="example-normal-text">({{ 'THEMES.EXAMPLE_TEXT' | translate }})</span>
+              </mat-radio-button>
+              <mat-radio-button class="mb-12" value="font-size-large">
+                {{ 'THEMES.FONT_SIZE_LARGE' | translate }} <span class="example-large-text">({{ 'THEMES.EXAMPLE_TEXT' | translate }})</span>
+              </mat-radio-button>
+            </mat-radio-group>
+          </div>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="start start">
+          <div class="group">
+            <h2 class="group-title">{{ 'THEMES.TOOLTIP_FONT_SIZE' | translate }}</h2>
+            <mat-radio-group fxLayout="column" fxLayoutAlign="start start" formControlName="tooltipSize">
+              <mat-radio-button class="mb-12" value="tooltip-font-size-small">
+                {{ 'THEMES.FONT_SIZE_SMALL' | translate }} <span class="example-small-text">({{ 'THEMES.EXAMPLE_TEXT' | translate }})</span>
+              </mat-radio-button>
+              <mat-radio-button class="mb-12" value="tooltip-font-size-normal">
+                {{ 'THEMES.FONT_SIZE_NORMAL' | translate }}
+                <span class="example-normal-text">({{ 'THEMES.EXAMPLE_TEXT' | translate }})</span>
+              </mat-radio-button>
+              <mat-radio-button class="mb-12" value="tooltip-font-size-large">
+                {{ 'THEMES.FONT_SIZE_LARGE' | translate }} <span class="example-large-text">({{ 'THEMES.EXAMPLE_TEXT' | translate }})</span>
+              </mat-radio-button>
+            </mat-radio-group>
+          </div>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="start start">
+          <div class="group">
+            <h2 class="group-title">{{ 'THEMES.COLOR_THEME' | translate }}</h2>
+            <mat-radio-group fxLayout="column" fxLayoutAlign="start start" formControlName="colorTheme">
+              <mat-radio-button class="mb-12" value="theme-default">{{ 'THEMES.DEFAULT_LIGHT' | translate }}</mat-radio-button>
+              <mat-radio-button class="mb-12" value="theme-blue-gray-dark">{{ 'THEMES.BLUE_GRAY_DARK' | translate }}</mat-radio-button>
+              <mat-radio-button class="mb-12" value="theme-yellow-light">{{ 'THEMES.YELLOW_LIGHT' | translate }}</mat-radio-button>
+              <mat-radio-button class="mb-12" value="theme-pink-dark">{{ 'THEMES.PINK_DARK' | translate }}</mat-radio-button>
+              <mat-radio-button class="mb-12" value="theme-custom">{{ 'THEMES.CUSTOM_COLORS' | translate }}</mat-radio-button>
+            </mat-radio-group>
+          </div>
+        </div>
+
+        <div [hidden]="form.get('colorTheme')?.value !== 'theme-custom'" class="color-pickers">
+          <div fxLayout="row" style="width: 50%" fxLayoutAlign="start start">
+            <mat-form-field appearance="outline" fxFlex>
+              <mat-label>{{ 'THEMES.MAIN_COLOR' | translate }}</mat-label>
+              <input
+                matInput
+                readonly
+                style="font-weight: bold"
+                [style.color]="mainColor"
+                [(colorPicker)]="mainColor"
+                (colorPickerChange)="form.get('mainColor')?.patchValue($event)"
+                formControlName="mainColor"
+              />
+            </mat-form-field>
+          </div>
+          <div fxLayout="row" style="width: 50%" fxLayoutAlign="start start">
+            <mat-form-field appearance="outline" fxFlex>
+              <mat-label>{{ 'THEMES.SECONDARY_COLOR' | translate }}</mat-label>
+              <input
+                matInput
+                readonly
+                style="font-weight: bold"
+                [style.color]="secondaryColor"
+                [(colorPicker)]="secondaryColor"
+                (colorPickerChange)="form.get('secondaryColor')?.patchValue($event)"
+                formControlName="secondaryColor"
+              />
+            </mat-form-field>
+          </div>
+          <div fxLayout="row" style="width: 50%" fxLayoutAlign="start start">
+            <mat-form-field appearance="outline" fxFlex>
+              <mat-label>{{ 'THEMES.TEXT_COLOR' | translate }}</mat-label>
+              <input
+                matInput
+                readonly
+                style="font-weight: bold"
+                [style.color]="textColor"
+                [(colorPicker)]="textColor"
+                (colorPickerChange)="form.get('textColor')?.patchValue($event)"
+                formControlName="textColor"
+              />
+            </mat-form-field>
+          </div>
+          <div fxLayout="row" style="width: 50%" fxLayoutAlign="start start">
+            <mat-form-field appearance="outline" fxFlex>
+              <mat-label>{{ 'THEMES.TEXT_SECONDARY_COLOR' | translate }}</mat-label>
+              <input
+                matInput
+                readonly
+                style="font-weight: bold"
+                [style.color]="textSecondaryColor"
+                [(colorPicker)]="textSecondaryColor"
+                (colorPickerChange)="form.get('textSecondaryColor')?.patchValue($event)"
+                formControlName="textSecondaryColor"
+              />
+            </mat-form-field>
+          </div>
+          <div fxLayout="row" style="width: 33%" fxLayoutAlign="start start">
+            <mat-form-field appearance="outline" fxFlex>
+              <mat-label>{{ 'THEMES.PRIMARY_COLOR' | translate }}</mat-label>
+              <input
+                matInput
+                readonly
+                style="font-weight: bold"
+                [style.color]="primaryColor"
+                [(colorPicker)]="primaryColor"
+                (colorPickerChange)="form.get('primaryColor')?.patchValue($event)"
+                formControlName="primaryColor"
+              />
+            </mat-form-field>
+          </div>
+          <div fxLayout="row" style="width: 33%" fxLayoutAlign="start start">
+            <mat-form-field appearance="outline" fxFlex>
+              <mat-label>{{ 'THEMES.ACCENT_COLOR' | translate }}</mat-label>
+              <input
+                matInput
+                readonly
+                style="font-weight: bold"
+                [style.color]="accentColor"
+                [(colorPicker)]="accentColor"
+                (colorPickerChange)="form.get('accentColor')?.patchValue($event)"
+                formControlName="accentColor"
+              />
+            </mat-form-field>
+          </div>
+          <div fxLayout="row" style="width: 33%" fxLayoutAlign="start start">
+            <mat-form-field appearance="outline" fxFlex>
+              <mat-label>{{ 'THEMES.WARN_COLOR' | translate }}</mat-label>
+              <input
+                matInput
+                readonly
+                style="font-weight: bold"
+                [style.color]="warnColor"
+                [(colorPicker)]="warnColor"
+                (colorPickerChange)="form.get('warnColor')?.patchValue($event)"
+                formControlName="warnColor"
+              />
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div mat-dialog-actions class="m-0" fxLayout="row" fxLayoutAlign="end center">
+    <button
+      *ngIf="action === FormType.new"
+      mat-raised-button
+      class="save-button"
+      color="primary"
+      (click)="matDialogRef.close(form)"
+      [disabled]="form.invalid"
+      [attr.aria-label]="'ACTIONS.SAVE' | translate"
+    >
+      {{ 'ACTIONS.ADD' | translate }}
+    </button>
+
+    <button
+      *ngIf="action === FormType.edit"
+      mat-raised-button
+      class="save-button"
+      color="primary"
+      (click)="matDialogRef.close(form)"
+      [disabled]="form.invalid"
+      [attr.aria-label]="'ACTIONS.SAVE' | translate"
+    >
+      {{ 'ACTIONS.SAVE' | translate }}
+    </button>
+  </div>
+</div>

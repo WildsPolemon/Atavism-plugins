@@ -1,0 +1,103 @@
+{
+  "asar": false,
+  "appId": "com.AtavismEditor[VERSION].app",
+  "productName": "Atavism Editor v[VERSION]",
+  "buildVersion": "[VERSION]",
+  "copyright": "Copyright Atavism ©2020",
+  "directories": {
+    "buildResources": "release",
+    "output": "release"
+  },
+  "protocols": {
+    "name": "atavism-protocol",
+    "schemes": [
+      "atavism-editor-[VERSION]"
+    ]
+  },
+  "files": [
+    "**/*",
+    "!**/*.ts",
+    "!*.code-workspace",
+    "!LICENSE.md",
+    "!package.json",
+    "!package-lock.json",
+    "!yarn.lock",
+    "!src/",
+    "!e2e/",
+    "!hooks/",
+    "!angular.json",
+    "!_config.yml",
+    "!karma.conf.js",
+    "!tsconfig.json",
+    "!tslint.json"
+  ],
+  "extraResources": [
+    {
+      "from": "dist",
+      "to": "app",
+      "filter": [
+        "**/*"
+      ]
+    }
+  ],
+  "win": {
+    "artifactName": "atavism-editor-v[VERSION].${ext}",
+    "icon": "dist/assets/icons/app/icon.png",
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ]
+  },
+  "nsis": {
+    "allowToChangeInstallationDirectory": true,
+    "oneClick": false,
+    "perMachine": true
+  },
+  "mac": {
+    "category": "public.app-category.developer-tools",
+    "artifactName": "atavism-editor-v[VERSION].${ext}",
+    "icon": "dist/assets/icons/app/icon.png",
+    "target": [
+      {
+        "target": "zip"
+      },
+      {
+        "target": "pkg"
+      }
+    ],
+    "identity": "identity",
+    "darkModeSupport": true,
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false
+  },
+  "pkg": {
+    "installLocation": "/Applications/Atavism/Editor/[VERSION]",
+    "allowAnywhere": true,
+    "allowCurrentUserHome": true,
+    "allowRootDirectory": true,
+    "isVersionChecked": true,
+    "isRelocatable": false,
+    "overwriteAction": "upgrade"
+  },
+  "linux": {
+    "artifactName": "atavism-editor-v[VERSION].${ext}",
+    "executableName": "Atavism Editor v[VERSION]",
+    "category": "Development",
+    "icon": "dist/assets/icons/app/icon256x256.png",
+    "target": [
+      {
+        "target": "deb"
+      },
+      {
+        "target": "tar.bz2"
+      }
+    ]
+  },
+  "extraFiles": [
+    "editor-version.txt"
+  ]
+}

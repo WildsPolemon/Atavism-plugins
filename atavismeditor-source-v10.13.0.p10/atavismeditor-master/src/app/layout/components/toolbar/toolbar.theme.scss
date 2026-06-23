@@ -1,0 +1,13 @@
+@mixin toolbar-theme($theme) {
+  $foreground: map-get($theme, foreground);
+  $background: map-get($theme, background);
+
+  .fixed-search-bar {
+    background: mat-color($background, 'card');
+  }
+  toolbar {
+    .toolbar-separator {
+      background: map-get($foreground, divider);
+    }
+  }
+}

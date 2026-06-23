@@ -1,0 +1,29 @@
+@mixin form-theme($theme) {
+  $background: map-get($theme, background);
+
+  .cdk-drag {
+    z-index: 10000;
+    position: relative;
+  }
+  .cdk-drag-placeholder {
+    background: map-get($background, 'card');
+    z-index: 10000;
+    position: relative;
+  }
+  .cdk-drag-preview {
+    background: map-get($background, 'card');
+    z-index: 10000;
+    position: relative;
+  }
+  .cdk-drag-animating {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+  .cdk-drop-list-dragging .cdk-drag {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+  .cdk-drag-custom-placeholder {
+    width: 100%;
+    min-height: 60px;
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+}

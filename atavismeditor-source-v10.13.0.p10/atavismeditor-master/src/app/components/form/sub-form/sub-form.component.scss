@@ -1,0 +1,47 @@
+atv-sub-form {
+  margin-bottom: 16px;
+  display: block;
+
+  .sub-form__add-form {
+    min-width: 120px;
+    margin-right: 16px;
+  }
+}
+.sub-form {
+  display: flex;
+  flex-direction: column;
+}
+.sub-form__container,
+.sub-sub-form__container {
+  padding: 12px 8px 0;
+  margin-bottom: 8px;
+  margin-top: 14px;
+  position: relative;
+
+  .sub-form__container-header {
+    position: absolute;
+    top: -22px;
+    left: 4px;
+    right: 8px;
+  }
+
+  .sub-form__title {
+    line-height: 40px;
+    margin: 0;
+    padding: 0 4px;
+  }
+  .sub-form__container-fields {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.sub-sub-form-main-container {
+  width: 100%;
+}
+
+.max-width-250 {
+  max-width: 250px;
+}

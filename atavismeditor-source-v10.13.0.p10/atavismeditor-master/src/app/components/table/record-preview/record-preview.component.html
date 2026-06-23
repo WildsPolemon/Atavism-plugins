@@ -1,0 +1,105 @@
+<div *ngIf="loading" class="preview-container">
+  <div class="preview-spinner-container" fxLayout="row" fxLayoutAlign="center center">
+    <div class="lds-ring">
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  </div>
+</div>
+<div *ngIf="!loading && record">
+  <ng-container
+    *ngIf="
+      config.type !== TabTypes.ENCHANT_PROFILE && config.type !== TabTypes.BUILD_OBJECT && config.type !== TabTypes.ITEM_SETS && config.type !== TabTypes.RESOURCE_NODE_PROFILE && config.type !== TabTypes.ABILITY;
+      else tableWithSubs
+    "
+  >
+    <ng-container *ngFor="let key of rowKeys(record)">
+      <ng-container *ngIf="record[key].length > 0; else emptySubs">
+        <h3 class="sub-title">{{ config.type + '.' + key.toUpperCase() | translate }}</h3>
+        <table class="sub-table">
+          <tr>
+            <ng-container *ngFor="let cell of rowKeys(record[key][0])">
+              <th *ngIf="cell !== 'subs'">{{ config.type + '.' + cell.toUpperCase() | translate }}</th>
+            </ng-container>
+          </tr>
+          <tr
+            *ngFor="let row of record[key]"
+            [class.element-removed]="row.hasOwnProperty('isactive') && !row.isactive"
+            (contextmenu)="onRightClick($event, row); $event.preventDefault()"
+          >
+            <ng-container *ngFor="let cell of rowKeys(row)">
+              <ng-container *ngIf="cell === 'isactive'">
+                <td>
+                  <mat-checkbox
+                    [checked]="row[cell]"
+                    (change)="switchActiveCheckbox($event, row)"
+                    (click)="$event.stopPropagation()"
+                  ></mat-checkbox>
+                </td>
+              </ng-container>
+              <ng-container *ngIf="cell !== 'isactive' && cell !== 'subs'">
+                <td>
+                  <ng-container *ngIf="cell.indexOf('Icon') !== -1 || cell.indexOf('icon') !== -1; else noImage">
+                    <ng-container *ngIf="row[cell]; else noImage">
+                      <atv-image
+                        [icon]="{icon: row[cell], folder: iconFolder}"
+                        [alt]="row[cell]"
+                      ></atv-image>
+                    </ng-container>
+                  </ng-container>
+                  <ng-template #noImage>{{ row[cell] }}</ng-template>
+                </td>
+              </ng-container>
+            </ng-container>
+          </tr>
+        </table>
+      </ng-container>
+      <ng-template #emptySubs>
+        <h3 class="sub-title sub-title__empty">{{ config.type + '.EMPTY_' + key.toUpperCase() | translate }}</h3>
+      </ng-template>
+    </ng-container>
+  </ng-container>
+  <ng-template #tableWithSubs>
+    <ng-container *ngFor="let record of newSubs">
+      <ng-container *ngIf="record.heading.length > 0">
+        <h3 class="sub-title sub-title-{{ record.level }}">
+          {{ config.type + '.' + record.title.toUpperCase() | translate }}
+        </h3>
+        <table class="sub-table sub-table-{{ record.level }}">
+          <tr>
+            <th style="width: 200px" *ngFor="let cell of record.heading">{{ config.type + '.' + cell.toUpperCase() | translate }}</th>
+          </tr>
+          <tr *ngFor="let row of record.records">
+            <td style="width: 200px" *ngFor="let cell of rowKeys(row)">
+              <ng-container *ngIf="cell.indexOf('Icon') !== -1 || cell.indexOf('icon') !== -1; else noImage">
+                <ng-container *ngIf="row[cell]; else noImage">
+                  <atv-image
+                    [icon]="{icon: row[cell], folder: iconFolder}"
+                    [alt]="row[cell]"
+                  ></atv-image>
+                </ng-container>
+              </ng-container>
+              <ng-template #noImage>{{ row[cell] }}</ng-template>
+            </td>
+          </tr>
+        </table>
+      </ng-container>
+    </ng-container>
+  </ng-template>
+</div>
+
+<ng-template #contextMenuTemplate2 let-item>
+  <section class="context-menu">
+    <button
+      mat-menu-item
+      *ngFor="let action of item.actions"
+      [attr.aria-label]="'ACTIONS.' + action.name | translate"
+      (click)="toggleAction(item.id, action.type)"
+    >
+      <mat-icon>{{ action.icon }}</mat-icon>
+      <span>{{ 'ACTIONS.' + action.name | translate }}</span>
+    </button>
+  </section>
+</ng-template>

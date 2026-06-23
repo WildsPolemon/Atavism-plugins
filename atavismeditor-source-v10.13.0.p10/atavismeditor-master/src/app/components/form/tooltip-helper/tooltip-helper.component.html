@@ -1,0 +1,16 @@
+<h1 matDialogTitle>Module Helper</h1>
+<div mat-dialog-content>
+  <div class="popover-content">
+    <p class="popover-body">
+      <ng-container *ngFor="let tooltip of parsedTooltip">
+        <ng-container *ngIf="tooltip.type === 'string'">{{ tooltip.text }}</ng-container>
+        <ng-container *ngIf="tooltip.type === 'link'">
+          <a (click)="openLink(tooltip.link)" [title]="tooltip.text">{{ tooltip.text }}</a>
+        </ng-container>
+      </ng-container>
+    </p>
+  </div>
+</div>
+<div mat-dialog-actions style="justify-content: space-around;" class="pt-24">
+  <button mat-button (click)="dialogRef.close(false)">Close</button>
+</div>

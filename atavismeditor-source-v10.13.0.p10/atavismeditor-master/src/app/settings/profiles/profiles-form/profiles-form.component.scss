@@ -1,0 +1,49 @@
+.database-card-form {
+  margin-bottom: 16px;
+
+  .mat-card-header {
+    .mat-card-header-text {
+      margin-left: 0;
+
+      .mat-card-title {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  .mat-card-content {
+    margin-bottom: 0;
+  }
+
+  .mat-form-field-wrapper:last-child {
+    padding-bottom: 0;
+  }
+
+  .errors-container {
+    margin-top: 0;
+  }
+}
+
+.dialog-content-wrapper {
+  position: relative;
+}
+
+.field-input-one-row {
+  atv-input {
+    margin-right: 16px;
+  }
+
+  button {
+    margin-top: 4px;
+    height: 36px;
+  }
+}
+.button-position-radio-label {
+  line-height: 24px;
+  margin-right: 5px;
+}
+.button-position-radio-group {
+  .mat-radio-button {
+    margin: 0 5px;
+  }
+}

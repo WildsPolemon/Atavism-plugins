@@ -1,0 +1,8 @@
+<ng-container *ngIf="showImage">
+  <img
+    [src]="image"
+    class="preview-icon"
+    onerror="this.src='assets/icons/custom/placeholder.png';"
+    [alt]="alt"
+  />
+</ng-container>

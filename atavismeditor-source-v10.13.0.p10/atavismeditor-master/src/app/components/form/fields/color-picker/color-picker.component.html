@@ -1,0 +1,67 @@
+<div *ngIf="subForm === -1; else subFormFields" fxLayout="column" fxLayoutAlign="start" [formGroup]="form">
+  <div fxLayout="row" style="width: 50%" fxLayoutAlign="start start">
+    <mat-form-field
+      appearance="outline"
+      fxFlex
+      [popover]="field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate)"
+      [popoverPlacement]="'top'"
+      [popoverSize]="'large'"
+      [appendToBody]="true"
+      [popoverDisabled]="this.disableTooltip"
+      [popoverCloseOnMouseOutside]="true"
+    >
+      <mat-label>{{ field.label ? field.label : (tableType + '.' + field.name | uppercase | translate) }}</mat-label>
+      <input
+        matInput
+        readonly
+        style="font-weight: bold"
+        [style.color]="color"
+        [(colorPicker)]="color"
+        (colorPickerChange)="form.get(field.name)?.patchValue($event)"
+        [formControlName]="field.name"
+        [required]="field.require ? field.require : false"
+      />
+    </mat-form-field>
+  </div>
+  <ng-container *ngIf="form.get(field.name)?.enabled">
+    <div class="errors-container" *ngIf="errors as list">
+      <mat-error *ngFor="let error of list">{{ 'ERROR.' + error | translate }}</mat-error>
+    </div>
+  </ng-container>
+</div>
+
+<ng-template #subFormFields>
+  <div [formGroup]="form">
+    <div fxLayout="column" fxLayoutAlign="start" [formArrayName]="subFormType">
+      <div [formGroupName]="subForm">
+      <div class="field-file-upload-row">
+        <mat-form-field
+          appearance="outline"
+          fxFlex
+          [popover]="field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate)"
+          [popoverPlacement]="'top'"
+          [popoverSize]="'large'"
+          [appendToBody]="true"
+          [popoverDisabled]="this.disableTooltip"
+          [popoverCloseOnMouseOutside]="true"
+        >
+          <mat-label>{{ field.label ? field.label : (tableType + '.' + field.name | uppercase | translate) }}</mat-label>
+          <input
+            matInput
+            readonly
+            style="font-weight: bold"
+            [style.color]="color"
+            [(colorPicker)]="color"
+            (colorPickerChange)="PathValue($event)"
+            [formControlName]="field.name"
+            [required]="field.require ? field.require : false"
+          />
+        </mat-form-field>
+      </div>
+      <div class="errors-container" *ngIf="errors as list">
+        <mat-error *ngFor="let error of list">{{ 'ERROR.' + error | translate }}</mat-error>
+      </div>
+    </div>
+    </div>
+  </div>
+</ng-template>

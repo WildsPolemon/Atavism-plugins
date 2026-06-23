@@ -1,0 +1,58 @@
+<div class="header search-container accent p-16 p-sm-24" fxLayout="row" fxLayoutAlign="space-between center">
+  <div fxLayout="row" fxLayoutAlign="start center">
+    <div class="logo" fxLayout="row" fxLayoutAlign="start center">
+      <span class="logo-text h1" [@animate]="{value: '*', params: {delay: '100ms', x: '-25px'}}">
+        {{ tableConfig.title ? tableConfig.title : (tableConfig.type + '.TITLE' | translate) }}
+      </span>
+    </div>
+  </div>
+  <div class="ml-sm-32" fxLayout="row" fxLayoutAlign="center center" fxFlex *ngIf="!tableConfig.hideSearch">
+    <div class="search-wrapper mt-16 mt-sm-0">
+      <div class="search" fxFlex fxLayout="row" fxLayoutAlign="start center">
+        <mat-icon>search</mat-icon>
+        <input [formControl]="searchInput" [placeholder]="tableConfig.type + '.SEARCH_PLACEHOLDER' | translate" />
+      </div>
+    </div>
+  </div>
+  <div class="mr-sm-32" fxLayout="row" fxLayoutAlign="center center">
+    <button mat-raised-button class="opacity-09" color="warn" (click)="clearQueryParams()">
+      {{ 'GENERAL.CLEAR_FILTERS' | translate }}
+    </button>
+  </div>
+</div>
+
+<div fxLayout="column" fxLayoutAlign="start" class="filter-container__overlay" [class.filter-container__visible]="allVisible">
+  <div class="filter-container accent pl-sm-24" fxLayout="row wrap" fxLayoutAlign="start start" *ngIf="filters.length > 0 && !clearFilters">
+    <h3>{{ 'TABLE.FILTERS' | translate }}</h3>
+    <atv-table-filter-input
+      *ngFor="let filterName of filters"
+      [tableType]="tableConfig.type"
+      [type]="filter(filterName).filterType"
+      [options]="filter(filterName).data"
+      [dataConfig]="filter(filterName).fieldConfig"
+      [overrideValue]="filter(filterName).overrideValue"
+      [name]="filterName"
+      (filterValue)="onFilterSelect($event, filterName)"
+      (filterNumber)="onFilterNumber($event, filterName)"
+    >
+    </atv-table-filter-input>
+  </div>
+  <button
+    *ngIf="filters.length > 10"
+    class="filter-container__button show_less opacity-09"
+    mat-mini-fab
+    color="warn"
+    (click)="allVisible = !allVisible"
+  >
+    <mat-icon>keyboard_arrow_up</mat-icon>
+  </button>
+  <button
+    *ngIf="filters.length > 10"
+    class="filter-container__button show_more opacity-09"
+    mat-mini-fab
+    color="warn"
+    (click)="allVisible = !allVisible"
+  >
+    <mat-icon>keyboard_arrow_down</mat-icon>
+  </button>
+</div>

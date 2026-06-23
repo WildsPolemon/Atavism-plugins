@@ -1,0 +1,16 @@
+<div class="version-popup-container">
+  <div class="version-popup-logo logo">
+    <img class="logo-icon" [src]="'assets/images/logos/logo.png'" />
+    <span class="logo-text secondary-text">{{ 'MAIN.TITLE' | translate }}</span>
+  </div>
+  <div class="version-popup-version">
+    {{ 'MAIN.VERSION_LABEL' | translate }}: {{ version }}
+  </div>
+  <div class="version-popup-copyright">
+    {{ 'MAIN.COPYRIGHT' | translate }}
+  </div>
+
+  <div class="version-popup-field">
+    <mat-checkbox [checked]="autoCheckForUpdate" (change)="updateAutoCheck()">{{ 'MAIN.AUTO_CHECK_FOR_UPDATE' | translate }}</mat-checkbox>
+  </div>
+</div>

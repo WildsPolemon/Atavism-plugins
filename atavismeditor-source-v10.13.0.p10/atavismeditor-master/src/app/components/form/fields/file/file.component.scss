@@ -1,0 +1,19 @@
+.button-clear-icon {
+  width: 24px;
+  height: 24px !important;
+  top: -0.25em;
+
+  span.mat-button-wrapper {
+    display: block;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    position: relative;
+
+    mat-icon {
+      line-height: 24px;
+      font-size: 18px;
+      vertical-align: unset;
+    }
+  }
+}

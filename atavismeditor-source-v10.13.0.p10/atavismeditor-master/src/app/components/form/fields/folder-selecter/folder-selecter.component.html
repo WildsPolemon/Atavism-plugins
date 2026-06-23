@@ -1,0 +1,27 @@
+<div fxLayoutAlign="start" [formGroup]="form">
+  <mat-form-field
+    appearance="outline"
+    fxFlex
+    [popover]="(field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate))"
+    [popoverPlacement]="'top'"
+    [popoverSize]="'large'"
+    [appendToBody]="true"
+    [popoverDisabled]="this.disableTooltip"
+    [popoverCloseOnMouseOutside]="true"
+  >
+    <mat-label>{{ field.label ? field.label : (tableType + '.' + field.name | uppercase | translate) }}</mat-label>
+    <input
+      type="text"
+      readonly
+      matInput
+      [formControlName]="field.name"
+      [required]="field.require ? field.require : false"
+    />
+  </mat-form-field>
+  <button mat-raised-button type="button" (click)="chooseFolder(field.name)">{{ 'ACTIONS.CHOOSE_FOLDER' | translate }}</button>
+</div>
+
+<div class="errors-container" *ngIf="errors as list">
+  <mat-error *ngFor="let error of list">{{ 'ERROR.' + error | translate }}</mat-error>
+</div>
+

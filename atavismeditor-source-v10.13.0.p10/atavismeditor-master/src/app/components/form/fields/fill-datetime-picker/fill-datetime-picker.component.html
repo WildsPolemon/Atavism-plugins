@@ -1,0 +1,15 @@
+<div>
+  <input
+    type="hidden"
+    [ngxMatDatetimePicker]="picker"
+    [formControl]="datepickerControl"
+  />
+  <mat-datepicker-toggle matSuffix [for]="$any(picker)"></mat-datepicker-toggle>
+  <ngx-mat-datetime-picker
+    #picker
+    [showSeconds]="false"
+    color="primary"
+    [enableMeridian]="false"
+    [touchUi]="true"
+  ></ngx-mat-datetime-picker>
+</div>

@@ -1,0 +1,47 @@
+body.theme-default .filter-container .mat-form-field.mat-focused .mat-form-field-label,
+body.theme-default .filter-container.accent .mat-form-field-label {
+  color: #fff;
+}
+.search-container {
+  width: 100%;
+  min-width: 800px;
+}
+.filter-container__overlay {
+  max-height: 130px;
+  position: relative;
+  transition: max-height 0.5s;
+  width: 100%;
+  min-width: 800px;
+  .filter-container__button {
+    position: absolute;
+    bottom: -20px;
+    right: 24px;
+    z-index: 102;
+    &.show_less {
+      display: none;
+    }
+  }
+  .filter-container {
+    max-height: 130px;
+    overflow: hidden;
+    transition: max-height 0.5s;
+    h3 {
+      width: 80px;
+      margin-top: 20px;
+      margin-right: 1em;
+    }
+  }
+
+  &.filter-container__visible {
+    max-height: 1000px;
+    .filter-container {
+      max-height: 1000px;
+    }
+    .show_more {
+      display: none;
+    }
+    .show_less {
+      display: block;
+    }
+  }
+}

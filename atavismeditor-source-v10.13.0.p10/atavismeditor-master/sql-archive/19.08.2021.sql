@@ -1,0 +1,80 @@
+CREATE TABLE `resource_node_profile` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(256) NOT NULL,
+  `spawnPercentage` float NOT NULL DEFAULT '100',
+  `spawnPecentageMax` float NOT NULL DEFAULT '100',
+  `maxHarvestDistance` float NOT NULL,
+  `isactive` tinyint(1) NOT NULL,
+  `creationtimestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatetimestamp` datetime NOT NULL DEFAULT '2000-01-01 00:00:00',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+
+CREATE TABLE `resource_node_sub_profile` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `profileId` int(11) NOT NULL,
+  `priority` int(11) NOT NULL,
+  `priorityMax` int(11) NOT NULL,
+  `skill` int(11) DEFAULT NULL,
+  `skillLevel` int(11) DEFAULT NULL,
+  `skillLevelMax` int(11) DEFAULT NULL,
+  `skillExp` int(11) NOT NULL DEFAULT '0',
+  `weaponReq` varchar(45) DEFAULT NULL,
+  `equipped` tinyint(1) DEFAULT NULL,
+  `gameObject` varchar(128) DEFAULT NULL,
+  `harvestCoordEffect` varchar(256) DEFAULT NULL,
+  `activateCoordeffect` varchar(256) NOT NULL DEFAULT '',
+  `deactivateCoordeffect` varchar(256) NOT NULL DEFAULT '',
+  `respawnTime` int(11) DEFAULT NULL,
+  `respawnTimeMax` int(11) DEFAULT NULL,
+  `harvestCount` int(11) DEFAULT NULL,
+  `harvestTimeReq` float DEFAULT '0',
+  `cooldown` float NOT NULL,
+  `deactivationDelay` float NOT NULL,
+  `cursorIcon` varchar(1024) NOT NULL DEFAULT '',
+  `cursorIcon2` mediumtext NOT NULL,
+  `selectedIcon` varchar(1024) NOT NULL DEFAULT '',
+  `selectedIcon2` mediumtext NOT NULL,
+  `creationtimestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatetimestamp` datetime DEFAULT '2000-01-01 00:00:00',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 AVG_ROW_LENGTH=1638;
+
+CREATE TABLE `resource_drop` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `resourceSubProfileId` int(11) NOT NULL,
+  `item` int(11) DEFAULT NOT NULL,
+  `min` int(11) DEFAULT NOT NULL,
+  `max` int(11) DEFAULT NOT NULL,
+  `chance` float NOT NULL DEFAULT '100',
+  `chanceMax` float NOT NULL DEFAULT '100',
+  `isactive` tinyint(1) DEFAULT '1',
+  `creationtimestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatetimestamp` datetime DEFAULT '2000-01-01 00:00:00',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 AVG_ROW_LENGTH=1638;
+
+CREATE TABLE `resource_node_template` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(45) DEFAULT NULL,
+  `skill` int(11) DEFAULT NULL,
+  `skillLevel` int(11) DEFAULT NULL,
+  `skillLevelMax` int(11) DEFAULT NULL,
+  `skillExp` int(11) DEFAULT '0',
+  `weaponReq` varchar(45) DEFAULT NULL,
+  `equipped` tinyint(1) DEFAULT NULL,
+  `gameObject` varchar(128) DEFAULT NULL,
+  `coordEffect` varchar(64) DEFAULT NULL,
+  `instance` int(11) DEFAULT NULL,
+  `respawnTime` int(11) DEFAULT NULL,
+  `locX` float DEFAULT NULL,
+  `locY` float DEFAULT NULL,
+  `locZ` float DEFAULT NULL,
+  `harvestCount` int(11) DEFAULT NULL,
+  `harvestTimeReq` float DEFAULT '0',
+  `profileId` int(11) NOT NULL DEFAULT '-1',
+  `isactive` tinyint(1) DEFAULT '1',
+  `creationtimestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatetimestamp` datetime DEFAULT '2000-01-01 00:00:00',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 AVG_ROW_LENGTH=1638;
