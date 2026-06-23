@@ -6,6 +6,12 @@ namespace AaaWorldGen.Editor
 {
     public static class WorldGeneratorMenu
     {
+        [MenuItem("Tools/World Generation/Open Generator Dashboard")]
+        private static void OpenDashboard()
+        {
+            WorldGeneratorDashboardWindow.Open();
+        }
+
         [MenuItem("Tools/World Generation/Create Default Config")]
         private static void CreateDefaultConfig()
         {

@@ -13,6 +13,14 @@ namespace AaaWorldGen
 
         private WorldGenerationResult lastResult;
 
+        public WorldGeneratorConfig Config
+        {
+            get => config;
+            set => config = value;
+        }
+
+        public WorldGenerationResult LastResult => lastResult;
+
         public WorldGenerationResult GenerateNow()
         {
             if (config == null)
@@ -64,6 +72,21 @@ namespace AaaWorldGen
         private void GenerateFromContext()
         {
             GenerateNow();
+        }
+
+        public void ExportLastResultJson(string absolutePath)
+        {
+            if (string.IsNullOrWhiteSpace(absolutePath))
+            {
+                throw new ArgumentException("Export path is empty.", nameof(absolutePath));
+            }
+
+            if (lastResult == null)
+            {
+                GenerateNow();
+            }
+
+            WorldJsonExporter.Export(absolutePath, lastResult);
         }
 
         private void SpawnRuntime(WorldGenerationResult result)
@@ -139,7 +162,15 @@ namespace AaaWorldGen
 
             for (int i = root.childCount - 1; i >= 0; i--)
             {
-                DestroyImmediate(root.GetChild(i).gameObject);
+                GameObject child = root.GetChild(i).gameObject;
+                if (Application.isPlaying)
+                {
+                    Destroy(child);
+                }
+                else
+                {
+                    DestroyImmediate(child);
+                }
             }
         }
     }

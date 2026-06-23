@@ -38,6 +38,85 @@ namespace AaaWorldGen
 
         [Header("Runtime")]
         public bool clearRootsBeforeSpawn = true;
+
+        public List<string> GetValidationMessages()
+        {
+            List<string> messages = new List<string>();
+
+            if (worldSizeInChunks < 2)
+            {
+                messages.Add("worldSizeInChunks should be >= 2.");
+            }
+
+            if (chunkSizeMeters < 32)
+            {
+                messages.Add("chunkSizeMeters should be >= 32.");
+            }
+
+            if (maxHeightMeters <= 1f)
+            {
+                messages.Add("maxHeightMeters should be > 1.");
+            }
+
+            if (biomes == null || biomes.Count == 0)
+            {
+                messages.Add("At least one biome is required.");
+            }
+            else
+            {
+                HashSet<string> seen = new HashSet<string>();
+                for (int i = 0; i < biomes.Count; i++)
+                {
+                    BiomeDefinition biome = biomes[i];
+                    if (biome == null)
+                    {
+                        messages.Add($"Biome #{i} is null.");
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(biome.biomeId))
+                    {
+                        messages.Add($"Biome #{i} has empty biomeId.");
+                    }
+                    else if (!seen.Add(biome.biomeId))
+                    {
+                        messages.Add($"Biome id '{biome.biomeId}' is duplicated.");
+                    }
+
+                    if (biome.maxHeight01 < biome.minHeight01)
+                    {
+                        messages.Add($"Biome '{biome.biomeId}' has maxHeight01 < minHeight01.");
+                    }
+                }
+            }
+
+            if (citySettings.maxCities < 0)
+            {
+                messages.Add("citySettings.maxCities should be >= 0.");
+            }
+
+            if (citySettings.minDistanceBetweenCities <= 0f)
+            {
+                messages.Add("citySettings.minDistanceBetweenCities should be > 0.");
+            }
+
+            if (caveSettings.maxCaves < 0)
+            {
+                messages.Add("caveSettings.maxCaves should be >= 0.");
+            }
+
+            if (caveSettings.stampPresets == null || caveSettings.stampPresets.Count == 0)
+            {
+                messages.Add("At least one cave stamp preset is required.");
+            }
+
+            if (resourceSettings.biomeRules == null || resourceSettings.biomeRules.Count == 0)
+            {
+                messages.Add("At least one resource biome rule is required.");
+            }
+
+            return messages;
+        }
     }
 
     [Serializable]
