@@ -1,0 +1,160 @@
+<mat-toolbar class="p-0 mat-elevation-z1">
+  <div fxFlex fxFill fxLayout="row" fxLayoutAlign="start center">
+    <div fxFlex="1 0 auto" fxLayout="row" fxLayoutAlign="start center">
+      <button
+        mat-icon-button
+        class="navbar-toggle-button"
+        *ngIf="!hiddenNavbar && !rightNavbar"
+        (click)="toggleSidebarOpen('navbar')"
+        fxHide.gt-md
+      >
+        <mat-icon class="secondary-text">menu</mat-icon>
+      </button>
+      <div class="toolbar-separator" *ngIf="!hiddenNavbar && !rightNavbar" fxHide.gt-md></div>
+    </div>
+
+    <div class="" fxFlex="0 1 auto" fxLayout="row" fxLayoutAlign="start center">
+
+      <button mat-button  class="user-button" >
+      <div class="server-version-container" fxLayout="row" fxLayoutAlign="center">
+        <div class="server-version" fxLayout="row" fxLayoutAlign="center">
+          <span >
+            <span fxLayoutAlign="left">{{ profile ? ('PROFILES.DB_VERSION' | translate ) : ''}}  {{ profile ?  dbVersion  : ''}}</span>
+            <span fxLayoutAlign="left">{{ profile ? ('PROFILES.SERVER_VERSION' | translate) : ''}}  {{ profile ? serverVersion : '' }}</span>
+          </span>
+        </div>
+      </div>
+      </button>
+
+      <div class="toolbar-separator"></div>
+
+      <button mat-button [matMenuTriggerFor]="serverButtonMenu" class="user-button" (menuClosed)="onMenuClosed()" (menuOpened)="onMenuOpened()">
+        <div class="server-status-container" fxLayout="row" fxLayoutAlign="space-between center">
+          <div class="server-status" fxLayout="row" fxLayoutAlign="center center">
+            <span>{{ 'PROFILES.AUTH_SERVER' | translate }}</span>
+            <span
+              class="server-status-icon"
+              [class.server-status-stop]="!authServerStatus"
+              [class.server-status-running]="authServerStatus"
+              [class.server-status-restarting]="restartServerStatus"
+            ></span>
+
+          </div>
+          <div class="server-status" fxLayout="row" fxLayoutAlign="center center">
+            <span>{{ 'PROFILES.WORLD_SERVER' | translate }}</span>
+            <span
+              class="server-status-icon"
+              [class.server-status-stop]="!worldServerStatus"
+              [class.server-status-running]="worldServerStatus"
+              [class.server-status-restarting]="restartServerStatus"
+            ></span>
+          </div>
+        </div>
+      </button>
+      <mat-menu #serverButtonMenu="matMenu" [backdropClass]="'menu-custom-overlay'">
+        <button [disabled]="serverButtonsDisabled" mat-menu-item (click)="serverStatusUpdate(ServerStatus.StartRestart)">
+          <mat-icon class="s-16 mr-4">play_arrow</mat-icon>
+          <span>{{ 'PROFILES.START_RESTART_SERVER' | translate }}</span>
+        </button>
+        <button [disabled]="serverButtonsDisabled" mat-menu-item (click)="serverStatusUpdate(ServerStatus.Stop)">
+          <mat-icon class="s-16 mr-4">stop</mat-icon>
+          <span>{{ 'PROFILES.STOP_SERVER' | translate }}</span>
+        </button>
+      </mat-menu>
+
+      <div class="toolbar-separator"></div>
+
+      <button mat-button class="user-button" [matMenuTriggerFor]="profilesMenu" (menuClosed)="onMenuClosed()" (menuOpened)="onMenuOpened()">
+        <div fxLayout="row" fxLayoutAlign="center center">
+          <mat-icon class="s-16 mr-4">account_circle</mat-icon>
+          <span class="mr-12" fxShow.gt-sm>
+            {{ profile ? profile.name : ('PROFILES.NOT_SELECTED' | translate) }}
+          </span>
+          <mat-icon class="s-16" fxHide.xs>keyboard_arrow_down</mat-icon>
+        </div>
+      </button>
+      <mat-menu #profilesMenu="matMenu" [overlapTrigger]="false" [backdropClass]="'menu-custom-overlay'">
+        <button *ngIf="oneProfileMode" mat-menu-item (click)="editProfile()">
+          <span fxLayout="row" fxLayoutAlign="start center">
+            <mat-icon class="s-16 mr-4">settings</mat-icon>
+            <span>{{ 'PROFILES.EDIT_PROFILE' | translate }}</span>
+          </span>
+        </button>
+        <button *ngIf="!oneProfileMode" mat-menu-item (click)="changeProfiles()">
+          <span fxLayout="row" fxLayoutAlign="start center">
+            <mat-icon class="s-16 mr-4">settings</mat-icon>
+            <span>{{ 'PROFILES.SAVED_PROFILES' | translate }}</span>
+          </span>
+        </button>
+        <button mat-menu-item (click)="openLogsFolder()">
+          <span fxLayout="row" fxLayoutAlign="start center">
+            <mat-icon class="s-16 mr-4">snippet_folder</mat-icon>
+            <span>{{ 'PROFILES.OPEN_LOGS' | translate }}</span>
+          </span>
+        </button>
+        <button mat-menu-item (click)="clearLogsFolder()">
+          <span fxLayout="row" fxLayoutAlign="start center">
+            <mat-icon class="s-16 mr-4">delete_forever</mat-icon>
+            <span>{{ 'PROFILES.CLEAR_LOGS' | translate }}</span>
+          </span>
+        </button>
+      </mat-menu>
+
+      <div class="toolbar-separator"></div>
+      <button
+        mat-button
+        class="language-button"
+        *ngIf="selectedTranslation | async as currentTranslation"
+        [matMenuTriggerFor]="languageMenu"
+        (menuClosed)="onMenuClosed()" (menuOpened)="onMenuOpened()"
+      >
+        <div fxLayout="row" fxLayoutAlign="center center">
+          <img
+            class="flag mr-8"
+            [src]="'assets/icons/flags/' + (currentTranslation.code | lowercase) + '.svg'"
+            onerror="this.src='assets/icons/flags/int.svg';"
+          />
+          <span class="iso text-uppercase">
+            {{ currentTranslation.code | uppercase }}
+          </span>
+        </div>
+      </button>
+      <mat-menu #languageMenu="matMenu" [overlapTrigger]="false" [backdropClass]="'menu-custom-overlay'">
+        <button mat-menu-item *ngFor="let translation of translations | async" (click)="changeTranslation(translation.id)">
+          <span fxLayout="row" fxLayoutAlign="start center">
+            <img
+              class="flag mr-16"
+              [src]="'assets/icons/flags/' + (translation.code | lowercase) + '.svg'"
+              onerror="this.src='assets/icons/flags/int.svg';"
+            />
+            <span class="iso"> {{ translation.name }} ({{ translation.code | uppercase }}) </span>
+          </span>
+        </button>
+        <button mat-menu-item (click)="redirectTo('/translation')">{{ 'TRANSLATIONS.SETTINGS' | translate }}</button>
+      </mat-menu>
+
+      <div class="toolbar-separator"></div>
+      <button mat-button fxHide fxShow.gt-xs class="language-button" [matMenuTriggerFor]="settingsMenu" (menuClosed)="onMenuClosed()" (menuOpened)="onMenuOpened()">
+        <div fxLayout="row" fxLayoutAlign="center center">
+          <mat-icon>settings</mat-icon>
+        </div>
+      </button>
+      <mat-menu #settingsMenu="matMenu" [overlapTrigger]="false" [backdropClass]="'menu-custom-overlay'">
+        <button mat-menu-item *ngIf="version" (click)="showVersionScreen()">{{ 'MAIN.VERSION' | translate }} {{ version }}</button>
+        <button mat-menu-item (click)="redirectTo('/theme-settings')">{{ 'THEMES.TITLE' | translate }}</button>
+        <button mat-menu-item [class.animated-dots]="syncInProgress" (click)="startWorker()">
+          <ng-container *ngIf="!syncInProgress">{{ 'FILE_MANAGER.SYNC_FILES' | translate }}</ng-container>
+          <ng-container *ngIf="syncInProgress"
+            >{{ 'FILE_MANAGER.SYNCING_FILES' | translate }} <span>.</span><span>.</span><span>.</span></ng-container
+          >
+        </button>
+        <button mat-menu-item (click)="checkForUpdates()">
+          {{ 'ACTIONS.CHECK_UPDATE' | translate }}
+        </button>
+        <button mat-menu-item (click)="closeApp()">
+          {{ 'ACTIONS.QUIT' | translate }}
+        </button>
+      </mat-menu>
+    </div>
+  </div>
+</mat-toolbar>

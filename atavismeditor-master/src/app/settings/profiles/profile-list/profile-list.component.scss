@@ -1,0 +1,50 @@
+.profile-list-container {
+  overflow: hidden;
+  position: relative;
+  .table-row:hover {
+    background: #777 !important;
+  }
+
+  .search-wrapper {
+    .search {
+      input {
+        font-size: 18px;
+      }
+    }
+  }
+
+  .content {
+    .custom-responsive {
+      overflow: auto;
+      max-width: 100vw;
+
+      th.mat-header-cell,
+      td.mat-cell,
+      td.mat-footer-cell,
+      mat-cell {
+        padding: 0 8px;
+      }
+
+      mat-cell:first-of-type,
+      mat-header-cell:first-of-type,
+      mat-footer-cell:first-of-type {
+        padding-left: 8px;
+      }
+      .mat-column-name {
+        word-wrap: break-word !important;
+        white-space: unset !important;
+        flex: 0 0 50% !important;
+        width: 50% !important;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+
+        word-break: break-word;
+
+        -ms-hyphens: auto;
+        -moz-hyphens: auto;
+        -webkit-hyphens: auto;
+        hyphens: auto;
+      }
+    }
+  }
+}

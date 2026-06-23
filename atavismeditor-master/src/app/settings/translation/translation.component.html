@@ -1,0 +1,120 @@
+<div class="page-layout simple left-sidebar inner-sidebar inner-scroll">
+  <div
+    class="header accent p-16 p-sm-24"
+    fxLayout="column"
+    fxLayoutAlign="start"
+    fxLayout.gt-xs="row"
+    fxLayoutAlign.gt-xs="space-between center"
+  >
+    <div fxLayout="row" fxLayoutAlign="start center">
+      <div class="logo" fxLayout="row" fxLayoutAlign="start center">
+        <mat-icon class="logo-icon mr-16" [@animate]="{value: '*', params: {delay: '50ms', scale: '0.2'}}">
+          account_box
+        </mat-icon>
+        <span class="logo-text h1" [@animate]="{value: '*', params: {delay: '100ms', x: '-25px'}}">
+          {{ 'TRANSLATIONS.TITLE' | translate }}
+        </span>
+      </div>
+    </div>
+
+    <div class="ml-sm-32" fxLayout="row" fxLayoutAlign="center center" fxFlex>
+      <div class="search-wrapper mt-16 mt-sm-0">
+        <div class="search" fxFlex fxLayout="row" fxLayoutAlign="start center">
+          <mat-icon>search</mat-icon>
+          <input [formControl]="searchInput" [placeholder]="'TRANSLATIONS.SEARCH_PLACEHOLDER' | translate" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="center p-24" fusePerfectScrollbar>
+      <div class="content">
+        <mat-table [dataSource]="translations" [@animateStagger]="{value: '50'}">
+          <ng-container matColumnDef="name">
+            <mat-header-cell *matHeaderCellDef>
+              {{ 'TRANSLATIONS.NAME' | translate }}
+            </mat-header-cell>
+            <mat-cell *matCellDef="let translation">
+              <p class="text-truncate font-weight-600">
+                {{ translation.name }}
+                <ng-container *ngIf="translation.default">
+                  {{ 'TRANSLATIONS.DEFAULT' | translate }}
+                </ng-container>
+              </p>
+            </mat-cell>
+          </ng-container>
+
+          <ng-container matColumnDef="code">
+            <mat-header-cell *matHeaderCellDef fxHide fxShow.gt-xs>
+              {{ 'TRANSLATIONS.CODE' | translate }}
+            </mat-header-cell>
+            <mat-cell *matCellDef="let translation" fxHide fxShow.gt-xs>
+              <p class="email text-truncate">
+                {{ translation.code | uppercase }}
+              </p>
+            </mat-cell>
+          </ng-container>
+
+          <ng-container matColumnDef="selected">
+            <mat-header-cell *matHeaderCellDef>
+              {{ 'TRANSLATIONS.SELECTED' | translate }}
+            </mat-header-cell>
+            <mat-cell *matCellDef="let translation">
+              <button
+                mat-icon-button
+                [attr.aria-label]="(translation.selected ? 'TRANSLATIONS.MARK_AS_SELECTED' : 'TRANSLATIONS.MARK_AS_UNSELECTED') | translate"
+                (click)="$event.stopPropagation(); toggleSelected(translation.id)"
+              >
+                <mat-icon [class.translation_selected]="translation.selected">
+                  check_circle
+                </mat-icon>
+              </button>
+            </mat-cell>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <mat-header-cell *matHeaderCellDef></mat-header-cell>
+            <mat-cell *matCellDef="let translation" fxLayoutAlign="flex-end" stickyEnd>
+              <button mat-icon-button [matMenuTriggerFor]="moreMenu" aria-label="More" (click)="$event.stopPropagation()">
+                <mat-icon class="secondary-text">more_vert</mat-icon>
+              </button>
+              <mat-menu #moreMenu="matMenu">
+                <button *ngIf="!translation.default" mat-menu-item aria-label="edit" (click)="edit(translation)">
+                  <mat-icon>edit</mat-icon>
+                  <span>{{ 'ACTIONS.EDIT' | translate }}</span>
+                </button>
+                <button *ngIf="!translation.default" mat-menu-item aria-label="remove" (click)="remove(translation)">
+                  <mat-icon>delete</mat-icon>
+                  <span>{{ 'ACTIONS.REMOVE' | translate }}</span>
+                </button>
+                <button *ngIf="translation.default" mat-menu-item aria-label="download" (click)="download(translation.id)">
+                  <mat-icon>save_alt</mat-icon>
+                  <span>{{ 'ACTIONS.DOWNLOAD_SAMPLE' | translate }}</span>
+                </button>
+              </mat-menu>
+            </mat-cell>
+          </ng-container>
+
+          <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+          <mat-row
+            *matRowDef="let translation; columns: displayedColumns"
+            class="contact table-row"
+            matRipple
+            [@animate]="{value: '*', params: {y: '100%'}}"
+          ></mat-row>
+        </mat-table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button
+  mat-fab
+  class="accent fab-add-button"
+  (click)="create()"
+  [attr.aria-label]="'TRANSLATIONS.ADD' | translate"
+  [@animate]="{value: '*', params: {delay: '300ms', scale: '.2'}}"
+>
+  <mat-icon>add</mat-icon>
+</button>

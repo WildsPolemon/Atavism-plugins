@@ -1,0 +1,1206 @@
+<div class="dialog-content-wrapper dialog-form-container" style="position: relative" *ngIf="form">
+  <mat-toolbar matDialogTitle class="mat-accent m-0">
+    <mat-toolbar-row fxLayout="row" fxLayoutAlign="space-between center">
+      <span class="title dialog-title">{{ 'MOB_BEHAVIOR_PROFILE.TITLE' | translate }}</span>
+      <div>
+        <mat-slide-toggle
+          class="dialog-title-toggle"
+          [checked]="showTooltip"
+          color="warn"
+          (change)="toggleTooltips($event)"
+        >
+          {{ 'TABLE.SHOW_TOOLTIP' | translate }}
+        </mat-slide-toggle>
+        <button
+          *ngIf="allowHelper"
+          type="button"
+          mat-icon-button
+          (click)="openHelp()"
+          [attr.aria-label]="'ACTIONS.CLOSE_DIALOG' | translate"
+        >
+          <mat-icon>help_outline</mat-icon>
+        </button>
+        <button
+          type="button"
+          mat-icon-button
+          (click)="cancelForm()"
+          [attr.aria-label]="'ACTIONS.CLOSE_DIALOG' | translate"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </mat-toolbar-row>
+  </mat-toolbar>
+
+  <div mat-dialog-content class="p-12 m-0" cdkScrollable>
+    <form [formGroup]="form" fxLayout="column">
+      <input type="hidden" formControlName="id"/>
+      <atv-input [tableType]="tableKey" [form]="form" [field]="config.name" [errors]="errors(form.get('name')!)"></atv-input>
+
+      <div
+        formArrayName="mobBehavior"
+        cdkDropList
+        class="sub-form sub-form-behavior"
+        (cdkDropListDropped)="drop($event, 'mobBehavior')"
+      >
+        <div class="cdk-drag-custom-placeholder" *cdkDragPlaceholder></div>
+        <div
+          cdkDrag
+          cdkDragBoundary=".sub-form-behavior"
+          class="sub-form__container sub-form__container-100"
+          *ngFor="let item of mobBehaviors().controls; let i = index"
+          [formGroupName]="i"
+        >
+          <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+            <h2 class="sub-form__title">
+              <mat-icon cdkDragHandle>open_with</mat-icon>
+              {{ 'MOB_BEHAVIOR_PROFILE.MOB_BEHAVIOR' | translate }} {{ i + 1 }}
+            </h2>
+            <button *ngIf="mobBehaviors().controls.length > 1" type="button" mat-icon-button color="warn"
+                    (click)="removeSubForm(form, 'mobBehavior', i)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+          <div class="sub-form__container-fields">
+            <input type="hidden" formControlName="id"/>
+            <div class="field-width-33">
+              <atv-dropdown
+                [tableType]="tableKey"
+                [field]="config.type"
+                [form]="$any(mobBehaviors().at(i))"
+                [options]="mobBehaviorType"
+                [errors]="errors(item.get('type')!)"
+              ></atv-dropdown>
+            </div>
+            <div class="field-width-33">
+              <atv-input
+                [tableType]="tableKey"
+                [form]="$any(mobBehaviors().at(i))"
+                [field]="config.ability_interval"
+                [errors]="errors(item.get('ability_interval')!)"
+              ></atv-input>
+            </div>
+            <div class="field-width-33">
+              <atv-boolean
+                [tableType]="tableKey"
+                [form]="$any(mobBehaviors().at(i))"
+                [field]="config.ignore_chase_distance"
+                [errors]="errors(item.get('ignore_chase_distance')!)"
+              ></atv-boolean>
+            </div>
+            <div class="field-width-50" [hidden]="item.get('type')!.value !== MobBehaviorType.Heal && item.get('type')!.value !== MobBehaviorType.Defend">
+              <atv-dynamic-dropdown
+                [tableType]="tableKey"
+                [form]="$any(mobBehaviors().at(i))"
+                [field]="config.mob_tag"
+                [errors]="errors(item.get('mob_tag')!)"
+              ></atv-dynamic-dropdown>
+            </div>
+            <div class="field-width-50">
+              <atv-dynamic-dropdown
+                [tableType]="tableKey"
+                [form]="$any(mobBehaviors().at(i))"
+                [field]="config.weapon"
+                [errors]="errors(item.get('weapon')!)"
+              ></atv-dynamic-dropdown>
+            </div>
+            <div class="field-width-50" [hidden]="item.get('type')!.value !== MobBehaviorType.Flee">
+              <atv-dropdown
+                [tableType]="tableKey"
+                [field]="config.flee_type"
+                [form]="$any(mobBehaviors().at(i))"
+                [options]="fleeTypes"
+                [errors]="errors(item.get('flee_type')!)"
+              ></atv-dropdown>
+            </div>
+
+            <div class="field-width-100" [hidden]="item.get('type')!.value !== MobBehaviorType.Flee || item.get('flee_type')!.value !== 1">
+              <div formArrayName="pointsGroup" class="sub-form">
+                <div
+                  class="sub-form__container sub-form__container-100"
+                  *ngFor="let pointsGroupForm of subFormGroupArray(item, 'pointsGroup').controls; let pointIndex = index"
+                  [formGroupName]="pointIndex"
+                >
+                  <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                    <h2
+                      class="sub-form__title">{{ 'MOB_BEHAVIOR_PROFILE.POINTS' | translate }} {{ pointIndex + 1 }}</h2>
+                    <button
+                      *ngIf="subFormGroupArray(item, 'pointsGroup').controls.length > 1"
+                      type="button" mat-icon-button color="warn"
+                      (click)="removeSubForm(item, 'pointsGroup', pointIndex)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+
+                  <input type="hidden" formControlName="id" />
+                  <div class="sub-form__container-fields mt-10">
+                    <div class="field-width-33">
+                      <atv-input
+                        [tableType]="tableKey"
+                        [form]="subFormGroupArrayFormGroup(item, 'pointsGroup', pointIndex)"
+                        [field]="config.loc_x"
+                        [errors]="errors(subFormGroupArrayFormGroup(item, 'pointsGroup', pointIndex).get('loc_x')!)"
+                      ></atv-input>
+                    </div>
+                    <div class="field-width-33">
+                      <atv-input
+                        [tableType]="tableKey"
+                        [form]="subFormGroupArrayFormGroup(item, 'pointsGroup', pointIndex)"
+                        [field]="config.loc_y"
+                        [errors]="errors(subFormGroupArrayFormGroup(item, 'pointsGroup', pointIndex).get('loc_y')!)"
+                      ></atv-input>
+                    </div>
+                    <div class="field-width-33">
+                      <atv-input
+                        [tableType]="tableKey"
+                        [form]="subFormGroupArrayFormGroup(item, 'pointsGroup', pointIndex)"
+                        [field]="config.loc_z"
+                        [errors]="errors(subFormGroupArrayFormGroup(item, 'pointsGroup', pointIndex).get('loc_z')!)"
+                      ></atv-input>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                <button type="button" class="sub-form__add-form" mat-raised-button color="primary"
+                        (click)="addPointsGroupForm(subFormGroupArray(item, 'pointsGroup'))">
+                  {{ 'MOB_BEHAVIOR_PROFILE.ADD_POINT' | translate }}
+                </button>
+              </div>
+            </div>
+            <div class="sub-form__container sub-form__container-100">
+              <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                <h2 class="sub-form__title">{{ 'MOB_BEHAVIOR_PROFILE.BEHAVIOR_CONDITIONS' | translate }}</h2>
+              </div>
+              <div class="sub-form__container-fields mt-10">
+            <div class="field-width-100">
+              <div
+                cdkDropList
+                formArrayName="behaviorConditionsGroup"
+                class="sub-form sub-form-behavior-condition-group"
+                (cdkDropListDropped)="dropChild($event, i, 'behaviorConditionsGroup')">
+                <div
+                  cdkDrag
+                  cdkDragBoundary=".sub-form-behavior-condition-group"
+                  class="sub-form__container sub-form__container-100"
+                  *ngFor="let bConditionGroupForm of subFormGroupArray(item, 'behaviorConditionsGroup').controls; let j = index"
+                  [formGroupName]="j"
+                >
+                  <input type="hidden" formControlName="id"/>
+
+                  <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                    <h2 class="sub-form__title">
+                      <mat-icon cdkDragHandle>open_with</mat-icon>
+                      {{ 'MOB_BEHAVIOR_PROFILE.BEHAVIOR_CONDITIONS_GROUP' | translate }} {{ j + 1 }}</h2>
+                    <button type="button" mat-icon-button color="warn" (click)="removeSubForm(item, 'behaviorConditionsGroup', j)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+
+                  <div class="sub-form__container-fields mt-10">
+                    <div class="field-width-100">
+                      <div formArrayName="behaviorConditions" class="sub-form">
+                        <div
+                          class="sub-form__container sub-form__container-100"
+                          *ngFor="let bConditionForm of subFormGroupArray(bConditionGroupForm, 'behaviorConditions').controls; let z = index"
+                          [formGroupName]="z"
+                        >
+                          <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                            <h2
+                              class="sub-form__title">{{ 'MOB_BEHAVIOR_PROFILE.BEHAVIOR_CONDITIONS' | translate }} {{ z + 1 }}</h2>
+                            <button
+                              *ngIf="subFormGroupArray(bConditionGroupForm, 'behaviorConditions').controls.length > 1"
+                              type="button" mat-icon-button color="warn"
+                              (click)="removeSubForm(bConditionGroupForm, 'behaviorConditions', z)">
+                              <mat-icon>delete</mat-icon>
+                            </button>
+                          </div>
+
+                          <input type="hidden" formControlName="id" />
+                          <div class="sub-form__container-fields mt-10">
+                            <div class="field-width-33">
+                              <atv-dropdown
+                                [tableType]="tableKey"
+                                [field]="config.bcType"
+                                [form]="subFormGroupArrayFormGroup(bConditionGroupForm, 'behaviorConditions', z)"
+                                [options]="behaviourConditionsTypes"
+                                [errors]="errors(bConditionForm.get('type')!)"
+                              ></atv-dropdown>
+                            </div>
+                            <div class="field-width-33" *ngIf="bConditionForm.get('type')!.value === 1">
+                              <atv-input
+                                [tableType]="tableKey"
+                                [form]="subFormGroupArrayFormGroup(bConditionGroupForm, 'behaviorConditions', z)"
+                                [field]="config.distance"
+                                [errors]="errors(bConditionForm.get('distance')!)"
+                              ></atv-input>
+                            </div>
+                            <div class="field-width-33" *ngIf="bConditionForm.get('type')!.value === 2">
+                              <atv-dynamic-dropdown
+                                [tableType]="tableKey"
+                                [form]="subFormGroupArrayFormGroup(bConditionGroupForm, 'behaviorConditions', z)"
+                                [field]="config.stat_name"
+                                [errors]="errors(bConditionForm.get('stat_name')!)"
+                              ></atv-dynamic-dropdown>
+                            </div>
+                            <div class="field-width-33" *ngIf="bConditionForm.get('type')!.value === 2">
+                              <atv-input
+                                [tableType]="tableKey"
+                                [form]="subFormGroupArrayFormGroup(bConditionGroupForm, 'behaviorConditions', z)"
+                                [field]="getFieldConfig('stat_value', bConditionForm)"
+                                [errors]="errors(bConditionForm.get('stat_value')!)"
+                              ></atv-input>
+                            </div>
+                            <div class="field-width-33" [hidden]="bConditionForm.get('type')!.value !== 3">
+                              <atv-dynamic-dropdown
+                                [tableType]="tableKey"
+                                [form]="subFormGroupArrayFormGroup(bConditionGroupForm, 'behaviorConditions', z)"
+                                [field]="config.effect_tag_id"
+                                [errors]="errors(bConditionForm.get('effect_tag_id')!)"
+                              ></atv-dynamic-dropdown>
+                            </div>
+                            <div class="field-width-33"
+                                 [hidden]="![2,3].includes(+bConditionForm.get('type')!.value)">
+                              <atv-dropdown
+                                [tableType]="tableKey"
+                                [field]="config.target"
+                                [form]="subFormGroupArrayFormGroup(bConditionGroupForm, 'behaviorConditions', z)"
+                                [options]="targetOptions"
+                                [errors]="errors(bConditionForm.get('target')!)"
+                              ></atv-dropdown>
+                            </div>
+                            <div class="field-width-33" [hidden]="bConditionForm.get('type')!.value !== 2">
+                              <atv-boolean
+                                [tableType]="tableKey"
+                                [form]="subFormGroupArrayFormGroup(bConditionGroupForm, 'behaviorConditions', z)"
+                                [field]="config.stat_vitality_percentage"
+                                [errors]="errors(bConditionForm.get('stat_vitality_percentage')!)"
+                              ></atv-boolean>
+                            </div>
+                            <div class="field-width-33" [hidden]="bConditionForm.get('type')!.value !== 3">
+                              <atv-boolean
+                                [tableType]="tableKey"
+                                [form]="subFormGroupArrayFormGroup(bConditionGroupForm, 'behaviorConditions', z)"
+                                [field]="config.on_target"
+                                [errors]="errors(bConditionForm.get('on_target')!)"
+                              ></atv-boolean>
+                            </div>
+
+                            <div class="field-width-33" [hidden]="bConditionForm.get('type')!.value !== 6">
+                              <atv-input
+                                [tableType]="tableKey"
+                                [form]="subFormGroupArrayFormGroup(bConditionGroupForm, 'behaviorConditions', z)"
+                                [field]="config.target_number"
+                                [errors]="errors(bConditionForm.get('target_number')!)"
+                              ></atv-input>
+                            </div>
+                            <div class="field-width-33" [hidden]="bConditionForm.get('type')!.value !== 6">
+                              <atv-boolean
+                                [tableType]="tableKey"
+                                [form]="subFormGroupArrayFormGroup(bConditionGroupForm, 'behaviorConditions', z)"
+                                [field]="config.target_ally"
+                                [errors]="errors(bConditionForm.get('target_ally')!)"
+                              ></atv-boolean>
+                            </div>
+                            <div class="field-width-33"
+                                 [hidden]="![1, 2, 6].includes(bConditionForm.get('type')!.value)">
+                              <atv-boolean
+                                [tableType]="tableKey"
+                                [form]="subFormGroupArrayFormGroup(bConditionGroupForm, 'behaviorConditions', z)"
+                                [field]="config.less"
+                                [errors]="errors(bConditionForm.get('less')!)"
+                              ></atv-boolean>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                        <button type="button" class="sub-form__add-form" mat-raised-button color="primary"
+                                (click)="addBehaviourCondition(subFormGroupArray(bConditionGroupForm, 'behaviorConditions'))">
+                          {{ 'MOB_BEHAVIOR_PROFILE.ADD_BEHAVIOR_CONDITION' | translate }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                <button type="button" class="sub-form__add-form" mat-raised-button color="primary"
+                        (click)="addBehaviourConditionGroupForm(subFormGroupArray(item, 'behaviorConditionsGroup'))">
+                  {{ 'MOB_BEHAVIOR_PROFILE.ADD_BEHAVIOR_CONDITION_GROUP' | translate }}
+                </button>
+              </div>
+            </div>
+            </div>
+            </div>
+
+
+          <div class="field-width-100">
+            <div formGroupName="mobAbilityStart" class="sub-form"
+                 [hidden]="item.get('type')!.value !== MobBehaviorType.Flee">
+              <div class="sub-form__container sub-form__container-100">
+                <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                  <h2
+                    class="sub-form__title">{{ (item.get('type')!.value !== MobBehaviorType.Flee ? 'MOB_BEHAVIOR_PROFILE.MOB_ABILITY' : 'MOB_BEHAVIOR_PROFILE.FLEEING_START') | translate }}</h2>
+                </div>
+                <div class="sub-form__container-fields mt-10">
+                  <div class="field-width-100">
+                    <div formArrayName="abilityGroups" cdkDropList class="sub-form sub-form-ability-group" (cdkDropListDropped)="dropAbilityGroup($event, 'mobAbilityStart', item)">
+                      <div class="sub-form__container sub-form__container-100"
+                           cdkDrag
+                           cdkDragBoundary=".sub-form-ability-group"
+                           *ngFor="let abilitiesGroupForm of subFormGroupArray(item, 'abilityGroups', 'mobAbilityStart').controls; let agIndex = index"
+                           [formGroupName]="agIndex">
+                        <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                          <h2 class="sub-form__title">
+                            <mat-icon cdkDragHandle>open_with</mat-icon>
+                            {{ 'MOB_BEHAVIOR_PROFILE.ABILITY_GROUP' | translate }} {{ agIndex + 1 }}</h2>
+                          <button type="button" mat-icon-button color="warn"
+                                  (click)="removeSubForm(item, 'abilityGroups', agIndex, 'mobAbilityStart')">
+                            <mat-icon>delete</mat-icon>
+                          </button>
+                        </div>
+                        <div class="field-width-100"></div>
+                        <div class="sub-form__container-fields mt-10">
+                          <input type="hidden" formControlName="mob_ability_type"/>
+                        <!--  <div class="field-width-50">
+                            <atv-input [tableType]="tableKey" [form]="subFormGroupArrayFormGroup(item, 'abilityGroups', agIndex, 'mobAbilityStart')"
+                                       [field]="config.minAbilityRangePercentage"
+                                       [errors]="errors(subFormGroupArrayFormGroup(item, 'abilityGroups', agIndex, 'mobAbilityStart').get('minAbilityRangePercentage')!)"></atv-input>
+                          </div>
+                          <div class="field-width-50">
+                            <atv-input [tableType]="tableKey"
+                                       [form]="subFormGroupArrayFormGroup(item, 'abilityGroups', agIndex, 'mobAbilityStart')"
+                                       [field]="config.maxAbilityRangePercentage"
+                                       [errors]="errors(subFormGroupArrayFormGroup(item, 'abilityGroups', agIndex, 'mobAbilityStart').get('maxAbilityRangePercentage')!)"></atv-input>
+                          </div> -->
+                          <div class="sub-form__container sub-form__container-100">
+                            <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                              <h2 class="sub-form__title">{{ 'MOB_BEHAVIOR_PROFILE.ABILITY_CONDITIONS' | translate }}</h2>
+                            </div>
+                            <div class="sub-form__container-fields mt-10">
+                          <div class="field-width-100">
+                            <div
+                              formArrayName="abilityConditionGroups"
+                              class="sub-form sub-form-ability-start-condition-group"
+                              cdkDropList
+                              (cdkDropListDropped)="dropAbilityChild($event, 'mobAbilityStart', item, agIndex)"
+                            >
+                              <div
+                                cdkDrag
+                                cdkDragBoundary=".sub-form-ability-start-condition-group"
+                                class="sub-form__container sub-form__container-100"
+                                *ngFor="let abilityConditionGroupForm of subFormGroupArray(abilitiesGroupForm, 'abilityConditionGroups').controls; let acgIndex = index"
+                                [formGroupName]="acgIndex"
+                              >
+                                <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                                  <h2 class="sub-form__title">
+                                    <mat-icon cdkDragHandle>open_with</mat-icon>
+                                    {{ 'MOB_BEHAVIOR_PROFILE.MOB_ABILITY_CONDITIONS_GROUP' | translate }} {{ acgIndex + 1 }}
+                                  </h2>
+                                  <button type="button" mat-icon-button color="warn" (click)="removeSubForm(abilitiesGroupForm, 'abilityConditionGroups', acgIndex)">
+                                    <mat-icon>delete</mat-icon>
+                                  </button>
+                                </div>
+
+                                <div class="sub-form__container-fields mt-10">
+                                  <div class="field-width-100">
+                                    <div formArrayName="abilityConditions" class="sub-form">
+                                      <div
+                                        class="sub-form__container sub-form__container-100"
+                                        *ngFor="let abilityConditionForm of subFormGroupArray(abilityConditionGroupForm, 'abilityConditions').controls; let acgfIndex = index"
+                                        [formGroupName]="acgfIndex"
+                                      >
+                                        <div class="sub-form__container-header" fxLayout="row"
+                                             fxLayoutAlign="space-between">
+                                          <h2
+                                            class="sub-form__title">{{ 'MOB_BEHAVIOR_PROFILE.ABILITY_CONDITIONS' | translate }} {{ acgfIndex + 1 }}</h2>
+                                          <button
+                                            *ngIf="subFormGroupArray(abilityConditionGroupForm, 'abilityConditions').controls.length > 1"
+                                            type="button" mat-icon-button color="warn"
+                                            (click)="removeSubForm(abilityConditionGroupForm, 'abilityConditions', acgfIndex)">
+                                            <mat-icon>delete</mat-icon>
+                                          </button>
+                                        </div>
+
+                                        <div class="sub-form__container-fields mt-10">
+                                          <input type="hidden" formControlName="id" />
+                                          <div class="field-width-33">
+                                            <atv-dropdown
+                                              [tableType]="tableKey"
+                                              [field]="config.abcType"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [options]="abilityConditionsTypes"
+                                              [errors]="errors(abilityConditionForm.get('type')!)"
+                                            ></atv-dropdown>
+                                          </div>
+                                          <div class="field-width-66" [hidden]="abilityConditionForm.get('type')!.value !== 0">
+                                            <atv-dropdown
+                                              [tableType]="tableKey"
+                                              [field]="config.trigger_event_Id"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [options]="eventTypeDropdown"
+                                              [errors]="errors(abilityConditionForm.get('trigger_event_Id')!)"
+                                            ></atv-dropdown>
+                                          </div>
+                                          <div class="field-width-33" *ngIf="abilityConditionForm.get('type')!.value === 2">
+                                            <atv-dynamic-dropdown
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.stat_name"
+                                              [errors]="errors(abilityConditionForm.get('stat_name')!)"
+                                            ></atv-dynamic-dropdown>
+                                          </div>
+                                          <div class="field-width-33" *ngIf="abilityConditionForm.get('type')!.value === 2">
+                                            <atv-input
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="getFieldConfig('stat_value', abilityConditionForm)"
+                                              [errors]="errors(abilityConditionForm.get('stat_value')!)"
+                                            ></atv-input>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 3">
+                                            <atv-dynamic-dropdown
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.effect_tag_id"
+                                              [errors]="errors(abilityConditionForm.get('effect_tag_id')!)"
+                                            ></atv-dynamic-dropdown>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="![2,3].includes(+abilityConditionForm.get('type')!.value)">
+                                            <atv-dropdown
+                                              [tableType]="tableKey"
+                                              [field]="config.target"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [options]="targetOptions"
+                                              [errors]="errors(abilityConditionForm.get('target')!)"
+                                            ></atv-dropdown>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 2">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.stat_vitality_percentage"
+                                              [errors]="errors(abilityConditionForm.get('stat_vitality_percentage')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 3">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.on_target"
+                                              [errors]="errors(abilityConditionForm.get('on_target')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 6">
+                                            <atv-input
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.target_number"
+                                              [errors]="errors(abilityConditionForm.get('target_number')!)"
+                                            ></atv-input>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 6">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.target_ally"
+                                              [errors]="errors(abilityConditionForm.get('target_ally')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="![1, 2, 6].includes(abilityConditionForm.get('type')!.value)">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.less"
+                                              [errors]="errors(abilityConditionForm.get('less')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 4">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.combat_state"
+                                              [errors]="errors(abilityConditionForm.get('combat_state')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 5">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.death_state"
+                                              [errors]="errors(abilityConditionForm.get('death_state')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                                        <button type="button" class="sub-form__add-form" mat-raised-button
+                                                color="primary"
+                                                (click)="addAbilityCondition(subFormGroupArray(abilityConditionGroupForm, 'abilityConditions'))">
+                                          {{ 'MOB_BEHAVIOR_PROFILE.ADD_ABILITY_CONDITION' | translate }}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                                <button type="button" class="sub-form__add-form" mat-raised-button color="primary"
+                                        (click)="addAbilityConditionGroupForm(subFormGroupArray(abilitiesGroupForm, 'abilityConditionGroups'))">
+                                  {{ 'MOB_BEHAVIOR_PROFILE.ADD_ABILITY_CONDITION_GROUP' | translate }}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                            </div>
+                          </div>
+                          <div class="field-width-100">
+                            <div formArrayName="abilities" class="sub-form">
+                              <div class="sub-form__container sub-form__container-100"
+                                   *ngFor="let abilityForm of subFormGroupArray(abilitiesGroupForm, 'abilities').controls; let abilityIndex = index"
+                                   [formGroupName]="abilityIndex">
+                                <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                                  <h2
+                                    class="sub-form__title">{{ 'MOB_BEHAVIOR_PROFILE.ABILITY' | translate }} {{ abilityIndex + 1 }}</h2>
+                                  <button
+                                    *ngIf="subFormGroupArray(abilitiesGroupForm, 'abilities').controls.length > 1"
+                                    type="button" mat-icon-button color="warn"
+                                          (click)="removeSubForm(abilitiesGroupForm, 'abilities', abilityIndex)">
+                                    <mat-icon>delete</mat-icon>
+                                  </button>
+                                </div>
+
+                                <div class="sub-form__container-fields mt-10">
+                                  <div class="field-width-50">
+                                    <atv-dynamic-dropdown
+                                      [tableType]="tableKey"
+                                      [form]="abilityForm"
+                                      [field]="config.ability"
+                                      [errors]="errors(abilityForm.get('ability')!)"
+                                    ></atv-dynamic-dropdown>
+                                  </div>
+                                  <div class="field-width-50">
+                                    <atv-input [tableType]="tableKey" [form]="abilityForm" [field]="config.priority"
+                                               [errors]="errors(abilityForm.get('priority')!)"></atv-input>
+                                  </div>
+                                </div>
+                              </div>
+                              <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                                <button type="button" class="sub-form__add-form" mat-raised-button color="primary"
+                                        (click)="addAbilitySubForm(subFormGroupArray(item, 'abilityGroups', 'mobAbilityStart').at(agIndex).get('abilities'))">
+                                  {{ 'MOB_BEHAVIOR_PROFILE.ADD_ABILITY' | translate }}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                        <button type="button" class="sub-form__add-form" mat-raised-button color="primary"
+                                (click)="addAbilityGroupForm(subFormGroupArray(item, 'abilityGroups', 'mobAbilityStart'), 1)">
+                          {{ 'MOB_BEHAVIOR_PROFILE.ADD_ABILITY_GROUP' | translate }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <div formGroupName="mobAbility" class="sub-form">
+              <div class="sub-form__container sub-form__container-100">
+                <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                  <h2
+                    class="sub-form__title">{{ (item.get('type')!.value !== MobBehaviorType.Flee ? 'MOB_BEHAVIOR_PROFILE.MOB_ABILITY' : 'MOB_BEHAVIOR_PROFILE.FLEEING') | translate }}</h2>
+                </div>
+                <div class="sub-form__container-fields mt-10">
+
+                  <div class="field-width-100">
+                    <div formArrayName="abilityGroups" cdkDropList class="sub-form sub-form-ability-group" (cdkDropListDropped)="dropAbilityGroup($event, 'mobAbility', item)">
+                      <div class="sub-form__container sub-form__container-100"
+                           cdkDrag
+                           cdkDragBoundary=".sub-form-ability-group"
+                           *ngFor="let abilitiesGroupForm of subFormGroupArray(item, 'abilityGroups', 'mobAbility').controls; let agIndex = index"
+                           [formGroupName]="agIndex">
+                        <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                          <h2 class="sub-form__title">
+                            <mat-icon cdkDragHandle>open_with</mat-icon>
+                            {{ 'MOB_BEHAVIOR_PROFILE.ABILITY_GROUP' | translate }} {{ agIndex + 1 }}</h2>
+                          <button type="button" mat-icon-button color="warn"
+                                  (click)="removeSubForm(item, 'abilityGroups', agIndex, 'mobAbility')">
+                            <mat-icon>delete</mat-icon>
+                          </button>
+                        </div>
+
+                        <div class="sub-form__container-fields mt-10">
+                          <input type="hidden" formControlName="mob_ability_type"/>
+
+                          <div class="field-width-50" [hidden]="item.get('type')!.value === MobBehaviorType.Flee">
+                            <atv-input [tableType]="tableKey"
+                                       [form]="subFormGroupArrayFormGroup(item, 'abilityGroups', agIndex, 'mobAbility')"
+                                       [field]="config.minAbilityRangePercentage"
+                                       [errors]="errors(subFormGroupArrayFormGroup(item, 'abilityGroups', agIndex, 'mobAbility').get('minAbilityRangePercentage')!)"></atv-input>
+                          </div>
+                          <div class="field-width-50" [hidden]="item.get('type')!.value === MobBehaviorType.Flee">
+                            <atv-input [tableType]="tableKey" [form]="subFormGroupArrayFormGroup(item, 'abilityGroups', agIndex, 'mobAbility')"
+                                       [field]="config.maxAbilityRangePercentage"
+                                       [errors]="errors(subFormGroupArrayFormGroup(item, 'abilityGroups', agIndex, 'mobAbility').get('maxAbilityRangePercentage')!)"></atv-input>
+                          </div>
+                          <div class="sub-form__container sub-form__container-100">
+                          <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                            <h2 class="sub-form__title">{{ 'MOB_BEHAVIOR_PROFILE.ABILITY_CONDITIONS' | translate }}</h2>
+                          </div>
+                            <div class="sub-form__container-fields mt-10">
+                          <div class="field-width-100">
+                            <div
+                              formArrayName="abilityConditionGroups"
+                              class="sub-form sub-form-ability-condition-group"
+                              cdkDropList
+                              (cdkDropListDropped)="dropAbilityChild($event, 'mobAbility', item, agIndex)"
+                            >
+                              <div
+                                cdkDrag
+                                cdkDragBoundary=".sub-form-ability-condition-group"
+                                class="sub-form__container sub-form__container-100"
+                                *ngFor="let abilityConditionGroupForm of subFormGroupArray(abilitiesGroupForm, 'abilityConditionGroups').controls; let acgIndex = index"
+                                [formGroupName]="acgIndex"
+                              >
+                                <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                                  <h2 class="sub-form__title">
+                                    <mat-icon cdkDragHandle>open_with</mat-icon>
+                                    {{ 'MOB_BEHAVIOR_PROFILE.MOB_ABILITY_CONDITIONS_GROUP' | translate }} {{ acgIndex + 1 }}
+                                  </h2>
+                                  <button type="button" mat-icon-button color="warn" (click)="removeSubForm(abilitiesGroupForm, 'abilityConditionGroups', acgIndex)">
+                                    <mat-icon>delete</mat-icon>
+                                  </button>
+                                </div>
+
+                                <div class="sub-form__container-fields mt-10">
+                                  <div class="field-width-100">
+                                    <div formArrayName="abilityConditions" class="sub-form">
+                                      <div
+                                        class="sub-form__container sub-form__container-100"
+                                        *ngFor="let abilityConditionForm of subFormGroupArray(abilityConditionGroupForm, 'abilityConditions').controls; let acgfIndex = index"
+                                        [formGroupName]="acgfIndex"
+                                      >
+                                        <div class="sub-form__container-header" fxLayout="row"
+                                             fxLayoutAlign="space-between">
+                                          <h2
+                                            class="sub-form__title">{{ 'MOB_BEHAVIOR_PROFILE.ABILITY_CONDITIONS' | translate }} {{ acgfIndex + 1 }}</h2>
+                                          <button
+                                            *ngIf="subFormGroupArray(abilityConditionGroupForm, 'abilityConditions').controls.length > 1"
+                                            type="button" mat-icon-button color="warn"
+                                            (click)="removeSubForm(abilityConditionGroupForm, 'abilityConditions', acgfIndex)">
+                                            <mat-icon>delete</mat-icon>
+                                          </button>
+                                        </div>
+
+                                        <div class="sub-form__container-fields mt-10">
+                                          <input type="hidden" formControlName="id" />
+                                          <div class="field-width-33">
+                                            <atv-dropdown
+                                              [tableType]="tableKey"
+                                              [field]="config.abcType"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [options]="abilityConditionsTypes"
+                                              [errors]="errors(abilityConditionForm.get('type')!)"
+                                            ></atv-dropdown>
+                                          </div>
+                                          <div class="field-width-66" [hidden]="abilityConditionForm.get('type')!.value !== 0">
+                                            <atv-dropdown
+                                              [tableType]="tableKey"
+                                              [field]="config.trigger_event_Id"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [options]="eventTypeDropdown"
+                                              [errors]="errors(abilityConditionForm.get('trigger_event_Id')!)"
+                                            ></atv-dropdown>
+                                          </div>
+                                          <div class="field-width-33"
+                                               *ngIf="abilityConditionForm.get('type')!.value === 2">
+                                            <atv-dynamic-dropdown
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.stat_name"
+                                              [errors]="errors(abilityConditionForm.get('stat_name')!)"
+                                            ></atv-dynamic-dropdown>
+                                          </div>
+                                          <div class="field-width-33"
+                                               *ngIf="abilityConditionForm.get('type')!.value === 2">
+                                            <atv-input
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="getFieldConfig('stat_value', abilityConditionForm)"
+                                              [errors]="errors(abilityConditionForm.get('stat_value')!)"
+                                            ></atv-input>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 3">
+                                            <atv-dynamic-dropdown
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.effect_tag_id"
+                                              [errors]="errors(abilityConditionForm.get('effect_tag_id')!)"
+                                            ></atv-dynamic-dropdown>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="![2,3].includes(+abilityConditionForm.get('type')!.value)">
+                                            <atv-dropdown
+                                              [tableType]="tableKey"
+                                              [field]="config.target"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [options]="targetOptions"
+                                              [errors]="errors(abilityConditionForm.get('target')!)"
+                                            ></atv-dropdown>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 2">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.stat_vitality_percentage"
+                                              [errors]="errors(abilityConditionForm.get('stat_vitality_percentage')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 3">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.on_target"
+                                              [errors]="errors(abilityConditionForm.get('on_target')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 6">
+                                            <atv-input
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.target_number"
+                                              [errors]="errors(abilityConditionForm.get('target_number')!)"
+                                            ></atv-input>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 6">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.target_ally"
+                                              [errors]="errors(abilityConditionForm.get('target_ally')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="![1, 2, 6].includes(abilityConditionForm.get('type')!.value)">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.less"
+                                              [errors]="errors(abilityConditionForm.get('less')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 4">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.combat_state"
+                                              [errors]="errors(abilityConditionForm.get('combat_state')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 5">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.death_state"
+                                              [errors]="errors(abilityConditionForm.get('death_state')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                                        <button type="button" class="sub-form__add-form" mat-raised-button
+                                                color="primary"
+                                                (click)="addAbilityCondition(subFormGroupArray(abilityConditionGroupForm, 'abilityConditions'))">
+                                          {{ 'MOB_BEHAVIOR_PROFILE.ADD_ABILITY_CONDITION' | translate }}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                                <button type="button" class="sub-form__add-form" mat-raised-button color="primary"
+                                        (click)="addAbilityConditionGroupForm(subFormGroupArray(abilitiesGroupForm, 'abilityConditionGroups'))">
+                                  {{ 'MOB_BEHAVIOR_PROFILE.ADD_ABILITY_CONDITION_GROUP' | translate }}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                            </div>
+                          </div>
+                          <div class="field-width-100">
+                            <div formArrayName="abilities" class="sub-form">
+                              <div class="sub-form__container sub-form__container-100"
+                                   *ngFor="let abilityForm of subFormGroupArray(abilitiesGroupForm, 'abilities').controls; let abilityIndex = index"
+                                   [formGroupName]="abilityIndex">
+                                <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                                  <h2
+                                    class="sub-form__title">{{ 'MOB_BEHAVIOR_PROFILE.ABILITY' | translate }} {{ abilityIndex + 1 }}</h2>
+                                  <button
+                                    *ngIf="subFormGroupArray(abilitiesGroupForm, 'abilities').controls.length > 1"
+                                    type="button" mat-icon-button color="warn"
+                                          (click)="removeSubForm(abilitiesGroupForm, 'abilities', abilityIndex)">
+                                    <mat-icon>delete</mat-icon>
+                                  </button>
+                                </div>
+
+                                <div class="sub-form__container-fields mt-10">
+                                  <div class="field-width-50">
+                                    <atv-dynamic-dropdown
+                                      [tableType]="tableKey"
+                                      [form]="abilityForm"
+                                      [field]="config.ability"
+                                      [errors]="errors(abilityForm.get('ability')!)"
+                                    ></atv-dynamic-dropdown>
+                                  </div>
+                                  <div class="field-width-50">
+                                    <atv-input
+                                      [tableType]="tableKey" [form]="abilityForm" [field]="config.priority"
+                                               [errors]="errors(abilityForm.get('priority')!)"></atv-input>
+                                  </div>
+                                </div>
+                              </div>
+                              <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                                <button
+                                  type="button" class="sub-form__add-form" mat-raised-button color="primary"
+                                        (click)="addAbilitySubForm(subFormGroupArray(item, 'abilityGroups', 'mobAbility').at(agIndex).get('abilities'))">
+                                  {{ 'MOB_BEHAVIOR_PROFILE.ADD_ABILITY' | translate }}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                        <button type="button" class="sub-form__add-form" mat-raised-button color="primary"
+                                (click)="addAbilityGroupForm(subFormGroupArray(item, 'abilityGroups', 'mobAbility'), 0)">
+                          {{ 'MOB_BEHAVIOR_PROFILE.ADD_ABILITY_GROUP' | translate }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div formGroupName="mobAbilityEnd" class="sub-form"
+                 [hidden]="item.get('type')!.value !== MobBehaviorType.Flee">
+              <div class="sub-form__container sub-form__container-100">
+                <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                  <h2
+                    class="sub-form__title">{{ (item.get('type')!.value !== MobBehaviorType.Flee ? 'MOB_BEHAVIOR_PROFILE.MOB_ABILITY' : 'MOB_BEHAVIOR_PROFILE.FLEEING_END') | translate }}</h2>
+                </div>
+                <div class="sub-form__container-fields mt-10">
+
+                  <div class="field-width-100">
+                    <div formArrayName="abilityGroups" cdkDropList class="sub-form sub-form-ability-group" (cdkDropListDropped)="dropAbilityGroup($event, 'mobAbilityEnd', item)">
+                      <div class="sub-form__container sub-form__container-100"
+                           cdkDrag
+                           cdkDragBoundary=".sub-form-ability-group"
+                           *ngFor="let abilitiesGroupForm of subFormGroupArray(item, 'abilityGroups', 'mobAbilityEnd').controls; let agIndex = index"
+                           [formGroupName]="agIndex">
+                        <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                          <h2 class="sub-form__title">
+                            <mat-icon cdkDragHandle>open_with</mat-icon>
+                            {{ 'MOB_BEHAVIOR_PROFILE.ABILITY_GROUP' | translate }} {{ agIndex + 1 }}</h2>
+                          <button type="button" mat-icon-button color="warn"
+                                  (click)="removeSubForm(item, 'abilityGroups', agIndex, 'mobAbilityEnd')">
+                            <mat-icon>delete</mat-icon>
+                          </button>
+                        </div>
+
+                        <div class="sub-form__container-fields mt-10">
+                          <input type="hidden" formControlName="mob_ability_type"/>
+                       <!--   <div class="field-width-50">
+                            <atv-input [tableType]="tableKey" [form]="subFormGroupArrayFormGroup(item, 'abilityGroups', agIndex, 'mobAbilityEnd')"
+                                       [field]="config.minAbilityRangePercentage"
+                                       [errors]="errors(subFormGroupArrayFormGroup(item, 'abilityGroups', agIndex, 'mobAbilityEnd').get('minAbilityRangePercentage')!)"></atv-input>
+                          </div>
+                          <div class="field-width-50">
+                            <atv-input [tableType]="tableKey" [form]="subFormGroupArrayFormGroup(item, 'abilityGroups', agIndex, 'mobAbilityEnd')"
+                                       [field]="config.maxAbilityRangePercentage"
+                                       [errors]="errors(subFormGroupArrayFormGroup(item, 'abilityGroups', agIndex, 'mobAbilityEnd').get('maxAbilityRangePercentage')!)"></atv-input>
+                          </div> -->
+                          <div class="sub-form__container sub-form__container-100">
+                            <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                              <h2 class="sub-form__title">{{ 'MOB_BEHAVIOR_PROFILE.ABILITY_CONDITIONS' | translate }}</h2>
+                            </div>
+                            <div class="sub-form__container-fields mt-10">
+                          <div class="field-width-100">
+                            <div
+                              formArrayName="abilityConditionGroups"
+                              class="sub-form sub-form-ability-end-condition-group"
+                              cdkDropList
+                              (cdkDropListDropped)="dropAbilityChild($event, 'mobAbilityEnd', item, agIndex)">
+                              <div
+                                cdkDrag
+                                cdkDragBoundary=".sub-form-ability-end-condition-group"
+                                class="sub-form__container sub-form__container-100"
+                                *ngFor="let abilityConditionGroupForm of subFormGroupArray(abilitiesGroupForm, 'abilityConditionGroups').controls; let acgIndex = index"
+                                [formGroupName]="acgIndex"
+                              >
+                                <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                                  <h2 class="sub-form__title">
+                                    <mat-icon cdkDragHandle>open_with</mat-icon>
+                                    {{ 'MOB_BEHAVIOR_PROFILE.MOB_ABILITY_CONDITIONS_GROUP' | translate }} {{ acgIndex + 1 }}
+                                  </h2>
+                                  <button type="button" mat-icon-button color="warn" (click)="removeSubForm(abilitiesGroupForm, 'abilityConditionGroups', acgIndex)">
+                                    <mat-icon>delete</mat-icon>
+                                  </button>
+                                </div>
+
+                                <div class="sub-form__container-fields mt-10">
+                                  <div class="field-width-100">
+                                    <div formArrayName="abilityConditions" class="sub-form">
+                                      <div
+                                        class="sub-form__container sub-form__container-100"
+                                        *ngFor="let abilityConditionForm of subFormGroupArray(abilityConditionGroupForm, 'abilityConditions').controls; let acgfIndex = index"
+                                        [formGroupName]="acgfIndex"
+                                      >
+                                        <div class="sub-form__container-header" fxLayout="row"
+                                             fxLayoutAlign="space-between">
+                                          <h2
+                                            class="sub-form__title">{{ 'MOB_BEHAVIOR_PROFILE.ABILITY_CONDITIONS' | translate }} {{ acgfIndex + 1 }}</h2>
+                                          <button
+                                            *ngIf="subFormGroupArray(abilityConditionGroupForm, 'abilityConditions').controls.length > 1"
+                                            type="button" mat-icon-button color="warn"
+                                            (click)="removeSubForm(abilityConditionGroupForm, 'abilityConditions', acgfIndex)">
+                                            <mat-icon>delete</mat-icon>
+                                          </button>
+                                        </div>
+
+                                        <div class="sub-form__container-fields mt-10">
+                                          <input type="hidden" formControlName="id" />
+                                          <div class="field-width-33">
+                                            <atv-dropdown
+                                              [tableType]="tableKey"
+                                              [field]="config.abcType"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [options]="abilityConditionsTypes"
+                                              [errors]="errors(abilityConditionForm.get('type')!)"
+                                            ></atv-dropdown>
+                                          </div>
+                                          <div class="field-width-66" [hidden]="abilityConditionForm.get('type')!.value !== 0">
+                                            <atv-dropdown
+                                              [tableType]="tableKey"
+                                              [field]="config.trigger_event_Id"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [options]="eventTypeDropdown"
+                                              [errors]="errors(abilityConditionForm.get('trigger_event_Id')!)"
+                                            ></atv-dropdown>
+                                          </div>
+                                          <div class="field-width-33" *ngIf="abilityConditionForm.get('type')!.value === 2">
+                                            <atv-dynamic-dropdown
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.stat_name"
+                                              [errors]="errors(abilityConditionForm.get('stat_name')!)"
+                                            ></atv-dynamic-dropdown>
+                                          </div>
+                                          <div class="field-width-33" *ngIf="abilityConditionForm.get('type')!.value === 2">
+                                            <atv-input
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="getFieldConfig('stat_value', abilityConditionForm)"
+                                              [errors]="errors(abilityConditionForm.get('stat_value')!)"
+                                            ></atv-input>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 3">
+                                            <atv-dynamic-dropdown
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.effect_tag_id"
+                                              [errors]="errors(abilityConditionForm.get('effect_tag_id')!)"
+                                            ></atv-dynamic-dropdown>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="![2,3].includes(+abilityConditionForm.get('type')!.value)">
+                                            <atv-dropdown
+                                              [tableType]="tableKey"
+                                              [field]="config.target"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [options]="targetOptions"
+                                              [errors]="errors(abilityConditionForm.get('target')!)"
+                                            ></atv-dropdown>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 2">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.stat_vitality_percentage"
+                                              [errors]="errors(abilityConditionForm.get('stat_vitality_percentage')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 3">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.on_target"
+                                              [errors]="errors(abilityConditionForm.get('on_target')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 6">
+                                            <atv-input
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.target_number"
+                                              [errors]="errors(abilityConditionForm.get('target_number')!)"
+                                            ></atv-input>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 6">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.target_ally"
+                                              [errors]="errors(abilityConditionForm.get('target_ally')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="![1, 2, 6].includes(abilityConditionForm.get('type')!.value)">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.less"
+                                              [errors]="errors(abilityConditionForm.get('less')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 4">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.combat_state"
+                                              [errors]="errors(abilityConditionForm.get('combat_state')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                          <div class="field-width-33"
+                                               [hidden]="abilityConditionForm.get('type')!.value !== 5">
+                                            <atv-boolean
+                                              [tableType]="tableKey"
+                                              [form]="subFormGroupArrayFormGroup(abilityConditionGroupForm, 'abilityConditions', acgfIndex)"
+                                              [field]="config.death_state"
+                                              [errors]="errors(abilityConditionForm.get('death_state')!)"
+                                            ></atv-boolean>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                                        <button type="button" class="sub-form__add-form" mat-raised-button
+                                                color="primary"
+                                                (click)="addAbilityCondition(subFormGroupArray(abilityConditionGroupForm, 'abilityConditions'))">
+                                          {{ 'MOB_BEHAVIOR_PROFILE.ADD_ABILITY_CONDITION' | translate }}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                                <button type="button" class="sub-form__add-form" mat-raised-button color="primary"
+                                        (click)="addAbilityConditionGroupForm(subFormGroupArray(abilitiesGroupForm, 'abilityConditionGroups'))">
+                                  {{ 'MOB_BEHAVIOR_PROFILE.ADD_ABILITY_CONDITION_GROUP' | translate }}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                            </div>
+                          </div>
+                          <div class="field-width-100">
+                            <div formArrayName="abilities" class="sub-form">
+                              <div class="sub-form__container sub-form__container-100"
+                                   *ngFor="let abilityForm of subFormGroupArray(abilitiesGroupForm, 'abilities').controls; let abilityIndex = index"
+                                   [formGroupName]="abilityIndex">
+                                <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+                                  <h2
+                                    class="sub-form__title">{{ 'MOB_BEHAVIOR_PROFILE.ABILITY' | translate }} {{ abilityIndex + 1 }}</h2>
+                                  <button
+                                    *ngIf="subFormGroupArray(abilitiesGroupForm, 'abilities').controls.length > 1"
+                                    type="button" mat-icon-button color="warn"
+                                          (click)="removeSubForm(abilitiesGroupForm, 'abilities', abilityIndex)">
+                                    <mat-icon>delete</mat-icon>
+                                  </button>
+                                </div>
+
+                                <div class="sub-form__container-fields mt-10">
+                                  <div class="field-width-50">
+                                    <atv-dynamic-dropdown
+                                      [tableType]="tableKey"
+                                      [form]="abilityForm"
+                                      [field]="config.ability"
+                                      [errors]="errors(abilityForm.get('ability')!)"
+                                    ></atv-dynamic-dropdown>
+                                  </div>
+                                  <div class="field-width-50">
+                                    <atv-input [tableType]="tableKey" [form]="abilityForm" [field]="config.priority"
+                                               [errors]="errors(abilityForm.get('priority')!)"></atv-input>
+                                  </div>
+                                </div>
+                              </div>
+                              <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                                <button type="button" class="sub-form__add-form" mat-raised-button color="primary"
+                                        (click)="addAbilitySubForm(subFormGroupArray(item, 'abilityGroups', 'mobAbilityEnd').at(agIndex).get('abilities'))">
+                                  {{ 'MOB_BEHAVIOR_PROFILE.ADD_ABILITY' | translate }}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div fxLayout="row" [fxLayoutAlign]="'end'" class="mb-10 width-100">
+                        <button type="button" class="sub-form__add-form" mat-raised-button color="primary"
+                                (click)="addAbilityGroupForm(subFormGroupArray(item, 'abilityGroups', 'mobAbilityEnd'), 2)">
+                          {{ 'MOB_BEHAVIOR_PROFILE.ADD_ABILITY_GROUP' | translate }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+
+      <div fxLayout="row" [fxLayoutAlign]="'end'">
+        <button type="button" class="sub-form__add-form" mat-raised-button color="primary"
+                (click)="addMobBehaviorForm()">
+          {{ 'MOB_BEHAVIOR_PROFILE.ADD_MOB_BEHAVIOR' | translate }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div mat-dialog-actions class="m-0" fxLayout="row" fxLayoutAlign="end center">
+    <button mat-raised-button color="primary" type="button" (click)="submitForm(DialogCloseType.update)" [attr.aria-label]="this.submit ? this.submit : ('ACTIONS.SAVE' | translate)">{{ this.submit? this.submit: 'ACTIONS.SAVE' | translate }}</button>
+    <button *ngIf="this.submit" mat-raised-button color="primary" type="button" (click)="submitForm(DialogCloseType.save_as_new)" [attr.aria-label]="'ACTIONS.SAVE_AS_NEW' | translate"> {{ 'ACTIONS.SAVE_AS_NEW' | translate }} </button>
+    <button mat-button type="button" (click)="cancelForm()" [attr.aria-label]="'ACTIONS.CANCEL' | translate">{{ 'ACTIONS.CANCEL' | translate }}</button>
+  </div>
+</div>

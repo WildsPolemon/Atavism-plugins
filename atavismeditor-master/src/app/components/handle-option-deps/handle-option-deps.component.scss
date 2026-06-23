@@ -1,0 +1,50 @@
+body {
+  &.font-size-small {
+    .dep-title-row {
+      font-size: 18px;
+    }
+    .dep-row-choice-title,
+    .dep-row-description {
+      font-size: 14px;
+    }
+  }
+  &.font-size-normal {
+    .dep-title-row {
+      font-size: 20px;
+    }
+    .dep-row-choice-title,
+    .dep-row-description {
+      font-size: 18px;
+    }
+  }
+  &.font-size-large {
+    .dep-title-row {
+      font-size: 28px;
+    }
+    .dep-row-choice-title,
+    .dep-row-description {
+      font-size: 24px;
+    }
+  }
+  .dep-row-choice {
+    margin-left: 24px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-flow: column nowrap;
+  }
+  .dep-row {
+    margin-left: 24px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+    .dep-row-description {
+    }
+    .dep-row-changeTo {
+      width: 325px;
+    }
+  }
+}
+.dependencies-container {
+  position: relative;
+}

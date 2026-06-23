@@ -1,0 +1,96 @@
+<div class="dialog-content-wrapper dialog-content-image-picker" fxLayout="column">
+  <mat-toolbar matDialogTitle class="mat-accent m-0">
+    <mat-toolbar-row fxLayout="row" fxLayoutAlign="space-between center">
+      <span class="title dialog-title">{{ 'FILE_MANAGER.TITLE' | translate }}</span>
+      <div>
+        <button mat-raised-button class="reference-button mt-16 mt-sm-0" (click)="synchronizeFiles()">
+          <mat-icon class="mr-8">sync</mat-icon>
+          <span>{{ 'ACTIONS.SYNC' | translate }}</span>
+        </button>
+        <button mat-icon-button (click)="matDialogRef.close()" [attr.aria-label]="'ACTIONS.CLOSE_DIALOG' | translate">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </mat-toolbar-row>
+  </mat-toolbar>
+
+  <div mat-dialog-content class="p-12 m-0">
+    <div fxLayout="column" class="fixed-search-bar">
+      <div class="mr-16 ml-16 mt-8">
+        <mat-form-field class="w-100-p">
+          <input matInput [placeholder]="'FILE_MANAGER.SEARCH_PLACEHOLDER' | translate" #searchField [formControl]="searchInput" />
+        </mat-form-field>
+      </div>
+    </div>
+    <div *ngIf="loading" class="spinner-container" fxLayout="row" fxLayoutAlign="center center">
+      <mat-spinner color="accent"></mat-spinner>
+    </div>
+    <div *ngIf="!loading">
+      <div fxLayout="column">
+        <div fxLayout="row wrap" class="files-container">
+          <div
+            class="icon-holder icon-holder-show-more m-16"
+            fxLayout="column"
+            fxLayoutAlign="center center"
+            *ngIf="allowShowPrev"
+            (click)="showPrev()"
+          >
+            {{ 'GENERAL.SHOW_PREV' | translate }}
+          </div>
+          <div
+            class="icon-holder m-16"
+            fxLayout="column"
+            fxLayoutAlign="center center"
+            *ngFor="let file of files; trackBy: trackByFn"
+            (click)="selectFile(file)"
+            (dblclick)="chooseFile(file)"
+          >
+            <div
+              class="icon-holder__image"
+              [class.icon-holder__selected]="selectedFile && selectedFile.path === file.path"
+              [ngSwitch]="file.ext"
+            >
+              <ng-container *ngSwitchCase="FileExtension.psd">
+                <atv-image [icon]="file.icon" [alt]="file.title"></atv-image>
+                <div class="icon-name secondary-text mt-8">{{ file.name }}</div>
+              </ng-container>
+              <ng-container *ngSwitchCase="FileExtension.tga">
+                <atv-image [icon]="file.icon" [alt]="file.title"></atv-image>
+                <div class="icon-name secondary-text mt-8">{{ file.name }}</div>
+              </ng-container>
+              <ng-container *ngSwitchDefault>
+                <img [src]="file.src" onerror="this.src='assets/icons/custom/placeholder.png';" [alt]="file.title" />
+                <div class="icon-name secondary-text mt-8">{{ file.name }}</div>
+              </ng-container>
+            </div>
+          </div>
+          <div
+            class="icon-holder icon-holder-show-more m-16"
+            fxLayout="column"
+            fxLayoutAlign="center center"
+            *ngIf="allowShowMore"
+            (click)="showNext()"
+          >
+            {{ 'GENERAL.SHOW_NEXT' | translate }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div mat-dialog-actions class="m-0" fxLayout="row" fxLayoutAlign="end center">
+    <button
+      mat-raised-button
+      color="primary"
+      class="save-button"
+      (click)="matDialogRef.close(selectedFile)"
+      [disabled]="!selectedFile"
+      [attr.aria-label]="'ACTIONS.CHOOSE_FILE' | translate"
+    >
+      {{ 'ACTIONS.CHOOSE_FILE' | translate }}
+    </button>
+    <button mat-button class="save-button" (click)="matDialogRef.close()" [attr.aria-label]="'ACTIONS.CLOSE' | translate">
+      {{ 'ACTIONS.CLOSE' | translate }}
+    </button>
+  </div>
+</div>

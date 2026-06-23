@@ -1,0 +1,10 @@
+<atv-table
+  [data]="list"
+  [tableConfig]="tableConfig"
+  (paramsChanged)="paramsUpdated($event)"
+  (actionTrigger)="actionTrigger($event)"
+  (bulkActionTrigger)="bulkActionTrigger($event)"
+  (dblClick)="updateItem($event)"
+  (getPreview)="getPreviewItem($event)"
+></atv-table>
+<atv-add-button *ngIf="activeRecords" (openForm)="addItem()"></atv-add-button>

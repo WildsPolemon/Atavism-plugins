@@ -1,0 +1,354 @@
+body {
+  .mat-form-field {
+    &.mat-form-field-can-float {
+      &.mat-form-field-should-float {
+        .mat-form-field-label {
+          transform: translateY(-1.3em) scale(0.75) !important;
+        }
+      }
+    }
+    .mat-form-field-wrapper {
+      padding-bottom: 0.75em;
+      .mat-form-field-infix {
+        padding: 0.5em 0;
+        border-top-width: 0.5em;
+      }
+    }
+  }
+  .form-checkbox-row {
+    padding-bottom: 0.75em;
+    line-height: 38px;
+  }
+  &.font-size-small {
+    font-size: 12px;
+    .mat-icon {
+      height: 18px;
+      width: 18px;
+      font-size: 18px;
+      min-width: 18px;
+      min-height: 18px;
+      line-height: 18px;
+    }
+    mat-cell:first-of-type,
+    mat-header-cell:first-of-type,
+    mat-footer-cell:first-of-type {
+      padding-left: 18px;
+    }
+    tr.mat-header-row,
+    mat-header-row {
+      min-height: 42px;
+    }
+    tr.mat-row,
+    tr.mat-footer-row,
+    mat-row,
+    mat-footer-row {
+      min-height: 36px;
+    }
+    mat-cell {
+      p {
+        margin: 0.5em 0;
+      }
+    }
+    .field-input-one-row {
+      button {
+        margin-top: 3px;
+      }
+    }
+    .mat-raised-button {
+      line-height: 28px;
+      height: 28px;
+    }
+    .custom-table th,
+    .custom-table td {
+      min-width: 80px;
+    }
+    .mat-dialog-actions {
+      padding: 8px;
+      min-height: 38px;
+    }
+    .mat-toolbar-single-row,
+    .mat-toolbar-row {
+      height: 48px;
+    }
+    .mat-tab-label {
+      height: 36px;
+    }
+    .mat-menu-panel {
+      min-height: 48px;
+    }
+    .mat-menu-item {
+      height: 36px;
+      line-height: 36px;
+    }
+    .nav.material2 .nav-item .nav-link,
+    .material2 .nav .nav-item .nav-link {
+      height: 30px;
+    }
+    .mat-tab-body-wrapper {
+      height: calc(100vh - 48px - 39px);
+    }
+    navbar-vertical-style-1 {
+      .navbar-top {
+        height: 48px;
+        min-height: 48px;
+        max-height: 48px;
+      }
+      .navbar-scroll-container {
+        .navbar-content.navbar-with-search {
+          .search-wrapper {
+            .search {
+              height: 32px;
+              line-height: 32px;
+              input {
+                height: 32px;
+                max-height: 32px;
+                min-height: 32px;
+              }
+            }
+          }
+        }
+      }
+    }
+    toolbar {
+      .toolbar-separator {
+        height: 48px;
+      }
+      .navbar-toggle-button {
+        height: 48px;
+      }
+      .user-button,
+      .language-button,
+      .quick-panel-toggle-button {
+        min-width: 48px;
+        height: 48px;
+      }
+    }
+    .table-config-sidebar {
+      .header {
+        margin-bottom: 0;
+      }
+    }
+    .filter-container__overlay {
+      .filter-container {
+        h3 {
+          margin-top: 10px;
+        }
+      }
+    }
+    .paginator-page-container {
+      .paginator-page-index {
+        top: 14px;
+      }
+    }
+    .mat-checkbox {
+      font-size: 12px;
+    }
+    fuse-sidebar {
+      .group {
+        margin-top: 1em;
+        .group-title {
+          top: -24px;
+          font-size: 14px;
+        }
+      }
+    }
+    .search-wrapper {
+      .search {
+        height: 32px;
+        line-height: 32px;
+        input {
+          font-size: 14px;
+          height: 32px;
+          min-height: 32px;
+          max-height: 32px;
+        }
+      }
+    }
+    .mat-form-field {
+      .mat-form-field-wrapper {
+        .mat-form-field-infix {
+          .mat-form-field-label {
+            font-size: 10px;
+          }
+          .mat-input-element {
+            font-size: 10px;
+          }
+        }
+      }
+    }
+    .filter-container {
+      .mat-form-field-label-wrapper {
+        top: -6px;
+      }
+    }
+    .dynamic-dropdown-component {
+      .dynamic-dropdown-edit-button,
+      .dynamic-dropdown-add-button {
+        width: 18px;
+        height: 18px;
+        span {
+          width: 18px;
+          height: 18px;
+          line-height: 18px;
+          mat-icon {
+            line-height: 18px;
+            font-size: 18px;
+          }
+        }
+      }
+    }
+    .table-responsive-container {
+      max-height: calc(100vh - 48px - 39px - 56px);
+    }
+  }
+  &.font-size-normal {
+    .filter-container {
+      .mat-form-field-appearance-legacy {
+        .mat-form-field-label {
+          top: 23px;
+        }
+      }
+    }
+    .mat-dialog-actions {
+      min-height: 69px;
+    }
+    .mat-form-field {
+      .mat-form-field-wrapper {
+        .mat-form-field-infix {
+          .mat-form-field-label {
+            font-size: 14px;
+          }
+          .mat-input-element {
+            font-size: 14px;
+          }
+        }
+      }
+    }
+  }
+  &.font-size-large {
+    font-size: 18px;
+    .mat-icon {
+      height: 28px;
+      width: 28px;
+      font-size: 28px;
+      min-width: 28px;
+      min-height: 28px;
+      line-height: 28px;
+    }
+    .mat-form-field {
+      .mat-form-field-wrapper {
+        .mat-form-field-infix {
+          padding: 0.4375em 0;
+          .mat-form-field-label {
+            font-size: 18px;
+          }
+          .mat-input-element {
+            font-size: 18px;
+          }
+        }
+      }
+    }
+    .mat-checkbox {
+      font-size: 18px;
+    }
+    .mat-raised-button {
+      line-height: 46px;
+      height: 46px;
+    }
+    .h1,
+    h1 {
+      font-size: 28px;
+    }
+    .h2,
+    h2 {
+      font-size: 24px;
+    }
+    .h3,
+    h3 {
+      font-size: 20px;
+    }
+    .table-config-sidebar {
+      .group {
+        padding: 2rem;
+      }
+    }
+    .custom-table th,
+    .custom-table td {
+      min-width: 140px;
+    }
+    .filter-container {
+      .mat-form-field-appearance-legacy {
+        .mat-form-field-infix {
+          padding: 0.4375em 0;
+        }
+      }
+      mat-form-field {
+        min-width: 220px;
+      }
+      .number-filter__container {
+        min-width: 220px;
+        .number-filter__operators {
+          min-width: 49px;
+        }
+        .number-filter__values {
+          min-width: 169px;
+        }
+      }
+      .mat-form-field-label-wrapper {
+        top: -6px;
+      }
+    }
+    .small-dialog-overlay {
+      width: 600px;
+    }
+    .confirm-dialog-overlay {
+      width: 420px;
+    }
+    .custom-table {
+      tr.mat-header-row {
+        height: 64px;
+      }
+      td {
+        min-height: 56px;
+      }
+    }
+    .filter-container__overlay {
+      .filter-container {
+        max-height: 65px;
+      }
+      &.filter-container__visible {
+        max-height: 1000px;
+        .filter-container {
+          max-height: 1000px;
+        }
+      }
+    }
+    .field-file-upload-row {
+      .preview-icon {
+        margin-top: 3px;
+        max-width: 62px;
+        max-height: 62px;
+      }
+    }
+    .form-checkbox-row {
+      line-height: 58px;
+    }
+    .dynamic-dropdown-component {
+      .dynamic-dropdown-edit-button,
+      .dynamic-dropdown-add-button {
+        top: 6px;
+        width: 28px;
+        height: 28px;
+        span {
+          width: 28px;
+          height: 28px;
+          line-height: 28px;
+          mat-icon {
+            line-height: 28px;
+            font-size: 28px;
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+.filter-form-field {
+  margin-right: 1em;
+}
+mat-form-field {
+  min-width: 180px;
+}
+
+.field-width-100 {
+  width: 100%;
+}
+
+.number-filter__container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 180px;
+  margin-right: 1em;
+
+  mat-form-field {
+    min-width: 30px;
+    margin-right: 5px;
+  }
+
+  .number-filter__operators {
+    width: 49px;
+  }
+  .number-filter__values {
+    width: 129px;
+    mat-form-field {
+      margin-right: 0;
+    }
+  }
+}

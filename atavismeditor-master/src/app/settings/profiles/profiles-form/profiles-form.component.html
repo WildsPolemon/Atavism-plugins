@@ -1,0 +1,182 @@
+<div class="dialog-content-wrapper dialog-form-container">
+  <mat-toolbar matDialogTitle class="mat-accent m-0">
+    <mat-toolbar-row fxLayout="row" fxLayoutAlign="space-between center">
+      <span class="title dialog-title">{{ 'PROFILES.TITLE_' + (action | uppercase) | translate }}</span>
+      <div>
+        <mat-slide-toggle class="dialog-title-toggle" [checked]="!disableTooltip" color="warn" (change)="toggleTooltips($event)">
+          {{ 'TABLE.SHOW_TOOLTIP' | translate }}
+        </mat-slide-toggle>
+        <button
+          *ngIf="tooltip && tooltip !== 'PROFILES.TITLE_TOOLTIP'"
+          type="button"
+          mat-icon-button
+          (click)="openHelp()"
+          [attr.aria-label]="'ACTIONS.CLOSE_DIALOG' | translate"
+        ><mat-icon>help_outline</mat-icon></button>
+        <button *ngIf="!oneProfileMode" mat-icon-button (click)="matDialogRef.close()" aria-label="Close dialog">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </mat-toolbar-row>
+  </mat-toolbar>
+
+  <div mat-dialog-content class="p-12 pb-0 m-0" cdkScrollable>
+    <form [formGroup]="form" fxLayout="column">
+      <div fxLayout="column">
+        <div fxLayout="row" fxLayoutAlign="start start" id="field_name">
+          <atv-input class="width-100" [tableType]="tableType" [form]="form" [field]="formFields.name" [errors]="getErrors('name')"></atv-input>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="start start" class="field-input-one-row" id="field_type">
+          <atv-dropdown class="width-100" [tableType]="tableType" [options]="[
+        {id: ProfileType.Unity, value: ProfileType.Unity},
+        {id: ProfileType.Unreal, value: ProfileType.Unreal},
+      ]" [form]="form" [field]="formFields.type" [errors]="getErrors('type')"></atv-dropdown>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="start start" class="field-input-one-row" id="field_folder">
+          <atv-folder-selecter class="width-100" [tableType]="tableType" [form]="form" [field]="formFields.folder" [errors]="getErrors('folder')"></atv-folder-selecter>
+        </div>
+
+        <div fxLayout="row nowrap" fxLayoutAlign="start start" class="field-input-one-row" id="field_mobFolder">
+          <atv-folder-selecter class="width-100" [tableType]="tableType" [form]="form" [field]="formFields.mobFolder" [errors]="getErrors('mobFolder')"></atv-folder-selecter>
+        </div>
+
+        <div fxLayout="row nowrap" fxLayoutAlign="start start" class="field-input-one-row" id="field_itemFolder">
+          <atv-folder-selecter class="width-100" [tableType]="tableType" [form]="form" [field]="formFields.itemFolder" [errors]="getErrors('itemFolder')"></atv-folder-selecter>
+        </div>
+
+        <div fxLayout="row nowrap" fxLayoutAlign="start start" class="field-input-one-row" id="field_buildObjectFolder">
+          <atv-folder-selecter class="width-100" [tableType]="tableType" [form]="form" [field]="formFields.buildObjectFolder" [errors]="getErrors('buildObjectFolder')"></atv-folder-selecter>
+        </div>
+
+        <div fxLayout="row nowrap" fxLayoutAlign="start start" class="field-input-one-row" id="field_coordFolder">
+          <atv-folder-selecter class="width-100" [tableType]="tableType" [form]="form" [field]="formFields.coordFolder" [errors]="getErrors('coordFolder')"></atv-folder-selecter>
+        </div>
+
+        <div fxLayout="row nowrap" fxLayoutAlign="start start" class="field-input-one-row" id="field_syncFolder">
+          <atv-folder-selecter class="width-100" [tableType]="tableType" [form]="form" [field]="formFields.syncFolder" [errors]="getErrors('syncFolder')"></atv-folder-selecter>
+        </div>
+
+        <div fxLayout="row nowrap" fxLayoutAlign="start start" class="field-input-one-row" id="field_defaultImage">
+          <atv-file class="width-100" [tableType]="tableType" [form]="form" [field]="formFields.defaultImage" [errors]="getErrors('defaultImage')"></atv-file>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="start start" id="field_meta">
+          <atv-input class="width-100" [tableType]="tableType" [form]="form" [field]="formFields.meta" [errors]="getErrors('meta')"></atv-input>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="start start" id="field_delay">
+          <atv-input class="width-100" [tableType]="tableType" [form]="form" [field]="formFields.delay" [errors]="getErrors('delay')"></atv-input>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="start start" id="field_notificationDelay">
+          <atv-input class="width-100" [tableType]="tableType" [form]="form" [field]="formFields.notificationDelay" [errors]="getErrors('notificationDelay')"></atv-input>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="start start" id="field_limit">
+          <atv-input class="width-100" [tableType]="tableType" [form]="form" [field]="formFields.limit" [errors]="getErrors('limit')"></atv-input>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="start start" id="field_iconsToShow">
+          <atv-input class="width-100" [tableType]="tableType" [form]="form" [field]="formFields.iconsToShow" [errors]="getErrors('iconsToShow')"></atv-input>
+        </div>
+
+        <div fxLayout="row nowrap" fxLayoutAlign="start start" class="field-input-one-row">
+          <atv-input id="field_image_width" class="width-40" [tableType]="tableType" [form]="form" [field]="formFields.image_width" [errors]="getErrors('image_width')"></atv-input>
+
+          <atv-input id="field_image_height" class="width-40" [tableType]="tableType" [form]="form" [field]="formFields.image_height" [errors]="getErrors('image_height')"></atv-input>
+
+          <button mat-raised-button color="primary" type="button" (click)="parseImages()">
+            {{ 'PROFILES.UPDATE_SAVED_IMAGES' | translate }}
+          </button>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="start start">
+          <mat-label class="button-position-radio-label">{{ 'PROFILES.ADD_BUTTON_POSITION' | translate }}</mat-label>
+          <mat-radio-group
+            class="button-position-radio-group"
+            [attr.aria-label]="'PROFILES.ADD_BUTTON_POSITION' | translate"
+            formControlName="buttonPosition"
+          >
+            <mat-radio-button [value]="AddButtonPosition.right">{{ 'POSITION.RIGHT' | translate }}</mat-radio-button>
+            <mat-radio-button [value]="AddButtonPosition.left">{{ 'POSITION.LEFT' | translate }}</mat-radio-button>
+          </mat-radio-group>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="start start" class="field-input-one-row mt-10" id="field_defaultIsActiveFilter">
+          <atv-dropdown
+            class="width-100"
+            [tableType]="tableType"
+            [options]="[
+              {id: '-1', value: 'TABLE.ALL' | translate},
+              {id: '1', value: 'GENERAL.ONLY_ACTIVE' | translate},
+              {id: '0', value: 'GENERAL.NOT_ACTIVE' | translate},
+            ]"
+            [form]="form"
+            [field]="formFields.defaultIsActiveFilter"
+            [errors]="getErrors('defaultIsActiveFilter')"></atv-dropdown>
+        </div>
+      </div>
+
+      <div fxLayout="row wrap" fxLayoutAlign="space-between">
+        <mat-card
+          fxFlex="0 1 calc(50% - 8px)"
+          class="database-card-form"
+          formArrayName="databases"
+          *ngFor="let item of dbControls; let i = index"
+        >
+          <mat-card-header>
+            <mat-card-title>
+              {{ 'PROFILES.DATABASE_TYPE.' + (dataBase[i] | uppercase) | translate }}
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content [formGroupName]="i">
+            <input type="hidden" formControlName="type" />
+            <div id="field_{{ i }}_host">
+              <atv-input class="width-100" [tableType]="tableType" [form]="form" [subForm]="i" [subFormType]="'databases'" [field]="formFields.host" [errors]="getErrors('host', i)"></atv-input>
+            </div>
+            <div id="field_{{ i }}_port">
+              <atv-input class="width-100" [tableType]="tableType" [form]="form" [subForm]="i" [subFormType]="'databases'" [field]="formFields.port" [errors]="getErrors('port', i)"></atv-input>
+            </div>
+            <div id="field_{{ i }}_database">
+              <atv-input class="width-100" [tableType]="tableType" [form]="form" [subForm]="i" [subFormType]="'databases'" [field]="formFields.database" [errors]="getErrors('database', i)"></atv-input>
+            </div>
+            <div id="field_{{ i }}_user">
+              <atv-input class="width-100" [tableType]="tableType" [form]="form" [subForm]="i" [subFormType]="'databases'" [field]="formFields.user" [errors]="getErrors('user', i)"></atv-input>
+            </div>
+            <div id="field_{{ i }}_password">
+              <atv-input class="width-100" [tableType]="tableType" [form]="form" [subForm]="i" [subFormType]="'databases'" [field]="formFields.password" [errors]="getErrors('password', i)"></atv-input>
+            </div>
+          </mat-card-content>
+          <mat-card-actions class="text-center">
+            <button mat-raised-button color="primary" type="button" (click)="testConnection(item)">
+              {{ 'PROFILES.TEST_CONNECTION' | translate }}
+            </button>
+            <button mat-raised-button color="accent" type="button" (click)="fillSettings(i, item)">
+              {{ 'PROFILES.FILL_SETTINGS' | translate }}
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      </div>
+    </form>
+  </div>
+
+  <div mat-dialog-actions class="m-0" fxLayout="row" fxLayoutAlign="end center">
+    <button
+      type="button"
+      mat-raised-button
+      class="save-button"
+      color="primary"
+      [attr.aria-label]="'ACTIONS.SAVE' | translate"
+      (click)="submitForm()"
+    >
+      <ng-container *ngIf="oneProfileMode; else normalModeButton">
+        {{ 'ACTIONS.SAVE_PROCEED' | translate }}
+      </ng-container>
+      <ng-template #normalModeButton>
+        {{ 'ACTIONS.SAVE' | translate }}
+      </ng-template>
+    </button>
+  </div>
+</div>

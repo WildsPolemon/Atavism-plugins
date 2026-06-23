@@ -1,0 +1,54 @@
+.dialog-content-image-picker {
+  .mat-dialog-content {
+    padding-top: 0 !important;
+  }
+  .fixed-search-bar {
+    position: sticky;
+    top: 0;
+  }
+  .icon-holder {
+    width: 112px;
+    height: 152px;
+    cursor: pointer;
+
+    .preview-icon-container {
+      width: 112px;
+      height: 112px;
+    }
+
+    img {
+      max-width: 112px;
+      max-height: 112px;
+    }
+
+    .icon-name {
+      font-size: 12px;
+      word-wrap: break-word;
+      width: 100px;
+      text-align: center;
+    }
+
+    .icon-holder__image {
+      padding: 5px;
+
+      &.icon-holder__selected {
+        border: 3px solid rgba(0, 0, 0, 0.4);
+        border-radius: 10px;
+      }
+    }
+
+    &.icon-holder-show-more {
+      cursor: pointer;
+      border: 3px solid rgba(0, 0, 0, 0.4);
+      border-radius: 10px;
+      &:hover {
+        border: 3px solid rgba(109, 108, 108, 0.7);
+      }
+    }
+  }
+
+  .files-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}

@@ -1,0 +1,13 @@
+<div *ngIf="subForm === -1; else subFormFields" class="hidden" [formGroup]="form">
+  <input type="hidden" [formControlName]="field.name" />
+</div>
+
+<ng-template #subFormFields>
+  <div class="hidden" [formGroup]="form">
+    <div [formArrayName]="subFormType">
+      <div [formGroupName]="subForm">
+        <input type="hidden" [formControlName]="field.name" />
+      </div>
+    </div>
+  </div>
+</ng-template>

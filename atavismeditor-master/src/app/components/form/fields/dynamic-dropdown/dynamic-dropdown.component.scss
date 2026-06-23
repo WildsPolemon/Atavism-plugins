@@ -1,0 +1,43 @@
+.dynamic-dropdown-component {
+  position: relative;
+  .dynamic-dropdown-edit-button,
+  .dynamic-dropdown-add-button {
+    position: absolute;
+    right: 0;
+    top: 3px;
+    width: 24px;
+    height: 24px;
+    span.mat-button-wrapper {
+      display: block;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      position: relative;
+      mat-icon {
+        line-height: 24px;
+        font-size: 18px;
+        vertical-align: unset;
+      }
+    }
+  }
+  .dynamic-dropdown-edit-button {
+    right: 32px;
+  }
+}
+.option-value-row {
+  padding-right: 28px;
+  position: relative;
+
+  .mat-option-text {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+
+    .option-value-row_icon {
+      line-height: 48px;
+      margin-right: 0;
+      position: absolute;
+      right: 0;
+    }
+  }
+}

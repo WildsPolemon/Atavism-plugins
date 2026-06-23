@@ -1,0 +1,20 @@
+<atv-table
+  [data]="list"
+  [tableConfig]="tableConfig"
+  (paramsChanged)="paramsUpdated($event)"
+  (actionTrigger)="actionTrigger($event)"
+  (bulkActionTrigger)="bulkActionTrigger($event)"
+  (dblClick)="updateItem($event)"
+  (getPreview)="getPreviewItem($event)"
+></atv-table>
+
+<atv-add-button *ngIf="activeRecords" (openForm)="addItem()"></atv-add-button>
+
+<button
+  mat-fab
+  class="warn fab-setting-button"
+  (click)="showItemQualitySettings()"
+  [attr.aria-label]="'ACTIONS.ITEM_QUALITY_SETTINGS' | translate"
+>
+  <mat-icon>settings_applications</mat-icon>
+</button>

@@ -1,0 +1,75 @@
+<ng-container *ngIf="name">
+  <mat-form-field class="filter-form-field" *ngIf="type === FilterTypes.dropdown">
+    <mat-label>{{ (name === 'isactive' ? 'GENERAL.ISACTIVE' : tableType + '.' + name.toUpperCase()) | translate }}</mat-label>
+    <mat-select [(value)]="value" (selectionChange)="emitFilterValue($event.value)">
+      <atv-dropdown-search *ngIf="searchFilter[name]" [formControl]="searchFilter[name]"></atv-dropdown-search>
+      <mat-option value="-1">{{ (name === 'isactive' ? 'TABLE.ALL' : 'TABLE.NONE') | translate }}</mat-option>
+      <mat-option *ngFor="let option of data" [value]="option.id">
+        {{ option.value }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field class="filter-form-field dynamic-dropdown-component" *ngIf="type === FilterTypes.dynamicDropdown">
+    <mat-label>{{ tableType + '.' + name.toUpperCase() | translate }}</mat-label>
+    <input
+      matInput
+      type="text"
+      #autoCompleteInput
+      (focus)="listOpened()"
+      (blur)="onBlurList()"
+      [matAutocomplete]="autocomplete"
+      [formControl]="searchField"
+      [attr.aria-label]="tableType + '.' + name.toUpperCase() | translate"
+    />
+    <mat-autocomplete #autocomplete="matAutocomplete" (closed)="cleanupList()" (optionSelected)="optionSelected($event)">
+      <mat-option *ngIf="optionCount > 0" [value]="-1">{{ 'TABLE.NONE' | translate }}</mat-option>
+      <ng-container *ngIf="optionCount > 0">
+        <mat-option *ngFor="let option of dynamicOptions" [value]="option">{{ option.value }}</mat-option>
+        <button mat-button *ngIf="allowMore" class="field-width-100" color="primary" (click)="showMore()">{{ 'GENERAL.SHOW_MORE' | translate }}</button>
+      </ng-container>
+      <mat-option *ngIf="!optionCount" [value]="null">Nothing to show</mat-option>
+    </mat-autocomplete>
+  </mat-form-field>
+
+  <mat-form-field class="filter-form-field" *ngIf="type === FilterTypes.booleanType">
+    <mat-label>{{ tableType + '.' + name.toUpperCase() | translate }}</mat-label>
+    <mat-select (selectionChange)="emitFilterValue($event.value)">
+      <mat-option>{{ 'TABLE.NONE' | translate }}</mat-option>
+      <mat-option value="1">{{ 'GENERAL.YES' | translate }}</mat-option>
+      <mat-option value="0">{{ 'GENERAL.NO' | translate }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field class="filter-form-field" *ngIf="type === FilterTypes.date">
+    <input
+      matInput
+      [matDatepicker]="picker"
+      [placeholder]="
+        (name === 'creationtimestamp' || name === 'updatetimestamp' ? 'GENERAL' : tableType) + '.' + name.toUpperCase() | translate
+      "
+      (dateChange)="emitFilterValue($event.value)"
+    />
+    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+    <mat-datepicker #picker></mat-datepicker>
+  </mat-form-field>
+
+  <div class="number-filter__container" *ngIf="type === FilterTypes.integer || type === FilterTypes.decimal">
+    <mat-form-field class="number-filter__operators">
+      <mat-select [(value)]="selected" (selectionChange)="filterNumbers()">
+        <mat-option *ngFor="let operator of operators" [value]="operator.id">{{ operator.value }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field class="number-filter__values">
+      <input
+        matInput
+        digitOnly
+        type="text"
+        [(ngModel)]="values"
+        (keyup)="filterNumbers()"
+        [decimal]="type === FilterTypes.decimal"
+        [placeholder]="tableType + '.' + name.toUpperCase() | translate"
+      />
+    </mat-form-field>
+  </div>
+</ng-container>

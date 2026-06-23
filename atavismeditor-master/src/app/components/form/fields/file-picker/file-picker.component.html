@@ -1,0 +1,68 @@
+<div *ngIf="subForm === -1; else subFormFields" fxLayout="column" fxLayoutAlign="start" [formGroup]="form">
+  <div class="field-file-upload-row">
+    <atv-image [icon]="{icon: icon, folder: field.acceptFolder}" [alt]="field.name"></atv-image>
+    <mat-form-field
+      appearance="outline"
+      fxFlex
+      [popover]="field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate)"
+      [popoverPlacement]="'top'"
+      [popoverSize]="'large'"
+      [appendToBody]="true"
+      [popoverDisabled]="this.disableTooltip"
+      [popoverCloseOnMouseOutside]="true"
+    >
+      <mat-label>{{ field.label ? field.label : (tableType + '.' + field.name | uppercase | translate) }}</mat-label>
+      <input type="text" readonly [formControlName]="field.name" matInput [required]="field.require ? field.require : false" />
+      <button
+        class="mt-0 button-clear-icon"
+        *ngIf="formField.value"
+        matSuffix mat-mini-fab color="warn" aria-label="Clear"
+        (click)="$event.preventDefault(); clearSelected()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+    <button mat-raised-button type="button" (click)="selectFile()">{{ 'ACTIONS.CHOOSE_FILE' | translate }}</button>
+  </div>
+  <ng-container *ngIf="form.get(field.name)?.enabled">
+    <div class="errors-container" *ngIf="errors as list">
+      <mat-error *ngFor="let error of list">{{ 'ERROR.' + error | translate }}</mat-error>
+    </div>
+  </ng-container>
+</div>
+
+<ng-template #subFormFields>
+  <div [formGroup]="form">
+    <div fxLayout="column" fxLayoutAlign="start" [formArrayName]="subFormType">
+      <div class="field-file-upload-row">
+        <atv-image [icon]="{icon: icon, folder: field.acceptFolder}" [alt]="field.name"></atv-image>
+        <mat-form-field
+          [formGroupName]="subForm"
+          appearance="outline"
+          fxFlex
+          [popover]="field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate)"
+          [popoverPlacement]="'top'"
+          [popoverSize]="'large'"
+          [appendToBody]="true"
+          [popoverDisabled]="this.disableTooltip"
+          [popoverCloseOnMouseOutside]="true"
+        >
+          <mat-label>{{ field.label ? field.label : (tableType + '.' + field.name | uppercase | translate) }}</mat-label>
+          <input type="text" readonly [formControlName]="field.name" matInput [required]="field.require ? field.require : false" />
+          <button
+            class="mt-0 button-clear-icon"
+            *ngIf="formField.value"
+            matSuffix mat-mini-fab color="warn" aria-label="Clear"
+            (click)="$event.preventDefault(); clearSelected()"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </mat-form-field>
+        <button mat-raised-button type="button" (click)="selectFile()">{{ 'ACTIONS.CHOOSE_FILE' | translate }}</button>
+      </div>
+      <div class="errors-container" *ngIf="errors as list">
+        <mat-error *ngFor="let error of list">{{ 'ERROR.' + error | translate }}</mat-error>
+      </div>
+    </div>
+  </div>
+</ng-template>
