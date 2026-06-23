@@ -1,0 +1,17 @@
+atv-dd-multiple {
+  .mat-chip-list-wrapper {
+    margin-top: -1px;
+    margin-right: 24px;
+  }
+  .mat-form-field .mat-form-field-wrapper .mat-form-field-infix {
+    min-height: 42px;
+  }
+}
+.mat-icon-edit-chip {
+  font-size: 18px;
+  line-height: 18px;
+  height: 18px;
+  width: 18px;
+  margin-left: 8px;
+  cursor: pointer;
+}

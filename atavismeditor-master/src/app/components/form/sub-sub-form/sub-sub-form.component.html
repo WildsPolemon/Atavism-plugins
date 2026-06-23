@@ -1,0 +1,46 @@
+<ng-container *ngIf="subFormConfig">
+  <div class="sub-sub-form" [formGroup]="form">
+    <div [formArrayName]="subFormType">
+      <div [formGroupName]="subForm" class="sub-form">
+        <div
+          class="sub-sub-form__container sub-form__container-{{ subFormConfig.columnWidth ? subFormConfig.columnWidth : 100 }}"
+          [formArrayName]="type" *ngFor="let item of controls; let i = index">
+          <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+            <h2 class="sub-form__title" *ngIf="title">{{ title }}</h2>
+            <button
+              *ngIf="showRemoveButton(i)"
+              type="button"
+              mat-icon-button
+              color="warn"
+              (click)="removeForm(i)"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+
+          <div class="sub-form__container-fields">
+            <ng-container *ngFor="let field of fields">
+              <atv-fields-container
+                class="field-width-{{ subFormConfig.fields[field].type === FormFieldType.hidden ? 0 : (overrideWidth[field] && overrideWidth[field][i] ? overrideWidth[field][i] : (subFormConfig.fields[field].width ? subFormConfig.fields[field].width : '100')) }}"
+                [tableType]="tableType"
+                [form]="form"
+                [subForm]="i"
+                [subFormType]="type"
+                [subFormParent]="subForm"
+                [subFormTypeParent]="subFormType"
+                [field]="subFormConfig.fields[field]"
+                [type]="subFormConfig.fields[field].type"
+                [customOptions]="customOptions[i] && customOptions[i][field] ? customOptions[i][field] : []"
+                [attr.id]="'field_' + subForm + '_' + i + '_' + field"
+                (updateWidth)="updateWidth(field, i, $event)"
+              ></atv-fields-container>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button type="button" *ngIf="allowMore" class="sub-form__add-form" mat-raised-button color="primary" (click)="addSubForm()">
+    {{ submitText ? submitText : ('ACTIONS.ADD_ITEM' | translate) }}
+  </button>
+</ng-container>

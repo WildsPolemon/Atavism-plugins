@@ -1,0 +1,25 @@
+{
+  "name": "atavism",
+  "description": "Atavism Editor",
+  "version": "10.13.0p10",
+  "homepage": "https://atavismonline.com/",
+  "author": {
+    "name": "Dragonsan Studios",
+    "email": "support@atavismonline.com"
+  },
+  "main": "main.js",
+  "private": true,
+  "dependencies": {
+    "@electron/remote": "^2.0.8",
+    "electron-fetch": "^1.7.4",
+    "electron-log": "4.4.7",
+    "electron-reload": "1.5.0",
+    "electron-settings": "4.0.2",
+    "mysql": "^2.18.1",
+    "mysql-import": "^5.0.21",
+    "mysql2": "^2.3.2",
+    "mysqldump": "^3.2.0",
+    "sharp": "0.32.5",
+    "tgaimage": "^1.1.0"
+  }
+}

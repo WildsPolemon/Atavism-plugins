@@ -1,0 +1,139 @@
+<div class="dialog-content-wrapper dialog-form-container" style="position: relative" *ngIf="form">
+  <mat-toolbar matDialogTitle class="mat-accent m-0">
+    <mat-toolbar-row fxLayout="row" fxLayoutAlign="space-between center">
+      <span class="title dialog-title">{{ config.title }}</span>
+      <div>
+        <mat-slide-toggle
+          class="dialog-title-toggle"
+          [checked]="showTooltip"
+          color="warn"
+          (change)="toggleTooltips($event)"
+        >
+          {{ 'TABLE.SHOW_TOOLTIP' | translate }}
+        </mat-slide-toggle>
+        <button
+          *ngIf="tooltip !== config.type + '.TITLE_TOOLTIP'"
+          type="button"
+          mat-icon-button
+          (click)="openHelp()"
+          [attr.aria-label]="'ACTIONS.CLOSE_DIALOG' | translate"
+        ><mat-icon>help_outline</mat-icon></button>
+        <button
+          type="button"
+          mat-icon-button
+          (click)="matDialogRef.close([null, DialogCloseType.cancel])"
+          [attr.aria-label]="'ACTIONS.CLOSE_DIALOG' | translate"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </mat-toolbar-row>
+  </mat-toolbar>
+
+  <div mat-dialog-content class="p-12 m-0" cdkScrollable>
+    <form [formGroup]="form" fxLayout="column">
+      <div class="form-row-group">
+        <div
+          *ngFor="let field of fields"
+          class="field-width-{{ config.fields[field].type === FormFieldType.hidden ? 0 : (overrideWidth[field] ? overrideWidth[field] : (config.fields[field].width && config.fields[field].width !== 0 ? config.fields[field].width : '100')) }}"
+          [attr.id]="'field_' + field"
+        >
+          <atv-fields-container
+            [tableType]="config.type"
+            [type]="config.fields[field].type"
+            [form]="form"
+            [field]="config.fields[field]"
+            (updateWidth)="updateWidth(field, $event)"
+          ></atv-fields-container>
+        </div>
+      </div>
+
+      <ng-container *ngIf="subFormTypes.length > 0">
+        <div *ngFor="let subForm of subFormTypes">
+          <ng-container
+            *ngIf="config && config.subForms && config.subForms[subForm] && !config.subForms[subForm].hiddenSubForm">
+            <div fxLayout="row" fxLayoutAlign="space-between"
+                 *ngIf="config.type === TabTypes.SKILL_PROFILES && subForm === 'levels'">
+              <button type="button" mat-raised-button color="primary" (click)="generateLevels()">
+                {{ 'ACTIONS.GENERATE_LEVELS' | translate }}
+              </button>
+            </div>
+            <div
+              fxLayout="row"
+              fxLayoutAlign="space-between"
+              *ngIf="config?.type === TabTypes.SKILL_PROFILES && (subForm === 'levels' || subForm === 'level_diffs')"
+            >
+              <h2
+                class="sub-form__title">{{ (config && config.subForms && config.subForms[subForm] && config.subForms[subForm].title) ? config.subForms[subForm].title : '' }}</h2>
+              <button
+                mat-raised-button
+                type="button"
+                color="primary"
+                *ngIf="subForm === 'levels' && levelsToShow > 0"
+                (click)="showLevels()"
+                style="margin-bottom: 0.83em; margin-top: 0.83em;"
+              >
+                {{ (hiddenLevels ? 'ACTIONS.SHOW_LEVELS' : 'ACTIONS.HIDE_LEVELS') | translate }}
+                {{ levelsToShow > 0 ? '(' + levelsToShow + ')' : '' }}
+              </button>
+            </div>
+            <atv-sub-form
+              *ngIf="config.type === TabTypes.SKILL_PROFILES && subForm === 'levels'; else otherSubs"
+              [hiddenItems]="hiddenLevels"
+              [config]="config"
+              [tableType]="config.type"
+              [type]="subForm"
+              [subFormConfig]="(config && config.subForms && config.subForms[subForm]) ? config.subForms[subForm] : undefined"
+              [form]="form"
+              [subForm]="subForms[subForm]"
+              [subForms]="subForms"
+              [submitted]="submitted"
+              (hiddenItemsEmit)="updateHiddenItems($event)"
+            ></atv-sub-form>
+            <ng-template #otherSubs>
+              <atv-sub-form
+                [hiddenItems]="false"
+                [config]="config"
+                [tableType]="config.type"
+                [type]="subForm"
+                [subFormConfig]="(config && config.subForms && config.subForms[subForm]) ? config.subForms[subForm] : undefined"
+                [form]="form"
+                [subForm]="subForms[subForm]"
+                [subForms]="subForms"
+                [submitted]="submitted"
+              ></atv-sub-form>
+            </ng-template>
+          </ng-container>
+        </div>
+      </ng-container>
+    </form>
+  </div>
+
+  <div mat-dialog-actions class="m-0" fxLayout="row" fxLayoutAlign="end center">
+    <button
+      mat-raised-button
+      color="primary"
+      type="button"
+      (click)="submitForm(DialogCloseType.update)"
+      [attr.aria-label]="config.submit ? config.submit : ('ACTIONS.SAVE' | translate)">
+      {{ config.submit ? config.submit : ('ACTIONS.SAVE' | translate) }}
+    </button>
+    <button
+      *ngIf="config.saveAsNew"
+      mat-raised-button
+      color="primary"
+      type="button"
+      (click)="submitForm(DialogCloseType.save_as_new)"
+      [attr.aria-label]="'ACTIONS.SAVE_AS_NEW' | translate">
+      {{ 'ACTIONS.SAVE_AS_NEW' | translate }}
+    </button>
+    <button
+      mat-button
+      type="button"
+      (click)="matDialogRef.close([null, DialogCloseType.cancel])"
+      [attr.aria-label]="config.cancel ? config.cancel : ('ACTIONS.CANCEL' | translate)"
+    >
+      {{ config.cancel ? config.cancel : ('ACTIONS.CANCEL' | translate) }}
+    </button>
+  </div>
+</div>

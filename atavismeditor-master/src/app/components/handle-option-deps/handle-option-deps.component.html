@@ -1,0 +1,64 @@
+<div class="dialog-content-wrapper dialog-form-container" style="position: relative">
+  <mat-toolbar matDialogTitle class="mat-accent m-0">
+    <mat-toolbar-row fxLayout="row" fxLayoutAlign="space-between center">
+      <span class="title dialog-title" *ngIf="modalType === 0">{{ 'DEPENDENCIES.TITLE_OPTION_0' | translate }}</span>
+      <span class="title dialog-title" *ngIf="modalType === 1">{{ 'DEPENDENCIES.TITLE_OPTION_1' | translate }}</span>
+      <div>
+        <mat-slide-toggle class="dialog-title-toggle" color="warn" [checked]="showTooltip" (change)="toggleTooltips($event)">
+          {{ 'TABLE.SHOW_TOOLTIP' | translate }}
+        </mat-slide-toggle>
+        <button mat-icon-button *ngIf="modalType === 0" (click)="close()" [attr.aria-label]="'ACTIONS.CLOSE_DIALOG' | translate">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </mat-toolbar-row>
+  </mat-toolbar>
+
+  <div mat-dialog-content class="p-12 m-0 dependencies-container" cdkScrollable>
+    <h2 class="dep-title-row">{{ 'DEPENDENCIES.ITEM_OPTION_TITLE' | translate: {item_name: itemName} }}</h2>
+    <form [formGroup]="form" fxLayout="column">
+      <input type="hidden" formControlName="hiddenId" />
+      <div class="dep-row-choice" *ngFor="let key of choicesKeys">
+        <span class="dep-row-choice-title">{{ 'DEPENDENCIES.OPTION_CHOICE' | translate: {choice: deps[key][0].optionName} }}</span>
+        <div class="dep-row" *ngFor="let dep of deps[key]">
+          <div class="dep-row-description">
+            <ng-container *ngIf="dep.module !== tabTypes.NONE && dep.section !== 'NONE'">
+              <span> - {{ 'DEPENDENCIES.MODULE_NAME' | translate: {module: ((dep.module | uppercase) + '.TITLE' | translate)} }}</span>
+              <span *ngIf="dep.count && dep.count > 1">{{ 'DEPENDENCIES.SECTION_NAME' | translate: {section: (dep.section | translate), count: dep.count} }}: </span>
+              <span *ngIf="dep.count && dep.count === 1">{{ 'DEPENDENCIES.SECTION_NAME_ONCE' | translate: {section: (dep.section | translate)} }}: </span>
+            </ng-container>
+            <ng-container *ngIf="dep.module === tabTypes.NONE && dep.section === 'NONE'">
+              <span> - {{ 'DEPENDENCIES.TABLE_NAME' | translate: {table: dep.table} }}</span>
+            </ng-container>
+
+            <ng-container [ngSwitch]="dep.usageType">
+              <span *ngSwitchCase="UsageType.change">{{ 'DEPENDENCIES.CHANGE_TO' | translate }}</span>
+              <span *ngSwitchCase="UsageType.deleteRecord">{{ 'DEPENDENCIES.DELETE_RECORD' | translate }}</span>
+              <span *ngSwitchCase="UsageType.deleteInString">{{ 'DEPENDENCIES.DELETE_IN_STRING' | translate }}</span>
+              <span *ngSwitchCase="UsageType.updateDefault">{{ 'DEPENDENCIES.UPDATE_DEFAULT' | translate }}</span>
+              <span *ngSwitchCase="UsageType.emptyValue">{{ 'DEPENDENCIES.UPDATE_DEFAULT' | translate }}</span>
+              <span *ngSwitchCase="UsageType.clearFieldSet">{{ 'DEPENDENCIES.CLEAR_FIELD_SET' | translate }}</span>
+            </ng-container>
+          </div>
+          <div class="dep-row-changeTo" *ngIf="dep.usageType === UsageType.change && dep.formField">
+            <atv-dynamic-dropdown
+              [tableType]="tabType"
+              [form]="form"
+              [errors]="errors(dep.formField.name)"
+              [field]="dep.formField"
+            ></atv-dynamic-dropdown>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div mat-dialog-actions class="m-0" fxLayout="row" fxLayoutAlign="end center">
+    <button mat-raised-button color="primary" (click)="confirmRemove()" [attr.aria-label]="'ACTIONS.CONFIRM_REMOVING' | translate">
+      {{ 'ACTIONS.CONFIRM_REMOVING' | translate }}
+    </button>
+    <button mat-button *ngIf="modalType === 0" (click)="close()" [attr.aria-label]="'ACTIONS.CANCEL' | translate">
+      {{ 'ACTIONS.CANCEL' | translate }}
+    </button>
+  </div>
+</div>

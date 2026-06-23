@@ -1,0 +1,135 @@
+<div class="page-layout simple left-sidebar inner-sidebar inner-scroll">
+  <mat-toolbar matDialogTitle class="mat-accent m-0">
+    <mat-toolbar-row fxLayout="row" fxLayoutAlign="space-between center">
+      <div class="title dialog-title">{{ 'THEMES.TITLE' | translate }}</div>
+      <div class="ml-sm-32" fxLayout="row" fxLayoutAlign="center center" fxFlex>
+        <div class="search-wrapper mt-16 mt-sm-0">
+          <div class="search" fxFlex fxLayout="row" fxLayoutAlign="start center">
+            <mat-icon>search</mat-icon>
+            <input [formControl]="searchInput" [placeholder]="'THEMES.SEARCH_PLACEHOLDER' | translate" />
+          </div>
+        </div>
+      </div>
+    </mat-toolbar-row>
+  </mat-toolbar>
+
+  <div class="content">
+    <div class="center p-24" fusePerfectScrollbar>
+      <div class="content">
+        <div class="custom-responsive">
+          <mat-table matSort [dataSource]="themes" [@animateStagger]="{value: '50'}">
+            <ng-container matColumnDef="name">
+              <mat-header-cell mat-sort-header *matHeaderCellDef>{{ 'THEMES.NAME' | translate }}</mat-header-cell>
+              <mat-cell *matCellDef="let theme">
+                <p class="text-truncate font-weight-600">{{ theme.name }}</p>
+              </mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="size">
+              <mat-header-cell mat-sort-header *matHeaderCellDef>{{ 'THEMES.FONT_SIZE' | translate }}</mat-header-cell>
+              <mat-cell *matCellDef="let theme">
+                <p class="text-truncate">{{ getSizeLabel(theme.size) }}</p>
+              </mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="colorTheme">
+              <mat-header-cell mat-sort-header *matHeaderCellDef>{{ 'THEMES.COLOR_THEME' | translate }}</mat-header-cell>
+              <mat-cell *matCellDef="let theme">
+                <p class="text-truncate">{{ getColorLabel(theme.colorTheme) }}</p>
+              </mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="selected">
+              <mat-header-cell fxFlex="50px" *matHeaderCellDef>{{ 'THEMES.SELECTED' | translate }}</mat-header-cell>
+              <mat-cell fxFlex="50px" *matCellDef="let theme">
+                <button
+                  mat-icon-button
+                  [attr.aria-label]="(theme.selected ? 'THEMES.MARK_AS_SELECTED' : 'THEMES.MARK_AS_UNSELECTED') | translate"
+                  (click)="$event.stopPropagation(); toggleSelected(theme)"
+                >
+                  <mat-icon [class.profile_selected]="theme.selected">check_circle</mat-icon>
+                </button>
+              </mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="lastUsed">
+              <mat-header-cell mat-sort-header *matHeaderCellDef>{{ 'THEMES.LAST_USED' | translate }}</mat-header-cell>
+              <mat-cell *matCellDef="let theme">
+                <p class="text-truncate">{{ theme.lastUsed }}</p>
+              </mat-cell>
+            </ng-container>
+
+            <!-- Buttons Column -->
+            <ng-container matColumnDef="actions">
+              <mat-header-cell fxFlex="50px" *matHeaderCellDef></mat-header-cell>
+              <mat-cell fxFlex="50px" *matCellDef="let theme" fxLayoutAlign="flex-end" stickyEnd>
+                <button
+                  mat-icon-button
+                  [matMenuTriggerFor]="moreMenu"
+                  aria-label="'ACTIONS.MORE' | translate"
+                  (click)="$event.stopPropagation()"
+                >
+                  <mat-icon class="secondary-text">more_vert</mat-icon>
+                </button>
+                <mat-menu #moreMenu="matMenu">
+                  <button mat-menu-item [attr.aria-label]="'THEMES.SELECT' | translate" (click)="select(theme)">
+                    <mat-icon>check_circle</mat-icon>
+                    <span>{{ 'THEMES.SELECT' | translate }}</span>
+                  </button>
+                  <button mat-menu-item [attr.aria-label]="'ACTIONS.EDIT' | translate" (click)="edit(theme)">
+                    <mat-icon>edit</mat-icon>
+                    <span>{{ 'ACTIONS.EDIT' | translate }}</span>
+                  </button>
+                  <button mat-menu-item [attr.aria-label]="'ACTIONS.DUPLICATE' | translate" (click)="duplicate(theme)">
+                    <mat-icon>file_copy</mat-icon>
+                    <span>{{ 'ACTIONS.DUPLICATE' | translate }}</span>
+                  </button>
+                  <button mat-menu-item [attr.aria-label]="'ACTIONS.REMOVE' | translate" (click)="remove(theme)">
+                    <mat-icon>delete</mat-icon>
+                    <span>{{ 'ACTIONS.REMOVE' | translate }}</span>
+                  </button>
+                </mat-menu>
+              </mat-cell>
+            </ng-container>
+
+            <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+            <mat-row
+              *matRowDef="let theme; columns: displayedColumns"
+              (dblclick)="edit(theme)"
+              (contextmenu)="onRightClick($event, theme); $event.preventDefault()"
+              class="contact table-row"
+            ></mat-row>
+          </mat-table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button
+  mat-fab
+  class="accent fab-add-button"
+  (click)="add()"
+  [attr.aria-label]="'THEMES.ADD' | translate"
+  [@animate]="{value: '*', params: {delay: '300ms', scale: '.2'}}"
+>
+  <mat-icon>add</mat-icon>
+</button>
+
+<ng-template #contextMenu let-theme>
+  <section class="context-menu">
+    <button mat-menu-item [attr.aria-label]="'THEMES.SELECT' | translate" (click)="select(theme)">
+      <mat-icon>check_circle</mat-icon>
+      <span>{{ 'THEMES.SELECT' | translate }}</span>
+    </button>
+    <button mat-menu-item [attr.aria-label]="'ACTIONS.EDIT' | translate" (click)="edit(theme)">
+      <mat-icon>edit</mat-icon>
+      <span>{{ 'ACTIONS.EDIT' | translate }}</span>
+    </button>
+    <button mat-menu-item [attr.aria-label]="'ACTIONS.DUPLICATE' | translate" (click)="duplicate(theme)">
+      <mat-icon>file_copy</mat-icon>
+      <span>{{ 'ACTIONS.DUPLICATE' | translate }}</span>
+    </button>
+    <button mat-menu-item [attr.aria-label]="'ACTIONS.REMOVE' | translate" (click)="remove(theme)">
+      <mat-icon>delete</mat-icon>
+      <span>{{ 'ACTIONS.REMOVE' | translate }}</span>
+    </button>
+  </section>
+</ng-template>

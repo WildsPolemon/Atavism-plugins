@@ -1,0 +1,31 @@
+<div class="tabs-container">
+  <mat-tab-group [selectedIndex]="selectedTab" (selectedTabChange)="updateSelectedTabIndex($event)">
+    <ng-container *ngFor="let tab of tabs">
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <div
+            class="tab-context-label"
+            (contextmenu)="onRight2Click($event, tab)"
+          >
+            <mat-icon (click)="removeTab(tab)" class="tab-close-icon">close</mat-icon>
+            {{ tab.title | translate }}
+          </div>
+        </ng-template>
+        <atv-tab [tab]="tab"></atv-tab>
+      </mat-tab>
+    </ng-container>
+  </mat-tab-group>
+</div>
+
+<ng-template #contextNewMenu let-tab>
+  <section class="context-menu">
+    <button mat-menu-item [attr.aria-label]="'ACTIONS.CLOSE_ALL' | translate" (click)="closeAll()">
+      <mat-icon>close</mat-icon>
+      <span>{{ 'ACTIONS.CLOSE_ALL' | translate }}</span>
+    </button>
+    <button mat-menu-item [attr.aria-label]="'ACTIONS.CLOSE_OTHER' | translate" (click)="closeOther(tab)">
+      <mat-icon>close</mat-icon>
+      <span>{{ 'ACTIONS.CLOSE_OTHER' | translate }}</span>
+    </button>
+  </section>
+</ng-template>

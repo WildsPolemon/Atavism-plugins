@@ -1,0 +1,71 @@
+<div class="dialog-content-wrapper dialog-form-container">
+  <mat-toolbar matDialogTitle class="mat-accent m-0">
+    <mat-toolbar-row fxLayout="row" fxLayoutAlign="space-between center">
+      <span class="title dialog-title">
+        {{ 'TRANSLATIONS.TITLE_' + (action | uppercase) | translate }}
+      </span>
+      <button mat-icon-button (click)="matDialogRef.close()" aria-label="Close dialog">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-toolbar-row>
+  </mat-toolbar>
+
+  <div mat-dialog-content class="p-12 pb-0 m-0">
+    <form [formGroup]="form" fxLayout="column">
+      <div fxLayout="column">
+        <div fxLayout="row" fxLayoutAlign="start start">
+          <mat-form-field appearance="outline" fxFlex>
+            <mat-label>{{ 'TRANSLATIONS.NAME' | translate }}</mat-label>
+            <input maxlength="32" type="text" formControlName="name" matInput required />
+          </mat-form-field>
+        </div>
+        <div fxLayout="row" fxLayoutAlign="start start">
+          <mat-form-field appearance="outline" fxFlex>
+            <mat-label>{{ 'TRANSLATIONS.CODE' | translate }}</mat-label>
+            <input maxlength="2" type="text" formControlName="code" matInput required />
+          </mat-form-field>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="start start" class="field-input-one-row field-file-upload-row" style="position: relative;">
+          <input class="field-file-upload" type="file" (change)="onFileChanged($event)" #translationInput />
+
+          <mat-form-field appearance="outline" fxFlex>
+            <mat-label>{{ 'TRANSLATIONS.TRANSLATION_FILE' | translate }}</mat-label>
+            <input type="text" readonly formControlName="file" matInput required />
+          </mat-form-field>
+          <button mat-raised-button type="button" (click)="translationInput.click()">
+            {{ 'ACTIONS.CHOOSE_FILE' | translate }}
+          </button>
+        </div>
+
+        <div class="form-checkbox-row" fxLayout="row" fxLayoutAlign="start start">
+          <mat-checkbox formControlName="selected">{{ 'TRANSLATIONS.SELECTED' | translate }}</mat-checkbox>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div mat-dialog-actions class="m-0" fxLayout="row" fxLayoutAlign="end center">
+    <button
+      *ngIf="action === FormType.new"
+      mat-button
+      class="save-button"
+      (click)="matDialogRef.close([form, uploadedFileContent])"
+      [disabled]="form.invalid"
+      [attr.aria-label]="'ACTIONS.SAVE' | translate"
+    >
+      {{ 'ACTIONS.ADD' | translate }}
+    </button>
+
+    <button
+      *ngIf="action === FormType.edit"
+      mat-button
+      class="save-button"
+      (click)="matDialogRef.close([form, uploadedFileContent])"
+      [disabled]="form.invalid"
+      [attr.aria-label]="'ACTIONS.SAVE' | translate"
+    >
+      {{ 'ACTIONS.SAVE' | translate }}
+    </button>
+  </div>
+</div>

@@ -1,0 +1,33 @@
+@mixin fuse-sidebar-theme($theme) {
+  $background: map-get($theme, background);
+
+  fuse-sidebar {
+    background: map-get($background, background);
+    .header {
+      background: map-get($background, background);
+    }
+    .group {
+      border: 1px solid map-get($background, foreground);
+      .group-title {
+        background: map-get($background, background);
+      }
+    }
+  }
+
+  atv-theme-settings {
+    .group {
+      border: 1px solid map-get($background, foreground);
+      .group-title {
+        background: map-get($background, background);
+      }
+    }
+  }
+
+  .fuse-sidebar-overlay {
+    background-color: rgba(0, 0, 0, 0.6);
+
+    &.fuse-sidebar-overlay-invisible {
+      background-color: transparent;
+    }
+  }
+}

@@ -1,0 +1,26 @@
+$icon-size: 18px;
+
+.mat-tab-list {
+  .mat-tab-labels {
+    padding-top: 2px;
+    .mat-tab-label {
+      border-radius: 10px 10px 0 0;
+      z-index: 1;
+      .tab-close-icon {
+        position: absolute;
+        right: 5px;
+        top: 5px;
+        font-size: 14px;
+        line-height: $icon-size;
+        height: $icon-size;
+        width: $icon-size;
+        min-height: $icon-size;
+        min-width: $icon-size;
+        border-radius: 50%;
+      }
+    }
+  }
+  .mat-ink-bar {
+    z-index: 1;
+  }
+}

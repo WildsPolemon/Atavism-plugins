@@ -1,0 +1,104 @@
+<ng-container *ngIf="subFormConfig">
+  <div *ngIf="tableType === TabTypes.PLAYER_CHARACTER && type === 'stat'" fxLayout="row" fxLayoutAlign="space-between center">
+    <h3 class="section-title mb-0">{{ 'PLAYER_CHARACTER.TITLE5' | translate }}</h3>
+
+    <mat-form-field appearance="outline" fxFlex class="max-width-250">
+      <mat-label>{{ 'PLAYER_CHARACTER.STAT_SEARCH' | translate }}</mat-label>
+      <input matInput type="text" [formControl]="searchControl" />
+    </mat-form-field>
+  </div>
+  <div *ngIf="subFormConfig.groupTitle" fxLayout="row" fxLayoutAlign="space-between center">
+    <h3 class="section-title mb-0">{{ subFormConfig.groupTitle | translate }}</h3>
+
+  </div>
+  <div
+    [hidden]="hiddenItems"
+    class="sub-form"
+    [formGroup]="form"
+    cdkDropList
+    [cdkDropListDisabled]="!subFormConfig.draggable"
+    (cdkDropListDropped)="drop($event)"
+  >
+    <div class="cdk-drag-custom-placeholder" *cdkDragPlaceholder></div>
+    <div
+      cdkDrag
+      [cdkDragDisabled]="!subFormConfig.draggable"
+      cdkDragBoundary=".sub-form"
+      class="sub-form__container sub-form__container-{{ subFormConfig.columnWidth ? subFormConfig.columnWidth : 50 }}"
+      [formArrayName]="type"
+      *ngFor="let item of controls; let i = index"
+      [hidden]="isHiddenFormRow[i]"
+    >
+      <div class="sub-form__container-header" fxLayout="row" fxLayoutAlign="space-between">
+        <h2 class="sub-form__title" *ngIf="showTitle">
+          <mat-icon *ngIf="subFormConfig.draggable" cdkDragHandle>open_with</mat-icon>
+          <ng-container *ngIf="tableType === TabTypes.PLAYER_CHARACTER && type === 'stat'; else normalTitle">{{
+            customTitle(i)
+            }}</ng-container>
+          <ng-template #normalTitle>{{ subFormConfig.title }} {{ subFormConfig.numerate ? i + 1 : '' }}</ng-template>
+        </h2>
+        <button type="button" *ngIf="!subFormConfig.hideRemoveButton && showRemoveButton(i)" mat-icon-button color="warn" (click)="removeForm(i)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+
+      <div class="sub-form__container-fields">
+      <ng-container *ngFor="let field of fields">
+        <atv-fields-container
+          class="field-width-{{ subFormConfig.fields[field].type === FormFieldType.hidden ? 0 : (overrideWidth[field] && overrideWidth[field][i] ? overrideWidth[field][i] : (subFormConfig.fields[field].width ? subFormConfig.fields[field].width : '100')) }}"
+          [tableType]="tableType"
+          [form]="form"
+          [subForm]="i"
+          [subFormType]="type"
+          [subFormParent]="-1"
+          [field]="subFormConfig.fields[field]"
+          [type]="subFormConfig.fields[field].type"
+          [customOptions]="customOptions[i] && customOptions[i][field] ? customOptions[i][field] : []"
+          [attr.id]="'field_' + i + '_' + field"
+          (updateWidth)="updateWidth(field, i, $event)"
+        ></atv-fields-container>
+      </ng-container>
+      <ng-container *ngIf="subFormTypes.length > 0 && getAllowToShow(i)">
+        <div class="sub-sub-form-main-container" *ngFor="let subForm of subFormTypes">
+          <atv-sub-sub-form
+            [tableType]="config.type"
+            [form]="form"
+            [type]="subForm"
+            [subForm]="i"
+            [subFormType]="type"
+            [subFormConfig]="(subFormConfig && subFormConfig.subForms) ? subFormConfig.subForms[subForm] : undefined"
+            [subFormFields]="subForms[subForm]"
+            [submitted]="formSubmitted"
+          ></atv-sub-sub-form>
+        </div>
+      </ng-container>
+    </div>
+    </div>
+  </div>
+  <div fxLayout="row"
+       [fxLayoutAlign]="tableType == TabTypes.SKILL_PROFILES && type === 'level_diffs' ? 'start' : 'space-between'">
+    <button type="button" *ngIf="allowMore" class="sub-form__add-form" mat-raised-button color="primary" (click)="addSubForm()">
+      {{ submitText ? submitText : ('ACTIONS.ADD_ITEM' | translate) }}
+    </button>
+    <button
+      *ngIf="tableType == TabTypes.SKILL_PROFILES && (type === 'levels' || type === 'level_diffs') && !hiddenItems && levelsToShow(type) > 0"
+      type="button"
+      class="sub-form__add-form"
+      mat-raised-button
+      color="warn"
+      (click)="removeLastSubForm()"
+    >
+      {{ 'ACTIONS.REMOVE_LAST' | translate }}
+    </button>
+    <button
+      *ngIf="tableType == TabTypes.SKILL_PROFILES && type === 'levels' && levelsToShow(type) > 0"
+      type="button"
+      mat-raised-button
+      color="primary"
+      (click)="showLevels()"
+    >
+      {{ (hiddenItems ? 'ACTIONS.SHOW_LEVELS' : 'ACTIONS.HIDE_LEVELS') | translate }}
+      {{ levelsToShow(type) > 0 ? '(' + levelsToShow(type) + ')' : '' }}
+    </button>
+  </div>
+</ng-container>

@@ -1,0 +1,25 @@
+<div class="dialog-content-wrapper dialog-rete-component">
+  <mat-toolbar matDialogTitle class="mat-accent m-0">
+    <mat-toolbar-row fxLayout="row" fxLayoutAlign="space-between center">
+      <span class="title dialog-title">{{ 'DIALOGUE.NODES_TITLE' | translate }}</span>
+      <button mat-icon-button (click)="matDialogRef.close()" [attr.aria-label]="'ACTIONS.CLOSE_DIALOG' | translate">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-toolbar-row>
+  </mat-toolbar>
+
+  <div mat-dialog-content class="p-0 m-0" fusePerfectScrollbar>
+    <div class="wrapper">
+      <div #nodeEditor class="node-editor"></div>
+    </div>
+  </div>
+
+  <div mat-dialog-actions class="m-0" fxLayout="row" fxLayoutAlign="start center">
+    <button mat-raised-button color="primary" (click)="saveDialogs()" [attr.aria-label]="'ACTIONS.SAVE' | translate">
+      {{ 'ACTIONS.SAVE' | translate }}
+    </button>
+    <button mat-button (click)="matDialogRef.close()" [attr.aria-label]="'ACTIONS.CANCEL' | translate">
+      {{ 'ACTIONS.CANCEL' | translate }}
+    </button>
+  </div>
+</div>

@@ -1,0 +1,13 @@
+<div class="alert-container">
+  <div *ngFor="let notification of notifications">
+    <div class="{{ cssClass(notification) }} alert-dismissable alert-item">
+      {{ notification.message }}
+      <button class="close" mat-icon-button aria-label="Remove Notification" (click)="removeNotification(notification)">
+        <mat-icon>close</mat-icon>
+      </button>
+      <div class="progress">
+        <div class="progress-bar" [ngStyle]="{width: calcWidth(notification)}"></div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,43 @@
+<div *ngIf="subForm === -1; else subFormFields" class="form-checkbox-row" fxLayout="column" [formGroup]="form">
+  <mat-checkbox
+    [formControlName]="field.name"
+    [required]="field.require ? field.require : false"
+    [popover]="field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate)"
+    [popoverPlacement]="'top'"
+    [popoverSize]="'large'"
+    [appendToBody]="true"
+    [popoverDisabled]="this.disableTooltip"
+    [popoverCloseOnMouseOutside]="true"
+    [hidden]="hiddenOverride !== hiddenField.noAction ? hiddenOverride === hiddenField.hidden : field.hidden === hiddenField.hidden"
+  >
+    {{ field.label ? field.label : (tableType + '.' + field.name | uppercase | translate) }}
+  </mat-checkbox>
+  <div class="errors-container" *ngIf="errors as list">
+    <mat-error *ngFor="let error of list">{{ 'ERROR.' + error | translate }}</mat-error>
+  </div>
+</div>
+
+<ng-template #subFormFields>
+  <div [formGroup]="form" class="form-checkbox-row">
+    <div [formArrayName]="subFormType">
+      <div [formGroupName]="subForm">
+        <mat-checkbox
+          [formControlName]="field.name"
+          [required]="field.require ? field.require : false"
+          [popover]="field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate)"
+          [popoverPlacement]="'top'"
+          [popoverSize]="'large'"
+          [appendToBody]="true"
+          [popoverDisabled]="this.disableTooltip"
+          [popoverCloseOnMouseOutside]="true"
+          [hidden]="hiddenOverride !== hiddenField.noAction ? hiddenOverride === hiddenField.hidden : field.hidden === hiddenField.hidden"
+        >
+          {{ overrideLabel ? overrideLabel : field.label ? field.label : (tableType + '.' + field.name | uppercase | translate) }}
+        </mat-checkbox>
+        <div class="errors-container" *ngIf="errors as list">
+          <mat-error *ngFor="let error of list">{{ 'ERROR.' + error | translate }}</mat-error>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-template>

@@ -1,0 +1,174 @@
+<div *ngIf="subForm === -1 && subFormParent === -1" fxLayout="column" fxLayoutAlign="start" [formGroup]="form">
+  <mat-form-field
+    fxFlex
+    appearance="outline"
+    class="dynamic-dropdown-component"
+    [popover]="field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate)"
+    [popoverPlacement]="'top'"
+    [popoverSize]="'large'"
+    [appendToBody]="true"
+    [popoverDisabled]="this.disableTooltip"
+    [popoverCloseOnMouseOutside]="true"
+  >
+    <input type="hidden" [required]="required" [formControlName]="field.name" />
+    <ng-template [ngTemplateOutlet]="addNewItemButton"></ng-template>
+    <mat-label>{{ label }}</mat-label>
+    <mat-chip-list [required]="required" #chipList aria-label="Items Selection" [formControlName]="field.name">
+      <mat-chip *ngFor="let item of selectedOptions" [removable]="true" (removed)="remove(item)">
+        {{ item.value }}
+        <mat-icon
+          *ngIf="!fieldConfig?.isData"
+          aria-hidden="false"
+          aria-label="Edit Option"
+          (click)="$event.stopPropagation(); updateItem(item)"
+          class="mat-icon-edit-chip"
+        >mode_edit</mat-icon>
+        <mat-icon matChipRemove>cancel</mat-icon>
+      </mat-chip>
+      <input
+        #searchInput
+        (focus)="listOpened()"
+        [required]="required"
+        [formControl]="searchField"
+        [matChipInputFor]="chipList"
+        [matAutocomplete]="autocomplete"
+        [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+        [placeholder]="'ACTIONS.SEARCH_ITEM' | translate"
+      />
+    </mat-chip-list>
+  </mat-form-field>
+  <ng-template [ngTemplateOutlet]="errorTemplate"></ng-template>
+</div>
+
+<div *ngIf="subForm !== -1 && subFormParent === -1" [formGroup]="form">
+  <div [formArrayName]="subFormType" fxLayout="column">
+    <mat-form-field
+      fxFlex
+      appearance="outline"
+      [formGroupName]="subForm"
+      class="dynamic-dropdown-component"
+      [popover]="field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate)"
+      [popoverPlacement]="'top'"
+      [popoverSize]="'large'"
+      [appendToBody]="true"
+      [popoverDisabled]="this.disableTooltip"
+      [popoverCloseOnMouseOutside]="true"
+    >
+      <input type="hidden" [required]="required" [formControlName]="field.name" />
+      <ng-template [ngTemplateOutlet]="addNewItemButton"></ng-template>
+      <mat-label>{{ label }}</mat-label>
+      <mat-chip-list #chipList aria-label="Items Selection">
+        <mat-chip *ngFor="let item of selectedOptions" [removable]="true" (removed)="remove(item)">
+          {{ item.value }}
+          <mat-icon
+            *ngIf="!fieldConfig?.isData"
+            aria-hidden="false"
+            aria-label="Edit Option"
+            (click)="$event.stopPropagation(); updateItem(item)"
+            class="mat-icon-edit-chip"
+          >mode_edit</mat-icon>
+          <mat-icon matChipRemove>cancel</mat-icon>
+        </mat-chip>
+        <input
+          #searchInput
+          (focus)="listOpened()"
+          [required]="required"
+          [formControl]="searchField"
+          [matChipInputFor]="chipList"
+          [matAutocomplete]="autocomplete"
+          [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+          [placeholder]="'ACTIONS.SEARCH_ITEM' | translate"
+        />
+      </mat-chip-list>
+    </mat-form-field>
+    <ng-template [ngTemplateOutlet]="errorTemplate"></ng-template>
+  </div>
+</div>
+
+<div *ngIf="subForm !== -1 && subFormParent !== -1" [formGroup]="form">
+  <div [formArrayName]="subFormTypeParent">
+    <div [formGroupName]="subFormParent">
+      <div [formArrayName]="subFormType" fxLayout="column">
+        <mat-form-field
+          fxFlex
+          appearance="outline"
+          [formGroupName]="subForm"
+          class="dynamic-dropdown-component"
+          [popover]="field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate)"
+          [popoverPlacement]="'top'"
+          [popoverSize]="'large'"
+          [appendToBody]="true"
+          [popoverDisabled]="this.disableTooltip"
+          [popoverCloseOnMouseOutside]="true"
+        >
+          <input type="hidden" [required]="required" [formControlName]="field.name" />
+          <ng-template [ngTemplateOutlet]="addNewItemButton"></ng-template>
+          <mat-label>{{ label }}</mat-label>
+          <mat-chip-list #chipList aria-label="Items Selection">
+            <mat-chip *ngFor="let item of selectedOptions" [removable]="true" (removed)="remove(item)">
+              {{ item.value }}
+              <mat-icon
+                *ngIf="!fieldConfig?.isData"
+                aria-hidden="false"
+                aria-label="Edit Option"
+                (click)="$event.stopPropagation(); updateItem(item)"
+                class="mat-icon-edit-chip"
+              >mode_edit</mat-icon>
+              <mat-icon matChipRemove>cancel</mat-icon>
+            </mat-chip>
+            <input
+              #searchInput
+              (focus)="listOpened()"
+              [required]="required"
+              [formControl]="searchField"
+              [matChipInputFor]="chipList"
+              [matAutocomplete]="autocomplete"
+              [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+              [placeholder]="'ACTIONS.SEARCH_ITEM' | translate"
+            />
+          </mat-chip-list>
+        </mat-form-field>
+        <ng-template [ngTemplateOutlet]="errorTemplate"></ng-template>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #addNewItemButton>
+  <button
+    *ngIf="allowNew"
+    type="button"
+    class="dynamic-dropdown-add-button"
+    mat-mini-fab
+    color="primary"
+    [attr.aria-label]="'ACTIONS.ADD_DROPDOWN_ITEM' | translate"
+    (click)="$event.stopPropagation(); addNewItem()"
+  >
+    <mat-icon>add</mat-icon>
+  </button>
+</ng-template>
+
+<mat-autocomplete #autocomplete="matAutocomplete" (closed)="cleanupList()" (optionSelected)="optionSelected($event)">
+  <ng-container *ngIf="optionCount > 0">
+    <mat-option class="option-value-row" *ngFor="let option of options" [value]="option">
+      <div class="option-value-row_text">{{ option.value }}</div>
+      <mat-icon
+        *ngIf="!fieldConfig?.isData"
+        class="option-value-row_icon"
+        aria-hidden="false"
+        aria-label="Edit Option"
+        (click)="$event.stopPropagation(); updateItem(option)"
+      >mode_edit</mat-icon>
+    </mat-option>
+    <button type="button" mat-button *ngIf="allowMore" [disabled]="loadingList" class="field-width-100" color="primary" (click)="showMore()">
+      {{ 'GENERAL.SHOW_MORE' | translate }}
+    </button>
+  </ng-container>
+  <mat-option *ngIf="!optionCount" [value]="null">Nothing to show</mat-option>
+</mat-autocomplete>
+
+<ng-template #errorTemplate>
+  <div class="errors-container" *ngIf="list">
+    <mat-error *ngFor="let error of list">{{ 'ERROR.' + error | translate }}</mat-error>
+  </div>
+</ng-template>

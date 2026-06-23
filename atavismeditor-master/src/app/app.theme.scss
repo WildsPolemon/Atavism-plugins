@@ -1,0 +1,203 @@
+// -----------------------------------------------------------------------------------------------------
+// @ Custom color maps for Fuse
+// -----------------------------------------------------------------------------------------------------
+$fuse-white: (
+  500: white,
+  contrast: (
+    500: $dark-primary-text
+  )
+);
+
+$fuse-black: (
+  500: black,
+  contrast: (
+    500: $light-primary-text
+  )
+);
+
+$fuse-navy: (
+  50: #ececee,
+  100: #c5c6cb,
+  200: #9ea1a9,
+  300: #7d818c,
+  400: #5c616f,
+  500: #3c4252,
+  600: #353a48,
+  700: #2d323e,
+  800: #262933,
+  900: #1e2129,
+  A100: #c5c6cb,
+  A200: #9ea1a9,
+  A400: #5c616f,
+  A700: #2d323e,
+  contrast: (
+    50: $dark-primary-text,
+    100: $dark-primary-text,
+    200: $dark-primary-text,
+    300: $light-primary-text,
+    400: $light-primary-text,
+    500: $light-primary-text,
+    600: $light-primary-text,
+    700: $light-primary-text,
+    800: $light-primary-text,
+    900: $light-primary-text,
+    A100: $dark-primary-text,
+    A200: $light-primary-text,
+    A400: $light-primary-text,
+    A700: $light-primary-text
+  )
+);
+
+// Generate Fuse color classes for custom palettes
+$custom_palettes: (
+  fuse-white: $fuse-white,
+  fuse-black: $fuse-black,
+  fuse-navy: $fuse-navy
+);
+
+@include fuse-color-classes($custom_palettes);
+
+// -----------------------------------------------------------------------------------------------------
+// @ Typography
+// -----------------------------------------------------------------------------------------------------
+
+// Angular Material typography
+$typography: mat-typography-config(
+  $font-family: 'Muli, Helvetica Neue, Arial, sans-serif',
+  $title: mat-typography-level(20px, 32px, 600),
+  $body-2: mat-typography-level(14px, 24px, 600),
+  $button: mat-typography-level(14px, 14px, 600),
+  $input: mat-typography-level(16px, 1.125, 400)
+);
+body.font-size-normal {
+  @include angular-material-typography($typography);
+}
+
+$typography-small: mat-typography-config(
+  $font-family: 'Muli, Helvetica Neue, Arial, sans-serif',
+  $display-4: mat-typography-level(84px, 84px, 300, $letter-spacing: -0.05em),
+  $display-3: mat-typography-level(42px, 42px, 400, $letter-spacing: -0.02em),
+  $display-2: mat-typography-level(34px, 36px, 400, $letter-spacing: -0.005em),
+  $display-1: mat-typography-level(24px, 30px, 400),
+  $headline: mat-typography-level(18px, 24px, 400),
+  $title: mat-typography-level(14px, 24px, 600),
+  $subheading-2: mat-typography-level(12px, 21px, 400),
+  $subheading-1: mat-typography-level(12px, 18px, 400),
+  $body-2: mat-typography-level(10px, 18px, 600),
+  $body-1: mat-typography-level(10px, 14px, 400),
+  $caption: mat-typography-level(9px, 14px, 400),
+  $button: mat-typography-level(10px, 10px, 600),
+  $input: mat-typography-level(12px, 1.125, 400)
+);
+// Setup the typography
+body.font-size-small {
+  @include angular-material-typography($typography-small);
+}
+$typography-large: mat-typography-config(
+  $font-family: 'Muli, Helvetica Neue, Arial, sans-serif',
+  $display-4: mat-typography-level(140px, 140px, 300, $letter-spacing: -0.05em),
+  $display-3: mat-typography-level(70px, 70px, 400, $letter-spacing: -0.02em),
+  $display-2: mat-typography-level(56px, 60px, 400, $letter-spacing: -0.005em),
+  $display-1: mat-typography-level(42px, 50px, 400),
+  $headline: mat-typography-level(30px, 40px, 400),
+  $title: mat-typography-level(24px, 36px, 600),
+  $subheading-2: mat-typography-level(20px, 36px, 400),
+  $subheading-1: mat-typography-level(18px, 30px, 400),
+  $body-2: mat-typography-level(18px, 32px, 600),
+  $body-1: mat-typography-level(18px, 26px, 400),
+  $caption: mat-typography-level(16px, 28px, 400),
+  $button: mat-typography-level(18px, 18px, 600),
+  $input: mat-typography-level(22px, 1.125, 400)
+);
+body.font-size-large {
+  @include angular-material-typography($typography-large);
+}
+
+@import 'layout/components/toolbar/toolbar.theme';
+@import 'tabs/tabs.theme';
+@import 'components/loading/loading.theme';
+@import 'components/form/form.theme';
+
+@mixin components-theme($theme) {
+  @include toolbar-theme($theme);
+  @include tabs-theme($theme);
+  @include loading-theme($theme);
+  @include form-theme($theme);
+}
+
+$default-primary-palette: mat-palette($fuse-navy);
+$default-accent-palette: mat-palette($mat-light-blue, 600, 400, 700);
+$default-warn-palette: mat-palette($mat-red);
+$theme: mat-light-theme($default-primary-palette, $default-accent-palette, $default-warn-palette);
+body.theme-default {
+  @include angular-material-theme($theme);
+  @include fuse-core-theme($theme);
+  @include components-theme($theme);
+  $palettes: (
+    primary: $default-primary-palette,
+    accent: $default-accent-palette,
+    warn: $default-warn-palette
+  );
+  @include fuse-color-classes($palettes);
+}
+
+$yellow-light-theme-primary-palette: mat-palette($fuse-navy, 600, 400, 700);
+$yellow-light-theme-accent-palette: mat-palette($mat-yellow, 600, 400, 700);
+$yellow-light-theme-warn-palette: mat-palette($mat-red);
+$yellow-light-theme: mat-light-theme(
+  $yellow-light-theme-primary-palette,
+  $yellow-light-theme-accent-palette,
+  $yellow-light-theme-warn-palette
+);
+body.theme-yellow-light {
+  // Generate the Angular Material theme
+  @include angular-material-theme($yellow-light-theme);
+  // Apply the theme to the Fuse Core
+  @include fuse-core-theme($yellow-light-theme);
+  // Apply the theme to the user components
+  @include components-theme($yellow-light-theme);
+  // Generate Fuse color classes for primary, accent and warn colors
+  $palettes: (
+    primary: $yellow-light-theme-primary-palette,
+    accent: $yellow-light-theme-accent-palette,
+    warn: $yellow-light-theme-warn-palette
+  );
+
+  @include fuse-color-classes($palettes);
+}
+
+$blue-gray-dark-theme-primary-palette: mat-palette($mat-blue);
+$blue-gray-dark-theme-accent-palette: mat-palette($mat-blue-gray);
+$blue-gray-dark-theme-warn-palette: mat-palette($mat-red);
+$blue-gray-dark-theme: mat-dark-theme(
+  $blue-gray-dark-theme-primary-palette,
+  $blue-gray-dark-theme-accent-palette,
+  $blue-gray-dark-theme-warn-palette
+);
+body.theme-blue-gray-dark {
+  @include angular-material-theme($blue-gray-dark-theme);
+  @include fuse-core-theme($blue-gray-dark-theme);
+  @include components-theme($blue-gray-dark-theme);
+  $palettes: (
+    primary: $blue-gray-dark-theme-primary-palette,
+    accent: $blue-gray-dark-theme-accent-palette,
+    warn: $blue-gray-dark-theme-warn-palette
+  );
+  @include fuse-color-classes($palettes);
+}
+
+$pink-dark-theme-primary-palette: mat-palette($mat-pink);
+$pink-dark-theme-accent-palette: mat-palette($mat-pink);
+$pink-dark-theme-warn-palette: mat-palette($mat-red);
+$pink-dark-theme: mat-dark-theme($pink-dark-theme-primary-palette, $pink-dark-theme-accent-palette, $pink-dark-theme-warn-palette);
+body.theme-pink-dark {
+  @include angular-material-theme($pink-dark-theme);
+  @include fuse-core-theme($pink-dark-theme);
+  @include components-theme($pink-dark-theme);
+  $palettes: (
+    primary: $pink-dark-theme-primary-palette,
+    accent: $pink-dark-theme-accent-palette,
+    warn: $pink-dark-theme-warn-palette
+  );
+  @include fuse-color-classes($palettes);
+}

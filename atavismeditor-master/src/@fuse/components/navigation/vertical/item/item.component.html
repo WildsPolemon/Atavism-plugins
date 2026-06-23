@@ -1,0 +1,19 @@
+<ng-container *ngIf="!item.hidden">
+  <a class="nav-link" [ngClass]="(item && item.classes) ? item.classes : ''" *ngIf="item.component" (click)="openComponent(item)">
+    <mat-icon class="nav-link-icon" *ngIf="item.locked">lock</mat-icon>
+    <img
+      class="nav-link-icon"
+      *ngIf="!item.locked"
+      src="assets/icons/custom/{{ item.icon ? item.icon : 'atavismLogo.png' }}"
+      alt="atavism logo"
+    />
+    <span class="nav-link-title">{{ item.title | translate }}</span>
+    <span
+      class="nav-link-badge"
+      *ngIf="item.badge"
+      [translate]="(item && item.badge && item.badge.translate) ? item.badge.translate : ''"
+      [ngStyle]="{'background-color': item.badge.bg, color: item.badge.fg}"
+      >{{ item.badge.title }}</span
+    >
+  </a>
+</ng-container>

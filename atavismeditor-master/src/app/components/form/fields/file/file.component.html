@@ -1,0 +1,103 @@
+<div *ngIf="subForm === -1 && subFormParent === -1" fxLayout="column" fxLayoutAlign="start" [formGroup]="form">
+  <div class="field-file-upload-row">
+    <mat-form-field
+      appearance="outline"
+      fxFlex
+      [popover]="field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate)"
+      [popoverPlacement]="'top'"
+      [popoverSize]="'large'"
+      [appendToBody]="true"
+      [popoverDisabled]="this.disableTooltip"
+      [popoverCloseOnMouseOutside]="true"
+    >
+      <mat-label>{{ field.label ? field.label : (tableType + '.' + field.name | uppercase | translate) }}</mat-label>
+      <input type="text" readonly [formControlName]="field.name" matInput [required]="field.require ? field.require : false" />
+      <button
+        class="mt-0 button-clear-icon"
+        *ngIf="fieldControl.value"
+        matSuffix mat-mini-fab color="warn" aria-label="Clear"
+        (click)="$event.preventDefault(); clearSelected()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+    <button mat-raised-button type="button" (click)="otherOption()">
+      {{ 'ACTIONS.CHOOSE_FILE' | translate }}
+    </button>
+  </div>
+  <ng-template [ngTemplateOutlet]="errorTemplate"></ng-template>
+</div>
+
+<div *ngIf="subForm !== -1 && subFormParent === -1"  fxLayout="column" fxLayoutAlign="start" [formGroup]="form">
+  <div class="field-file-upload-row" [formArrayName]="subFormType">
+    <mat-form-field
+      [formGroupName]="subForm"
+      appearance="outline"
+      fxFlex
+      [popover]="field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate)"
+      [popoverPlacement]="'top'"
+      [popoverSize]="'large'"
+      [appendToBody]="true"
+      [popoverDisabled]="this.disableTooltip"
+      [popoverCloseOnMouseOutside]="true"
+    >
+      <mat-label>{{ field.label ? field.label : (tableType + '.' + field.name | uppercase | translate) }}</mat-label>
+      <input type="text" readonly [formControlName]="field.name" matInput [required]="field.require ? field.require : false" />
+      <button
+        class="mt-0 button-clear-icon"
+        *ngIf="fieldControl.value"
+        matSuffix mat-mini-fab color="warn" aria-label="Clear"
+        (click)="$event.preventDefault(); clearSelected()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+    <button mat-raised-button type="button" (click)="otherOption()">
+      {{ 'ACTIONS.CHOOSE_FILE' | translate }}
+    </button>
+  </div>
+  <ng-template [ngTemplateOutlet]="errorTemplate"></ng-template>
+</div>
+
+<div *ngIf="subForm !== -1 && subFormParent !== -1" [formGroup]="form">
+  <div [formArrayName]="subFormTypeParent">
+    <div [formGroupName]="subFormParent" fxLayout="column" fxLayoutAlign="start">
+      <div class="field-file-upload-row" [formArrayName]="subFormType">
+        <mat-form-field
+          [formGroupName]="subForm"
+          appearance="outline"
+          fxFlex
+          [popover]="field.tooltip ? field.tooltip : (tableType + '.' + field.name + '_HELP' | uppercase | translate)"
+          [popoverPlacement]="'top'"
+          [popoverSize]="'large'"
+          [appendToBody]="true"
+          [popoverDisabled]="this.disableTooltip"
+          [popoverCloseOnMouseOutside]="true"
+        >
+          <mat-label>{{ field.label ? field.label : (tableType + '.' + field.name | uppercase | translate) }}</mat-label>
+          <input type="text" readonly [formControlName]="field.name" matInput [required]="field.require ? field.require : false" />
+          <button
+            class="mt-0 button-clear-icon"
+            *ngIf="fieldControl.value"
+            matSuffix mat-mini-fab color="warn" aria-label="Clear"
+            (click)="$event.preventDefault(); clearSelected()"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </mat-form-field>
+        <button mat-raised-button type="button" (click)="otherOption()">
+          {{ 'ACTIONS.CHOOSE_FILE' | translate }}
+        </button>
+      </div>
+      <ng-template [ngTemplateOutlet]="errorTemplate"></ng-template>
+    </div>
+  </div>
+</div>
+
+<ng-template #errorTemplate>
+  <ng-container *ngIf="fieldControl.enabled">
+    <div class="errors-container" *ngIf="errors">
+      <mat-error *ngFor="let error of errors">{{ 'ERROR.' + error | translate }}</mat-error>
+    </div>
+  </ng-container>
+</ng-template>

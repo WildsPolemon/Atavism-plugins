@@ -1,0 +1,58 @@
+<div id="main">
+  <ng-container *ngIf="fuseConfig.layout.toolbar.position === 'above'">
+    <ng-container *ngTemplateOutlet="toolbar"></ng-container>
+  </ng-container>
+
+  <div id="container-1" class="container">
+    <ng-container *ngIf="fuseConfig.layout.navbar.position === 'left'">
+      <ng-container *ngTemplateOutlet="leftNavbar"></ng-container>
+    </ng-container>
+
+    <div id="container-2" class="container">
+      <ng-container *ngIf="fuseConfig.layout.toolbar.position === 'below-fixed'">
+        <ng-container *ngTemplateOutlet="toolbar"></ng-container>
+      </ng-container>
+
+      <div
+        id="container-3"
+        class="container"
+        fusePerfectScrollbar
+        [fusePerfectScrollbarOptions]="{
+          suppressScrollX: true,
+          updateOnRouteChange: true
+        }"
+      >
+        <ng-container *ngIf="fuseConfig.layout.toolbar.position === 'below-static'">
+          <ng-container *ngTemplateOutlet="toolbar"></ng-container>
+        </ng-container>
+        <router-outlet></router-outlet>
+      </div>
+    </div>
+  </div>
+</div>
+
+<fuse-sidebar name="quickPanel" position="right" class="quick-panel">
+  <quick-panel></quick-panel>
+</fuse-sidebar>
+
+<ng-template #toolbar>
+  <toolbar
+    *ngIf="!fuseConfig.layout.toolbar.hidden"
+    [ngClass]="
+      fuseConfig.layout.toolbar.position +
+      (fuseConfig.layout.toolbar.customBackgroundColor ? ' ' + fuseConfig.layout.toolbar.background : '')
+    "
+  ></toolbar>
+</ng-template>
+
+<ng-template #leftNavbar>
+  <fuse-sidebar
+    name="navbar"
+    class="navbar-fuse-sidebar"
+    [folded]="fuseConfig.layout.navbar.folded"
+    lockedOpen="gt-md"
+    *ngIf="!fuseConfig.layout.navbar.hidden"
+  >
+    <navbar-vertical-style-1></navbar-vertical-style-1>
+  </fuse-sidebar>
+</ng-template>

@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>I'm a hidden worker</title>
+  </head>
+  <body>
+    <script>
+      var remote = window.require('electron').remote;
+      window.require('./files-checker.js');
+    </script>
+  </body>
+</html>

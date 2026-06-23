@@ -1,0 +1,52 @@
+<button class="mat-icon-button warn mat-elevation-z2 table-config-btn right-side-panel" mat-icon-button=""
+        (click)="toggleSidebar()">
+  <span class="mat-button-wrapper">
+    <mat-icon class="mat-icon notranslate material-icons mat-icon-no-color" role="img" aria-hidden="true">
+      settings
+    </mat-icon>
+  </span>
+  <div class="mat-button-ripple mat-ripple mat-button-ripple-round" matripple></div>
+  <div class="mat-button-focus-overlay"></div>
+</button>
+
+<fuse-sidebar *ngIf="tableConfig.fields" class="table-config-sidebar"
+              [name]="tableConfig.type + '-table-config-sidebar'" position="right">
+  <div class="header">
+    <h2 class="title">{{ 'TABLE.CONFIGURATION' | translate }}</h2>
+    <button class="close-button mat-icon-button" mat-icon-button="" (click)="toggleSidebar()">
+      <span class="mat-button-wrapper">
+        <mat-icon class="mat-icon notranslate material-icons mat-icon-no-color" role="img"
+                  aria-hidden="true">close</mat-icon>
+      </span>
+      <div class="mat-button-ripple mat-ripple mat-button-ripple-round" matripple></div>
+      <div class="mat-button-focus-overlay"></div>
+    </button>
+  </div>
+
+  <div class="group" *ngIf="configTableColumnsKeys.length > 0">
+    <h3 class="group-title">{{ 'TABLE.COLUMN_VISIBILITY' | translate }}</h3>
+    <div class="checkbox-wrapper" *ngFor="let key of configTableColumnsKeys">
+      <mat-checkbox
+        [checked]="(tableConfig.fields[key] && tableConfig.fields[key].visible)"
+        (change)="toggleColumnVisibility($event, key)"
+      >
+        {{
+        (key === 'creationtimestamp' || key === 'updatetimestamp' || key === 'isactive' ? 'GENERAL' : tableConfig.type) + '.' + key.toUpperCase() | translate
+        }}
+      </mat-checkbox>
+    </div>
+  </div>
+
+  <div class="group mt-3" *ngIf="tableFilters.length > 0">
+    <h3 class="group-title">{{ 'TABLE.COLUMN_FILTERS' | translate }}</h3>
+    <div class="checkbox-wrapper" *ngFor="let filter of tableFilters">
+      <mat-checkbox [checked]="(tableConfig.fields[filter] && tableConfig.fields[filter].filterVisible) ? true : false"
+                    (change)="toggleFilters($event, filter)">
+        {{
+        (filter === 'creationtimestamp' || filter === 'updatetimestamp' || filter === 'isactive' ? 'GENERAL' : tableConfig.type) + '.' + filter.toUpperCase()
+          | translate
+        }}
+      </mat-checkbox>
+    </div>
+  </div>
+</fuse-sidebar>

@@ -1,0 +1,101 @@
+.alert-container {
+  position: absolute;
+  top: 65px;
+  right: 10px;
+  z-index: 1001;
+  .alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    &.alert-warning {
+      color: #8a6d3b;
+      background-color: #fcf8e3;
+      border-color: #faebcc;
+    }
+    &.alert-info {
+      color: #31708f;
+      background-color: #d9edf7;
+      border-color: #bce8f1;
+    }
+    &.alert-success {
+      color: #3c763d;
+      background-color: #dff0d8;
+      border-color: #d6e9c6;
+    }
+    &.alert-danger {
+      color: #a94442;
+      background-color: #f2dede;
+      border-color: #ebccd1;
+    }
+  }
+  .alert-dismissable,
+  .alert-dismissible {
+    padding-right: 35px;
+    .close {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+    }
+  }
+  .alert-item {
+    position: relative;
+    width: 500px;
+    padding: 0.75em 1.5em;
+    border: 0 none;
+    .progress {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 4px;
+      width: 100%;
+      background-color: #3f51b550;
+
+      .progress-bar {
+        position: relative;
+        height: 4px;
+        width: 100%;
+        background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent);
+        background-size: 1rem 1rem;
+        background-color: #3f51b5;
+        transition: width .6s ease;
+      }
+    }
+    &.alert-warning {
+      .progress {
+        background-color: #8a6d3b40;
+        .progress-bar {
+          background-color: #8a6d3b;
+        }
+      }
+    }
+    &.alert-info {
+      .progress {
+        background-color: #31708f40;
+        .progress-bar {
+          background-color: #31708f;
+        }
+      }
+    }
+    &.alert-success {
+      .progress {
+        background-color: #3c763d40;
+        .progress-bar {
+          background-color: #3c763d;
+        }
+      }
+    }
+    &.alert-danger {
+      .progress {
+        background-color: #a9444240;
+        .progress-bar {
+          background-color: #a94442;
+        }
+      }
+    }
+  }
+}

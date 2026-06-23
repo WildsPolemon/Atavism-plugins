@@ -1,0 +1,25 @@
+.content {
+  .group {
+    padding: 2rem 1rem 1rem;
+    position: relative;
+    .group-title {
+      position: absolute;
+      top: -32px;
+      padding: 0 10px;
+    }
+  }
+}
+.example-small-text {
+  font-size: 10px;
+}
+.example-normal-text {
+  font-size: 14px;
+}
+.example-large-text {
+  font-size: 18px;
+}
+.color-pickers {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-between;
+}
