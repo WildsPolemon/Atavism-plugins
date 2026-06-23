@@ -12,6 +12,7 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 - Cave generation **Variant A** (stamp-based cave prefabs + entrances).
 - Resource distribution by biome with exclusion zones.
 - MMORPG-ready spawn generation (player, NPC, wilderness mob zones).
+- Runtime FPS optimization via distance streaming + active object budgets.
 - Runtime prefab spawning + JSON export for generated layout.
 
 ## Folder layout
@@ -34,6 +35,16 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 5. Add `WorldGenerator` component to an empty scene object and assign config.
 6. Open **Tools > World Generation > Open Generator Dashboard**.
 7. Click **Generate World** in dashboard (or call `GenerateNow()` at runtime).
+
+## Runtime FPS optimization
+
+Use `runtimeOptimization` in `WorldGeneratorConfig`:
+
+- `enableDistanceStreaming` - stream objects around player/focus target only.
+- `streamingRadiusMeters` + `unloadPaddingMeters` - visible radius and hysteresis.
+- `maxActiveObjects` - hard cap of active runtime objects.
+- `maxActiveResources` - specific cap for resource props (largest category).
+- `streamingTarget` - optional transform to follow (player/camera rig).
 
 ## Editor UX
 

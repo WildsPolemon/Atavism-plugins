@@ -64,5 +64,15 @@
     "mob_zone_radius": 55.0,
     "city_spawn_exclusion_radius": 300.0,
     "cave_spawn_exclusion_radius": 110.0
+  },
+  "runtime_optimization": {
+    "enable_distance_streaming": true,
+    "streaming_radius_meters": 1400.0,
+    "unload_padding_meters": 260.0,
+    "cell_size_meters": 220.0,
+    "refresh_interval_seconds": 0.35,
+    "max_active_objects": 6000,
+    "max_active_resources": 2600,
+    "keep_cities_always_loaded": true
   }
 }

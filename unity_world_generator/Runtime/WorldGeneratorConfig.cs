@@ -53,6 +53,7 @@ namespace AaaWorldGen
         public GameObject playerSpawnMarkerPrefab;
         public GameObject npcSpawnMarkerPrefab;
         public GameObject mobZoneMarkerPrefab;
+        public RuntimeOptimizationSettings runtimeOptimization = new RuntimeOptimizationSettings();
 
         public List<string> GetValidationMessages()
         {
@@ -148,6 +149,33 @@ namespace AaaWorldGen
             if (spawnSettings.maxMobZones < 0)
             {
                 messages.Add("spawnSettings.maxMobZones should be >= 0.");
+            }
+
+            if (runtimeOptimization == null)
+            {
+                messages.Add("runtimeOptimization should be assigned.");
+            }
+            else
+            {
+                if (runtimeOptimization.cellSizeMeters < 10f)
+                {
+                    messages.Add("runtimeOptimization.cellSizeMeters should be >= 10.");
+                }
+
+                if (runtimeOptimization.streamingRadiusMeters < 50f)
+                {
+                    messages.Add("runtimeOptimization.streamingRadiusMeters should be >= 50.");
+                }
+
+                if (runtimeOptimization.maxActiveObjects < 100)
+                {
+                    messages.Add("runtimeOptimization.maxActiveObjects should be >= 100.");
+                }
+
+                if (runtimeOptimization.maxActiveResources < 0)
+                {
+                    messages.Add("runtimeOptimization.maxActiveResources should be >= 0.");
+                }
             }
 
             return messages;
@@ -260,6 +288,20 @@ namespace AaaWorldGen
         public float mobZoneRadius = 55f;
         public float citySpawnExclusionRadius = 300f;
         public float caveSpawnExclusionRadius = 110f;
+    }
+
+    [Serializable]
+    public sealed class RuntimeOptimizationSettings
+    {
+        public bool enableDistanceStreaming = true;
+        public Transform streamingTarget;
+        public float streamingRadiusMeters = 1400f;
+        public float unloadPaddingMeters = 260f;
+        public float cellSizeMeters = 220f;
+        public float refreshIntervalSeconds = 0.35f;
+        public int maxActiveObjects = 6000;
+        public int maxActiveResources = 2600;
+        public bool keepCitiesAlwaysLoaded = true;
     }
 
     [Serializable]

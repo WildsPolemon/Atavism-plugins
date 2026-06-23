@@ -80,6 +80,18 @@ DEFAULT_BIOME_CLIMATE = {
 }
 
 
+DEFAULT_RUNTIME_OPTIMIZATION = {
+    "enable_distance_streaming": True,
+    "streaming_radius_meters": 1400.0,
+    "unload_padding_meters": 260.0,
+    "cell_size_meters": 220.0,
+    "refresh_interval_seconds": 0.35,
+    "max_active_objects": 6000,
+    "max_active_resources": 2600,
+    "keep_cities_always_loaded": True,
+}
+
+
 def clamp01(value: float) -> float:
     return max(0.0, min(1.0, value))
 
@@ -167,6 +179,113 @@ def apply_biome_climate(height, moisture, temperature, x, z, world_size, sea_lev
     moisture += variation * climate_cfg["variation_strength"]
     temperature += variation * climate_cfg["variation_strength"] * 0.45
     return clamp01(moisture), clamp01(temperature)
+
+
+def estimate_runtime_streaming(result, config):
+    opt = dict(DEFAULT_RUNTIME_OPTIMIZATION)
+    opt.update(config.get("runtime_optimization", {}))
+
+    full_total = (
+        result["city_count"]
+        + result["road_count"]
+        + result["cave_count"]
+        + result["resource_count"]
+        + result["player_spawn_count"]
+        + result["npc_spawn_count"]
+        + result["mob_zone_count"]
+    )
+
+    if not opt["enable_distance_streaming"]:
+        return {
+            "enabled": False,
+            "full_total": full_total,
+            "active_total": full_total,
+            "active_resources": result["resource_count"],
+        }
+
+    center = result["world_size"] * 0.5
+    focus = (center, center)
+    radius_sq = opt["streaming_radius_meters"] ** 2
+    keep_cities = bool(opt["keep_cities_always_loaded"])
+    max_active = max(100, int(opt["max_active_objects"]))
+    max_resources = max(0, int(opt["max_active_resources"]))
+
+    candidates = []
+    priority = {
+        "city": 1200,
+        "cave": 980,
+        "player": 900,
+        "npc": 820,
+        "mob_zone": 540,
+        "road": 520,
+        "resource": 180,
+    }
+
+    for city in result["cities"]:
+        x, _, z = city["center"]
+        dist_sq = (x - focus[0]) ** 2 + (z - focus[1]) ** 2
+        if keep_cities or dist_sq <= radius_sq:
+            candidates.append(("city", dist_sq))
+
+    for cave in result["caves"]:
+        x, _, z = cave["entrance"]
+        dist_sq = (x - focus[0]) ** 2 + (z - focus[1]) ** 2
+        if dist_sq <= radius_sq:
+            candidates.append(("cave", dist_sq))
+
+    for node in result["resources"]:
+        x, _, z = node["position"]
+        dist_sq = (x - focus[0]) ** 2 + (z - focus[1]) ** 2
+        if dist_sq <= radius_sq:
+            candidates.append(("resource", dist_sq))
+
+    for point in result["player_spawns"]:
+        x, _, z = point["position"]
+        dist_sq = (x - focus[0]) ** 2 + (z - focus[1]) ** 2
+        if dist_sq <= radius_sq:
+            candidates.append(("player", dist_sq))
+
+    for point in result["npc_spawns"]:
+        x, _, z = point["position"]
+        dist_sq = (x - focus[0]) ** 2 + (z - focus[1]) ** 2
+        if dist_sq <= radius_sq:
+            candidates.append(("npc", dist_sq))
+
+    for zone in result["mob_zones"]:
+        x, _, z = zone["center"]
+        dist_sq = (x - focus[0]) ** 2 + (z - focus[1]) ** 2
+        if dist_sq <= radius_sq:
+            candidates.append(("mob_zone", dist_sq))
+
+    for road in result["world_roads"]:
+        ax, _, az = road["from"]
+        bx, _, bz = road["to"]
+        x = (ax + bx) * 0.5
+        z = (az + bz) * 0.5
+        dist_sq = (x - focus[0]) ** 2 + (z - focus[1]) ** 2
+        if dist_sq <= radius_sq:
+            candidates.append(("road", dist_sq))
+
+    candidates.sort(key=lambda entry: (-priority[entry[0]], entry[1]))
+
+    active_total = 0
+    active_resources = 0
+    for kind, _ in candidates:
+        if active_total >= max_active:
+            break
+        if kind == "resource" and active_resources >= max_resources:
+            continue
+
+        active_total += 1
+        if kind == "resource":
+            active_resources += 1
+
+    return {
+        "enabled": True,
+        "full_total": full_total,
+        "active_total": active_total,
+        "active_resources": active_resources,
+    }
 
 
 def pair_key(a: int, b: int):
@@ -508,7 +627,7 @@ def generate_world(config: dict):
 
     player_spawns, npc_spawns, mob_zones = generate_spawns(config, cities, caves, sample_height, sample_biome)
 
-    return {
+    result = {
         "world_seed": seed,
         "world_size": world_size,
         "city_count": len(cities),
@@ -526,6 +645,8 @@ def generate_world(config: dict):
         "npc_spawns": npc_spawns,
         "mob_zones": mob_zones,
     }
+    result["runtime_estimate"] = estimate_runtime_streaming(result, config)
+    return result
 
 
 def main():
@@ -550,6 +671,8 @@ def main():
     print(f"player_spawn_count={result['player_spawn_count']}")
     print(f"npc_spawn_count={result['npc_spawn_count']}")
     print(f"mob_zone_count={result['mob_zone_count']}")
+    print(f"runtime_active_total_estimate={result['runtime_estimate']['active_total']}")
+    print(f"runtime_full_total={result['runtime_estimate']['full_total']}")
 
 
 if __name__ == "__main__":

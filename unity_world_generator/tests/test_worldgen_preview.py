@@ -78,6 +78,15 @@ class WorldGenPreviewTests(unittest.TestCase):
 
         self.assertGreater(statistics.mean(tundra_latitudes), statistics.mean(desert_latitudes))
 
+    def test_runtime_streaming_budget_reduces_active_objects(self):
+        result = generate_world(self.config)
+        runtime = result["runtime_estimate"]
+        runtime_cfg = self.config["runtime_optimization"]
+        self.assertTrue(runtime["enabled"])
+        self.assertLess(runtime["active_total"], runtime["full_total"])
+        self.assertLessEqual(runtime["active_total"], runtime_cfg["max_active_objects"])
+        self.assertLessEqual(runtime["active_resources"], runtime_cfg["max_active_resources"])
+
 
 if __name__ == "__main__":
     unittest.main()

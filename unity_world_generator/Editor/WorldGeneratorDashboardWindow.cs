@@ -183,6 +183,7 @@ namespace AaaWorldGen.Editor
                 DrawProperty("playerSpawnMarkerPrefab");
                 DrawProperty("npcSpawnMarkerPrefab");
                 DrawProperty("mobZoneMarkerPrefab");
+                DrawProperty("runtimeOptimization");
             });
         }
 
