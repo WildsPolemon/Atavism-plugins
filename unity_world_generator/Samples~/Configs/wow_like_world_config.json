@@ -16,8 +16,8 @@
     "ridge_strength": 0.24,
     "ridge_noise": { "frequency": 0.00105, "octaves": 4, "lacunarity": 2.12, "persistence": 0.52, "offset_x": -77.0, "offset_z": 129.0 },
     "lowland_flatten_strength": 0.42,
-    "lowland_threshold01": 0.43,
-    "mountain_boost_start01": 0.60,
+    "lowland_threshold01": 0.53,
+    "mountain_boost_start01": 0.72,
     "mountain_boost_strength": 0.29
   },
   "biome_climate": {

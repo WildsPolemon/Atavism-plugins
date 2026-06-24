@@ -708,8 +708,8 @@ namespace AaaWorldGen.Editor
             config.terrainShape.ridgeNoise.lacunarity = 2.12f;
             config.terrainShape.ridgeNoise.persistence = 0.52f;
             config.terrainShape.lowlandFlattenStrength = 0.42f;
-            config.terrainShape.lowlandThreshold01 = 0.43f;
-            config.terrainShape.mountainBoostStart01 = 0.60f;
+            config.terrainShape.lowlandThreshold01 = 0.53f;
+            config.terrainShape.mountainBoostStart01 = 0.72f;
             config.terrainShape.mountainBoostStrength = 0.29f;
 
             config.biomes = new List<BiomeDefinition>
