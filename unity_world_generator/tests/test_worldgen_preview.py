@@ -4,7 +4,7 @@ import statistics
 import unittest
 from pathlib import Path
 
-from unity_world_generator.tools.worldgen_preview import fbm01, generate_world
+from unity_world_generator.tools.worldgen_preview import fbm01, generate_world, sample_height01
 
 
 class WorldGenPreviewTests(unittest.TestCase):
@@ -12,6 +12,8 @@ class WorldGenPreviewTests(unittest.TestCase):
     def setUpClass(cls):
         config_path = Path("/workspace/unity_world_generator/Samples~/Configs/example_world_config.json")
         cls.config = json.loads(config_path.read_text(encoding="utf-8"))
+        wow_config_path = Path("/workspace/unity_world_generator/Samples~/Configs/wow_like_world_config.json")
+        cls.wow_config = json.loads(wow_config_path.read_text(encoding="utf-8"))
 
     def test_generation_is_deterministic(self):
         first = generate_world(self.config)
@@ -48,16 +50,57 @@ class WorldGenPreviewTests(unittest.TestCase):
         min_allowed = sea + min_area
         ring_radius = self.config["cities"]["district_ring_radius"] * 0.95
         sample_count = max(8, int(self.config["cities"].get("water_proximity_samples", 24)))
-        noise_height = self.config["noise"]["height"]
-        seed = self.config["world_seed"]
         for city in result["cities"]:
             cx, _, cz = city["center"]
             for i in range(sample_count):
                 angle = (i / sample_count) * 2.0 * math.pi
                 x = cx + math.cos(angle) * ring_radius
                 z = cz + math.sin(angle) * ring_radius
-                h01 = fbm01(x, z, seed, noise_height)
+                h01 = sample_height01(self.config, x, z)
                 self.assertGreaterEqual(h01, min_allowed)
+
+    def test_terrain_shape_changes_height_profile(self):
+        shape_cfg = self.config.get("terrain_shape", {})
+        if not shape_cfg.get("enable_advanced_shaping", True):
+            self.skipTest("Terrain shaping is disabled in this config.")
+
+        height_noise = self.config["noise"]["height"]
+        seed = self.config["world_seed"]
+        points = [
+            (1530.0, 1910.0),
+            (4420.0, 5130.0),
+            (7900.0, 3820.0),
+            (10200.0, 10800.0),
+        ]
+        deltas = []
+        for x, z in points:
+            shaped = sample_height01(self.config, x, z)
+            raw = fbm01(x, z, seed, height_noise)
+            deltas.append(abs(shaped - raw))
+
+        self.assertGreater(max(deltas), 0.01)
+
+    def test_wow_like_has_broad_plains_and_highlands(self):
+        world_size = self.wow_config["world_size_chunks"] * self.wow_config["chunk_size_meters"]
+        lowland_threshold = self.wow_config["terrain_shape"]["lowland_threshold01"]
+        mountain_start = self.wow_config["terrain_shape"]["mountain_boost_start01"]
+
+        plains = 0
+        highlands = 0
+        samples = 0
+        for iz in range(28):
+            for ix in range(28):
+                x = (ix + 0.5) * (world_size / 28.0)
+                z = (iz + 0.5) * (world_size / 28.0)
+                h = sample_height01(self.wow_config, x, z)
+                samples += 1
+                if h <= lowland_threshold:
+                    plains += 1
+                if h >= mountain_start:
+                    highlands += 1
+
+        self.assertGreater(plains / samples, 0.25)
+        self.assertGreater(highlands / samples, 0.08)
 
     def test_caves_are_outside_city_exclusion(self):
         result = generate_world(self.config)

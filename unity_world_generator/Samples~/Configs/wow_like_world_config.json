@@ -9,6 +9,17 @@
     "moisture": { "frequency": 0.00135, "octaves": 4, "lacunarity": 2.15, "persistence": 0.52, "offset_x": 113.0, "offset_z": 71.0 },
     "temperature": { "frequency": 0.0010, "octaves": 4, "lacunarity": 2.05, "persistence": 0.49, "offset_x": -91.0, "offset_z": 44.0 }
   },
+  "terrain_shape": {
+    "enable_advanced_shaping": true,
+    "continent_influence": 0.28,
+    "continent_noise": { "frequency": 0.00020, "octaves": 3, "lacunarity": 2.0, "persistence": 0.5, "offset_x": 201.0, "offset_z": -144.0 },
+    "ridge_strength": 0.24,
+    "ridge_noise": { "frequency": 0.00105, "octaves": 4, "lacunarity": 2.12, "persistence": 0.52, "offset_x": -77.0, "offset_z": 129.0 },
+    "lowland_flatten_strength": 0.42,
+    "lowland_threshold01": 0.43,
+    "mountain_boost_start01": 0.60,
+    "mountain_boost_strength": 0.29
+  },
   "biome_climate": {
     "latitude_temperature_influence": 0.32,
     "elevation_temperature_drop": 0.29,

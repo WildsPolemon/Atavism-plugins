@@ -233,13 +233,14 @@ namespace AaaWorldGen.Editor
                 });
             }
 
-            if (GroupVisible("noise", "temperature", "moisture", "climate", "variation"))
+            if (GroupVisible("noise", "temperature", "moisture", "climate", "variation", "terrain", "ridge", "continent"))
             {
                 DrawCard("Noise + Climate", () =>
                 {
                     DrawProperty("heightNoise");
                     DrawProperty("moistureNoise");
                     DrawProperty("temperatureNoise");
+                    DrawProperty("terrainShape");
                     DrawProperty("biomeClimate");
                 });
             }
@@ -694,6 +695,22 @@ namespace AaaWorldGen.Editor
             config.biomeClimate.elevationTemperatureDrop = 0.29f;
             config.biomeClimate.coastalMoistureBoost = 0.14f;
             config.biomeClimate.variationStrength = 0.06f;
+
+            config.terrainShape.enableAdvancedShaping = true;
+            config.terrainShape.continentInfluence = 0.28f;
+            config.terrainShape.continentNoise.frequency = 0.00020f;
+            config.terrainShape.continentNoise.octaves = 3;
+            config.terrainShape.continentNoise.lacunarity = 2f;
+            config.terrainShape.continentNoise.persistence = 0.5f;
+            config.terrainShape.ridgeStrength = 0.24f;
+            config.terrainShape.ridgeNoise.frequency = 0.00105f;
+            config.terrainShape.ridgeNoise.octaves = 4;
+            config.terrainShape.ridgeNoise.lacunarity = 2.12f;
+            config.terrainShape.ridgeNoise.persistence = 0.52f;
+            config.terrainShape.lowlandFlattenStrength = 0.42f;
+            config.terrainShape.lowlandThreshold01 = 0.43f;
+            config.terrainShape.mountainBoostStart01 = 0.60f;
+            config.terrainShape.mountainBoostStrength = 0.29f;
 
             config.biomes = new List<BiomeDefinition>
             {
@@ -1206,6 +1223,9 @@ namespace AaaWorldGen.Editor
             if (target.spawnSettings == null) { target.spawnSettings = new SpawnGenerationSettings(); }
             if (target.runtimeOptimization == null) { target.runtimeOptimization = new RuntimeOptimizationSettings(); }
             if (target.sectorSettings == null) { target.sectorSettings = new SectorGenerationSettings(); }
+            if (target.terrainShape == null) { target.terrainShape = new TerrainShapeSettings(); }
+            if (target.terrainShape.continentNoise == null) { target.terrainShape.continentNoise = new NoiseLayerSettings(0.00022f, 3, 2f, 0.5f, 201f, -144f); }
+            if (target.terrainShape.ridgeNoise == null) { target.terrainShape.ridgeNoise = new NoiseLayerSettings(0.00092f, 4, 2.1f, 0.5f, -77f, 129f); }
             if (target.biomes == null) { target.biomes = new List<BiomeDefinition>(); }
         }
 

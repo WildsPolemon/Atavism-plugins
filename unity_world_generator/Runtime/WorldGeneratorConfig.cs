@@ -19,6 +19,9 @@ namespace AaaWorldGen
         public NoiseLayerSettings moistureNoise = new NoiseLayerSettings(0.0015f, 4, 2.15f, 0.52f, 113f, 71f);
         public NoiseLayerSettings temperatureNoise = new NoiseLayerSettings(0.0011f, 4, 2.05f, 0.49f, -91f, 44f);
 
+        [Header("Terrain Shape")]
+        public TerrainShapeSettings terrainShape = new TerrainShapeSettings();
+
         [Header("Biome Climate")]
         public BiomeClimateSettings biomeClimate = new BiomeClimateSettings();
 
@@ -80,6 +83,36 @@ namespace AaaWorldGen
             if (biomeClimate == null)
             {
                 messages.Add("biomeClimate should be assigned.");
+            }
+
+            if (terrainShape == null)
+            {
+                messages.Add("terrainShape should be assigned.");
+            }
+            else
+            {
+                if (terrainShape.lowlandThreshold01 >= terrainShape.mountainBoostStart01)
+                {
+                    messages.Add("terrainShape.lowlandThreshold01 should be < terrainShape.mountainBoostStart01.");
+                }
+
+                if (terrainShape.continentNoise == null)
+                {
+                    messages.Add("terrainShape.continentNoise should be assigned.");
+                }
+                else if (terrainShape.continentNoise.frequency <= 0f)
+                {
+                    messages.Add("terrainShape.continentNoise.frequency should be > 0.");
+                }
+
+                if (terrainShape.ridgeNoise == null)
+                {
+                    messages.Add("terrainShape.ridgeNoise should be assigned.");
+                }
+                else if (terrainShape.ridgeNoise.frequency <= 0f)
+                {
+                    messages.Add("terrainShape.ridgeNoise.frequency should be > 0.");
+                }
             }
 
             if (biomes == null || biomes.Count == 0)
@@ -251,6 +284,20 @@ namespace AaaWorldGen
             this.offsetX = offsetX;
             this.offsetZ = offsetZ;
         }
+    }
+
+    [Serializable]
+    public sealed class TerrainShapeSettings
+    {
+        public bool enableAdvancedShaping = true;
+        [Range(0f, 1f)] public float continentInfluence = 0.22f;
+        public NoiseLayerSettings continentNoise = new NoiseLayerSettings(0.00022f, 3, 2f, 0.5f, 201f, -144f);
+        [Range(0f, 1f)] public float ridgeStrength = 0.19f;
+        public NoiseLayerSettings ridgeNoise = new NoiseLayerSettings(0.00092f, 4, 2.1f, 0.5f, -77f, 129f);
+        [Range(0f, 1f)] public float lowlandFlattenStrength = 0.35f;
+        [Range(0f, 1f)] public float lowlandThreshold01 = 0.38f;
+        [Range(0f, 1f)] public float mountainBoostStart01 = 0.62f;
+        [Range(0f, 1f)] public float mountainBoostStrength = 0.24f;
     }
 
     [Serializable]

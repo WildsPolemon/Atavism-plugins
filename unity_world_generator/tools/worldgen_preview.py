@@ -102,8 +102,78 @@ DEFAULT_SECTOR_SETTINGS = {
 }
 
 
+DEFAULT_TERRAIN_SHAPE = {
+    "enable_advanced_shaping": True,
+    "continent_influence": 0.22,
+    "continent_noise": {
+        "frequency": 0.00022,
+        "octaves": 3,
+        "lacunarity": 2.0,
+        "persistence": 0.5,
+        "offset_x": 201.0,
+        "offset_z": -144.0,
+    },
+    "ridge_strength": 0.19,
+    "ridge_noise": {
+        "frequency": 0.00092,
+        "octaves": 4,
+        "lacunarity": 2.1,
+        "persistence": 0.5,
+        "offset_x": -77.0,
+        "offset_z": 129.0,
+    },
+    "lowland_flatten_strength": 0.35,
+    "lowland_threshold01": 0.38,
+    "mountain_boost_start01": 0.62,
+    "mountain_boost_strength": 0.24,
+}
+
+
 def clamp01(value: float) -> float:
     return max(0.0, min(1.0, value))
+
+
+def build_terrain_shape_cfg(config: dict) -> dict:
+    shape_cfg = dict(DEFAULT_TERRAIN_SHAPE)
+    shape_cfg.update(config.get("terrain_shape", {}))
+    shape_cfg["continent_noise"] = dict(DEFAULT_TERRAIN_SHAPE["continent_noise"])
+    shape_cfg["continent_noise"].update(config.get("terrain_shape", {}).get("continent_noise", {}))
+    shape_cfg["ridge_noise"] = dict(DEFAULT_TERRAIN_SHAPE["ridge_noise"])
+    shape_cfg["ridge_noise"].update(config.get("terrain_shape", {}).get("ridge_noise", {}))
+    return shape_cfg
+
+
+def apply_terrain_shape(base_height, x, z, seed, shape_cfg):
+    h = clamp01(base_height)
+    if not shape_cfg.get("enable_advanced_shaping", True):
+        return h
+
+    continent = fbm01(x, z, seed + 211, shape_cfg["continent_noise"])
+    h += (continent - 0.5) * shape_cfg["continent_influence"]
+    h = clamp01(h)
+
+    ridge_source = fbm01(x, z, seed + 389, shape_cfg["ridge_noise"])
+    ridged = 1.0 - abs(ridge_source * 2.0 - 1.0)
+    h += (ridged - 0.5) * shape_cfg["ridge_strength"]
+    h = clamp01(h)
+
+    lowland_threshold = max(1e-6, shape_cfg["lowland_threshold01"])
+    lowland_mask = 1.0 - clamp01((h - lowland_threshold) / lowland_threshold)
+    smooth_h = smoothstep(h)
+    h = h + (smooth_h - h) * (shape_cfg["lowland_flatten_strength"] * lowland_mask)
+    h = clamp01(h)
+
+    mountain_start = min(0.999, max(0.0, shape_cfg["mountain_boost_start01"]))
+    mountain_mask = clamp01((h - mountain_start) / max(1e-6, 1.0 - mountain_start))
+    h += (mountain_mask ** 2) * shape_cfg["mountain_boost_strength"]
+    return clamp01(h)
+
+
+def sample_height01(config: dict, x: float, z: float, shape_cfg: dict = None) -> float:
+    if shape_cfg is None:
+        shape_cfg = build_terrain_shape_cfg(config)
+    base = fbm01(x, z, config["world_seed"], config["noise"]["height"])
+    return apply_terrain_shape(base, x, z, config["world_seed"], shape_cfg)
 
 
 def poisson(bounds_w: float, bounds_h: float, min_dist: float, seed: int, k: int = 30):
@@ -568,16 +638,16 @@ def generate_world(config: dict):
     world_size = config["world_size_chunks"] * config["chunk_size_meters"]
     sea = config["sea_level01"]
 
-    n_height = config["noise"]["height"]
     n_moist = config["noise"]["moisture"]
     n_temp = config["noise"]["temperature"]
     climate_cfg = dict(DEFAULT_BIOME_CLIMATE)
     climate_cfg.update(config.get("biome_climate", {}))
     climate_cfg["variation_noise"] = dict(DEFAULT_BIOME_CLIMATE["variation_noise"])
     climate_cfg["variation_noise"].update(config.get("biome_climate", {}).get("variation_noise", {}))
+    terrain_shape_cfg = build_terrain_shape_cfg(config)
 
     def sample_height(x, z):
-        return fbm01(x, z, seed, n_height)
+        return sample_height01(config, x, z, terrain_shape_cfg)
 
     def sample_biome(x, z):
         h = sample_height(x, z)

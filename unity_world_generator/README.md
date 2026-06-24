@@ -6,6 +6,7 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 
 - Deterministic world seed generation.
 - Biome synthesis from height/moisture/temperature noise fields.
+- Advanced terrain shaping (continent mask + ridges + lowland flattening + mountain boost).
 - Climate-aware biome shaping (latitude cooling, elevation cooling, coastal humidity, micro-variation).
 - City placement with spacing constraints and district lot generation.
 - Intercity road network generation (MST backbone + extra links).
@@ -86,6 +87,7 @@ Variant A uses prebuilt cave stamps (module chains) and entrance placement rules
 
 - Default sample: `unity_world_generator/Samples~/Configs/example_world_config.json`
 - WoW-like sample: `unity_world_generator/Samples~/Configs/wow_like_world_config.json`
+- Both configs include `terrain_shape` for macro terrain forms (continents, ridges, quest plains, highland boosts).
 
 ## Local smoke checks
 

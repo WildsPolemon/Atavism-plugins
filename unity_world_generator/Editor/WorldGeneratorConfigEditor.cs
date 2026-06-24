@@ -44,6 +44,7 @@ namespace AaaWorldGen.Editor
                 DrawProperty("heightNoise");
                 DrawProperty("moistureNoise");
                 DrawProperty("temperatureNoise");
+                DrawProperty("terrainShape");
                 DrawProperty("biomeClimate");
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
@@ -320,6 +321,22 @@ namespace AaaWorldGen.Editor
             config.biomeClimate.coastalMoistureBoost = 0.14f;
             config.biomeClimate.variationStrength = 0.06f;
 
+            config.terrainShape.enableAdvancedShaping = true;
+            config.terrainShape.continentInfluence = 0.28f;
+            config.terrainShape.continentNoise.frequency = 0.00020f;
+            config.terrainShape.continentNoise.octaves = 3;
+            config.terrainShape.continentNoise.lacunarity = 2f;
+            config.terrainShape.continentNoise.persistence = 0.5f;
+            config.terrainShape.ridgeStrength = 0.24f;
+            config.terrainShape.ridgeNoise.frequency = 0.00105f;
+            config.terrainShape.ridgeNoise.octaves = 4;
+            config.terrainShape.ridgeNoise.lacunarity = 2.12f;
+            config.terrainShape.ridgeNoise.persistence = 0.52f;
+            config.terrainShape.lowlandFlattenStrength = 0.42f;
+            config.terrainShape.lowlandThreshold01 = 0.43f;
+            config.terrainShape.mountainBoostStart01 = 0.60f;
+            config.terrainShape.mountainBoostStrength = 0.29f;
+
             config.biomes = new List<BiomeDefinition>
             {
                 new BiomeDefinition { biomeId = "forest", minHeight01 = 0.05f, maxHeight01 = 0.66f, idealMoisture01 = 0.66f, idealTemperature01 = 0.57f, blendWeight = 1.35f },
@@ -360,6 +377,9 @@ namespace AaaWorldGen.Editor
             if (config.spawnSettings == null) { config.spawnSettings = new SpawnGenerationSettings(); }
             if (config.runtimeOptimization == null) { config.runtimeOptimization = new RuntimeOptimizationSettings(); }
             if (config.sectorSettings == null) { config.sectorSettings = new SectorGenerationSettings(); }
+            if (config.terrainShape == null) { config.terrainShape = new TerrainShapeSettings(); }
+            if (config.terrainShape.continentNoise == null) { config.terrainShape.continentNoise = new NoiseLayerSettings(0.00022f, 3, 2f, 0.5f, 201f, -144f); }
+            if (config.terrainShape.ridgeNoise == null) { config.terrainShape.ridgeNoise = new NoiseLayerSettings(0.00092f, 4, 2.1f, 0.5f, -77f, 129f); }
             if (config.biomeClimate == null) { config.biomeClimate = new BiomeClimateSettings(); }
         }
     }
