@@ -1,0 +1,90 @@
+{
+  "world_seed": 77317,
+  "world_size_chunks": 56,
+  "chunk_size_meters": 256,
+  "max_height_meters": 340.0,
+  "sea_level01": 0.28,
+  "noise": {
+    "height": { "frequency": 0.00095, "octaves": 6, "lacunarity": 2.05, "persistence": 0.53, "offset_x": 0.0, "offset_z": 0.0 },
+    "moisture": { "frequency": 0.00135, "octaves": 4, "lacunarity": 2.15, "persistence": 0.52, "offset_x": 113.0, "offset_z": 71.0 },
+    "temperature": { "frequency": 0.0010, "octaves": 4, "lacunarity": 2.05, "persistence": 0.49, "offset_x": -91.0, "offset_z": 44.0 }
+  },
+  "biome_climate": {
+    "latitude_temperature_influence": 0.32,
+    "elevation_temperature_drop": 0.29,
+    "coastal_moisture_boost": 0.14,
+    "variation_strength": 0.06,
+    "variation_noise": { "frequency": 0.0032, "octaves": 3, "lacunarity": 2.0, "persistence": 0.5, "offset_x": 57.0, "offset_z": -33.0 }
+  },
+  "biomes": [
+    { "biome_id": "forest", "min_height01": 0.05, "max_height01": 0.66, "ideal_moisture01": 0.66, "ideal_temperature01": 0.57, "blend_weight": 1.35 },
+    { "biome_id": "desert", "min_height01": 0.06, "max_height01": 0.60, "ideal_moisture01": 0.26, "ideal_temperature01": 0.86, "blend_weight": 0.85 },
+    { "biome_id": "tundra", "min_height01": 0.34, "max_height01": 1.00, "ideal_moisture01": 0.42, "ideal_temperature01": 0.20, "blend_weight": 1.20 },
+    { "biome_id": "swamp", "min_height01": 0.00, "max_height01": 0.32, "ideal_moisture01": 0.90, "ideal_temperature01": 0.64, "blend_weight": 0.95 }
+  ],
+  "cities": {
+    "max_cities": 16,
+    "min_distance_between_cities": 980.0,
+    "city_core_radius": 240.0,
+    "district_ring_radius": 540.0,
+    "road_block_size": 42.0,
+    "target_lots_per_city": 140,
+    "min_height_above_sea01": 0.03,
+    "shoreline_buffer01": 0.085,
+    "min_area_height_above_sea01": 0.05,
+    "water_proximity_samples": 32
+  },
+  "roads": {
+    "extra_connections_per_city": 1,
+    "road_height_offset": 0.5,
+    "max_curvature_ratio": 0.06
+  },
+  "caves_variant_a": {
+    "max_caves": 260,
+    "min_distance_between_entrances": 200.0,
+    "city_exclusion_radius": 390.0,
+    "min_slope_delta": 0.006,
+    "stamp_presets": [
+      { "stamp_id": "cave_small_a", "weight": 1.2, "corridor_segments": 4, "segment_length": 24.0, "max_yaw_change": 34.0 },
+      { "stamp_id": "cave_medium_b", "weight": 0.85, "corridor_segments": 7, "segment_length": 27.0, "max_yaw_change": 28.0 },
+      { "stamp_id": "cave_large_c", "weight": 0.35, "corridor_segments": 10, "segment_length": 30.0, "max_yaw_change": 22.0 }
+    ]
+  },
+  "resources": {
+    "city_resource_exclusion_radius": 300.0,
+    "cave_resource_exclusion_radius": 130.0,
+    "base_node_spacing": 32.0,
+    "biome_rules": {
+      "forest": { "nodes_per_square_km": 560, "entries": [{ "resource_id": "wood_t1", "weight": 0.62 }, { "resource_id": "fiber_t1", "weight": 0.38 }] },
+      "desert": { "nodes_per_square_km": 360, "entries": [{ "resource_id": "ore_t1", "weight": 0.58 }, { "resource_id": "stone_t1", "weight": 0.42 }] },
+      "tundra": { "nodes_per_square_km": 340, "entries": [{ "resource_id": "ore_t1", "weight": 0.67 }, { "resource_id": "wood_t1", "weight": 0.33 }] },
+      "swamp": { "nodes_per_square_km": 470, "entries": [{ "resource_id": "fiber_t1", "weight": 0.72 }, { "resource_id": "wood_t1", "weight": 0.28 }] }
+    }
+  },
+  "spawns": {
+    "player_spawns_per_city": 3,
+    "npc_spawns_per_city": 26,
+    "max_mob_zones": 390,
+    "mob_zone_radius": 58.0,
+    "city_spawn_exclusion_radius": 320.0,
+    "cave_spawn_exclusion_radius": 120.0
+  },
+  "sector_settings": {
+    "enable_sectors": true,
+    "sector_size_meters": 820.0,
+    "neighbor_load_radius": 1,
+    "max_resources_per_sector": 1800,
+    "max_npc_spawns_per_sector": 96,
+    "max_mob_zones_per_sector": 48
+  },
+  "runtime_optimization": {
+    "enable_distance_streaming": true,
+    "streaming_radius_meters": 1600.0,
+    "unload_padding_meters": 300.0,
+    "cell_size_meters": 220.0,
+    "refresh_interval_seconds": 0.35,
+    "max_active_objects": 6800,
+    "max_active_resources": 3000,
+    "keep_cities_always_loaded": true
+  }
+}

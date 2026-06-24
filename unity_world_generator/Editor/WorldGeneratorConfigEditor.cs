@@ -186,6 +186,10 @@ namespace AaaWorldGen.Editor
             {
                 ApplyPresetMega(config);
             }
+            if (GUILayout.Button("WoW-like", GUILayout.Height(22f)))
+            {
+                ApplyPresetWowLike(config);
+            }
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
         }
@@ -293,6 +297,57 @@ namespace AaaWorldGen.Editor
             config.runtimeOptimization.maxActiveResources = 3800;
             config.runtimeOptimization.streamingRadiusMeters = 1900f;
             config.sectorSettings.sectorSizeMeters = 900f;
+            config.sectorSettings.neighborLoadRadius = 1;
+            EditorUtility.SetDirty(config);
+        }
+
+        private static void ApplyPresetWowLike(WorldGeneratorConfig config)
+        {
+            EnsureConfigSections(config);
+            Undo.RecordObject(config, "Apply WoW-like preset");
+            config.worldSizeInChunks = 56;
+            config.chunkSizeMeters = 256;
+            config.maxHeightMeters = 340f;
+            config.seaLevel01 = 0.28f;
+
+            config.heightNoise.frequency = 0.00095f;
+            config.heightNoise.octaves = 6;
+            config.heightNoise.lacunarity = 2.05f;
+            config.heightNoise.persistence = 0.53f;
+
+            config.biomeClimate.latitudeTemperatureInfluence = 0.32f;
+            config.biomeClimate.elevationTemperatureDrop = 0.29f;
+            config.biomeClimate.coastalMoistureBoost = 0.14f;
+            config.biomeClimate.variationStrength = 0.06f;
+
+            config.biomes = new List<BiomeDefinition>
+            {
+                new BiomeDefinition { biomeId = "forest", minHeight01 = 0.05f, maxHeight01 = 0.66f, idealMoisture01 = 0.66f, idealTemperature01 = 0.57f, blendWeight = 1.35f },
+                new BiomeDefinition { biomeId = "desert", minHeight01 = 0.06f, maxHeight01 = 0.60f, idealMoisture01 = 0.26f, idealTemperature01 = 0.86f, blendWeight = 0.85f },
+                new BiomeDefinition { biomeId = "tundra", minHeight01 = 0.34f, maxHeight01 = 1.00f, idealMoisture01 = 0.42f, idealTemperature01 = 0.20f, blendWeight = 1.20f },
+                new BiomeDefinition { biomeId = "swamp", minHeight01 = 0.00f, maxHeight01 = 0.32f, idealMoisture01 = 0.90f, idealTemperature01 = 0.64f, blendWeight = 0.95f },
+            };
+
+            config.citySettings.maxCities = 16;
+            config.citySettings.minDistanceBetweenCities = 980f;
+            config.citySettings.cityCoreRadius = 240f;
+            config.citySettings.districtRingRadius = 540f;
+            config.citySettings.targetLotsPerCity = 140;
+            config.citySettings.minHeightAboveSea01 = 0.03f;
+            config.citySettings.shorelineBuffer01 = 0.085f;
+            config.citySettings.minAreaHeightAboveSea01 = 0.05f;
+            config.citySettings.waterProximitySamples = 32;
+
+            config.roadSettings.extraConnectionsPerCity = 1;
+            config.roadSettings.maxCurvatureRatio = 0.06f;
+            config.caveSettings.maxCaves = 260;
+            config.caveSettings.minSlopeDelta = 0.006f;
+            config.resourceSettings.baseNodeSpacing = 32f;
+            config.spawnSettings.maxMobZones = 390;
+            config.runtimeOptimization.maxActiveObjects = 6800;
+            config.runtimeOptimization.maxActiveResources = 3000;
+            config.runtimeOptimization.streamingRadiusMeters = 1600f;
+            config.sectorSettings.sectorSizeMeters = 820f;
             config.sectorSettings.neighborLoadRadius = 1;
             EditorUtility.SetDirty(config);
         }

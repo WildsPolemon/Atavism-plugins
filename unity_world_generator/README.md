@@ -64,6 +64,7 @@ This is intended for Atavism-style AOI/interest management where server and clie
 
 - tabbed workflow (Overview, Biome Lab, World Layout, Spawns + Performance, Diagnostics, Tools)
 - preset system (Balanced MMO / Cinematic / Performance / Mega World)
+- WoW-like Adventure preset for highland silhouettes + wide quest-friendly plains
 - one-click generation, Generate+Export, and quick temp export
 - biome automation helpers (normalize blend weights, rebalance height bands, biome template)
 - city inland safety profile toggles and runtime profile shortcuts
@@ -80,6 +81,11 @@ Variant A uses prebuilt cave stamps (module chains) and entrance placement rules
 - Entrances appear on suitable slopes.
 - Stamp presets are selected by weighted rarity.
 - Entrances avoid city cores and keep spacing between cave systems.
+
+## Presets and sample configs
+
+- Default sample: `unity_world_generator/Samples~/Configs/example_world_config.json`
+- WoW-like sample: `unity_world_generator/Samples~/Configs/wow_like_world_config.json`
 
 ## Local smoke checks
 
