@@ -124,6 +124,16 @@ namespace AaaWorldGen
                 messages.Add("citySettings.minDistanceBetweenCities should be > 0.");
             }
 
+            if (citySettings.minHeightAboveSea01 < 0f)
+            {
+                messages.Add("citySettings.minHeightAboveSea01 should be >= 0.");
+            }
+
+            if (citySettings.shorelineBuffer01 < 0f)
+            {
+                messages.Add("citySettings.shorelineBuffer01 should be >= 0.");
+            }
+
             if (caveSettings.maxCaves < 0)
             {
                 messages.Add("caveSettings.maxCaves should be >= 0.");
@@ -269,6 +279,8 @@ namespace AaaWorldGen
         public float roadBlockSize = 40f;
         public int lotPadding = 2;
         public int targetLotsPerCity = 120;
+        [Range(0f, 0.2f)] public float minHeightAboveSea01 = 0.025f;
+        [Range(0f, 0.3f)] public float shorelineBuffer01 = 0.06f;
     }
 
     [Serializable]

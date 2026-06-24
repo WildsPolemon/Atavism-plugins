@@ -590,10 +590,16 @@ def generate_world(config: dict):
     city_cfg = config["cities"]
     city_candidates = poisson(world_size, world_size, city_cfg["min_distance_between_cities"], seed + 1103)
     ranked = []
+    min_city_h = sea + city_cfg.get("min_height_above_sea01", 0.025)
+    shoreline_buffer = city_cfg.get("shoreline_buffer01", 0.06)
     for x, z in city_candidates:
         c = sample_height(x, z)
+        if c < min_city_h:
+            continue
         slope = abs(c - sample_height(x + 35, z)) + abs(c - sample_height(x - 35, z)) + abs(c - sample_height(x, z + 35)) + abs(c - sample_height(x, z - 35))
-        score = slope * 2 + abs(c - sea)
+        shoreline_distance = abs(c - sea)
+        shoreline_penalty = (shoreline_buffer - shoreline_distance) * 7 if shoreline_distance < shoreline_buffer else 0.0
+        score = slope * 2 + shoreline_penalty
         ranked.append((score, x, z))
     ranked.sort(key=lambda v: v[0])
 

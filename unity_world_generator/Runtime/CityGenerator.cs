@@ -20,13 +20,26 @@ namespace AaaWorldGen
             {
                 Vector2 p = candidates[i];
                 float centerHeight = sampleHeight01(p.x, p.y);
+                float minCityHeight01 = config.seaLevel01 + config.citySettings.minHeightAboveSea01;
+                if (centerHeight < minCityHeight01)
+                {
+                    // Reject low-lying candidates to keep cities away from rivers/lakes/shoreline flooding.
+                    continue;
+                }
+
                 float hN = sampleHeight01(p.x + 35f, p.y);
                 float hS = sampleHeight01(p.x - 35f, p.y);
                 float hE = sampleHeight01(p.x, p.y + 35f);
                 float hW = sampleHeight01(p.x, p.y - 35f);
                 float slopePenalty = Mathf.Abs(centerHeight - hN) + Mathf.Abs(centerHeight - hS) + Mathf.Abs(centerHeight - hE) + Mathf.Abs(centerHeight - hW);
-                float waterPenalty = Mathf.Abs(centerHeight - config.seaLevel01);
-                float score = slopePenalty * 2f + waterPenalty;
+                float shorelineDistance = Mathf.Abs(centerHeight - config.seaLevel01);
+                float shorelinePenalty = 0f;
+                if (shorelineDistance < config.citySettings.shorelineBuffer01)
+                {
+                    shorelinePenalty = (config.citySettings.shorelineBuffer01 - shorelineDistance) * 7f;
+                }
+
+                float score = slopePenalty * 2f + shorelinePenalty;
                 ranked.Add((p, score));
             }
 

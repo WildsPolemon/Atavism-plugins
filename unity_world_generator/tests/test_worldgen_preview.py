@@ -31,6 +31,15 @@ class WorldGenPreviewTests(unittest.TestCase):
                 dist_sq = (ax - bx) ** 2 + (az - bz) ** 2
                 self.assertGreaterEqual(dist_sq, min_dist ** 2 * 0.85)
 
+    def test_cities_are_above_sea_safety_margin(self):
+        result = generate_world(self.config)
+        min_margin = self.config["cities"].get("min_height_above_sea01", 0.0)
+        sea = self.config["sea_level01"]
+        max_h = self.config["max_height_meters"]
+        for city in result["cities"]:
+            h01 = city["center"][1] / max_h
+            self.assertGreaterEqual(h01, sea + min_margin)
+
     def test_caves_are_outside_city_exclusion(self):
         result = generate_world(self.config)
         exclusion = self.config["caves_variant_a"]["city_exclusion_radius"]

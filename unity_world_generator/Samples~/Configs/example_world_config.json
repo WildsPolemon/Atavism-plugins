@@ -28,7 +28,9 @@
     "city_core_radius": 220.0,
     "district_ring_radius": 480.0,
     "road_block_size": 40.0,
-    "target_lots_per_city": 120
+    "target_lots_per_city": 120,
+    "min_height_above_sea01": 0.025,
+    "shoreline_buffer01": 0.06
   },
   "roads": {
     "extra_connections_per_city": 1,
