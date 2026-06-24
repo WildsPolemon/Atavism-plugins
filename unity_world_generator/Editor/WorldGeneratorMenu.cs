@@ -31,6 +31,37 @@ namespace AaaWorldGen.Editor
             AssetDatabase.SaveAssets();
             Selection.activeObject = config;
         }
+
+        [MenuItem("Tools/World Generation/Create Generator In Scene")]
+        private static void CreateGeneratorInScene()
+        {
+            GameObject go = new GameObject("WorldGenerator");
+            go.AddComponent<WorldGenerator>();
+            Selection.activeObject = go;
+            EditorGUIUtility.PingObject(go);
+            Debug.Log($"Created {go.name} with component {nameof(WorldGenerator)}.");
+        }
+
+        [MenuItem("Tools/World Generation/Validate Selected Config")]
+        private static void ValidateSelectedConfig()
+        {
+            WorldGeneratorConfig config = Selection.activeObject as WorldGeneratorConfig;
+            if (config == null)
+            {
+                EditorUtility.DisplayDialog("Validation", "Select a WorldGeneratorConfig asset first.", "OK");
+                return;
+            }
+
+            System.Collections.Generic.List<string> messages = config.GetValidationMessages();
+            if (messages.Count == 0)
+            {
+                EditorUtility.DisplayDialog("Validation", "Config is valid.", "OK");
+            }
+            else
+            {
+                EditorUtility.DisplayDialog("Validation Warnings", string.Join("\n", messages), "OK");
+            }
+        }
     }
 }
 #endif

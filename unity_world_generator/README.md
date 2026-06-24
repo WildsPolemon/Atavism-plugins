@@ -62,12 +62,16 @@ This is intended for Atavism-style AOI/interest management where server and clie
 
 `WorldGeneratorDashboardWindow` provides a centralized control panel:
 
-- tabbed workflow (Overview, Biomes, Cities + Caves + Roads, Resources + Spawns, Diagnostics)
-- one-click generation and JSON export
-- inline configuration validation warnings
-- generation summary counters (cities/roads/caves/resources/spawns)
+- tabbed workflow (Overview, Biome Lab, World Layout, Spawns + Performance, Diagnostics, Tools)
+- preset system (Balanced MMO / Cinematic / Performance / Mega World)
+- one-click generation, Generate+Export, and quick temp export
+- biome automation helpers (normalize blend weights, rebalance height bands, biome template)
+- city inland safety profile toggles and runtime profile shortcuts
+- inline configuration validation warnings with filtering
+- generation diagnostics: biome distribution + sector load hotspots
+- operations toolkit: config snapshot copy, root pinging, and folder shortcuts
 
-`WorldGeneratorConfigEditor` provides a polished inspector with grouped foldouts and quick actions.
+`WorldGeneratorConfigEditor` provides a polished inspector with grouped foldouts, quick presets, expand/collapse-all controls, filter search, and snapshot/random-seed actions.
 
 ## Cave Variant A
 

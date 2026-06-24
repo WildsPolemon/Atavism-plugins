@@ -15,6 +15,7 @@ namespace AaaWorldGen.Editor
         private bool showResources = true;
         private bool showSpawns = true;
         private bool showRuntime = true;
+        private string searchQuery = string.Empty;
 
         public override void OnInspectorGUI()
         {
@@ -23,6 +24,8 @@ namespace AaaWorldGen.Editor
 
             DrawHeader();
             DrawTopActions(config);
+            DrawPresetActions(config);
+            DrawSearch();
 
             showShape = EditorGUILayout.BeginFoldoutHeaderGroup(showShape, "World Shape");
             if (showShape)
@@ -108,6 +111,7 @@ namespace AaaWorldGen.Editor
 
         private void DrawTopActions(WorldGeneratorConfig config)
         {
+            EnsureConfigSections(config);
             EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
             if (GUILayout.Button("Open Dashboard", GUILayout.Height(24f)))
             {
@@ -127,17 +131,181 @@ namespace AaaWorldGen.Editor
                 }
             }
 
+            if (GUILayout.Button("Random Seed", GUILayout.Height(24f)))
+            {
+                Undo.RecordObject(config, "Randomize world seed");
+                config.worldSeed = Random.Range(1000, 999_999_999);
+                EditorUtility.SetDirty(config);
+            }
+
+            if (GUILayout.Button("Copy Snapshot", GUILayout.Height(24f)))
+            {
+                float worldSize = config.worldSizeInChunks * config.chunkSizeMeters;
+                float areaKm2 = (worldSize * worldSize) / 1_000_000f;
+                string snapshot =
+                    $"seed={config.worldSeed}\n" +
+                    $"size={worldSize:0}m ({areaKm2:0.00}km2)\n" +
+                    $"cities={config.citySettings.maxCities} caves={config.caveSettings.maxCaves} mobZones={config.spawnSettings.maxMobZones}\n" +
+                    $"runtimeCaps={config.runtimeOptimization.maxActiveObjects}/{config.runtimeOptimization.maxActiveResources}";
+                EditorGUIUtility.systemCopyBuffer = snapshot;
+            }
+
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+            if (GUILayout.Button("Expand All", GUILayout.Height(22f)))
+            {
+                SetAllFoldouts(true);
+            }
+
+            if (GUILayout.Button("Collapse All", GUILayout.Height(22f)))
+            {
+                SetAllFoldouts(false);
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(3f);
+        }
+
+        private void DrawPresetActions(WorldGeneratorConfig config)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Quick Presets", EditorStyles.boldLabel);
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Balanced MMO", GUILayout.Height(22f)))
+            {
+                ApplyPresetBalanced(config);
+            }
+            if (GUILayout.Button("Cinematic", GUILayout.Height(22f)))
+            {
+                ApplyPresetCinematic(config);
+            }
+            if (GUILayout.Button("Performance", GUILayout.Height(22f)))
+            {
+                ApplyPresetPerformance(config);
+            }
+            if (GUILayout.Button("Mega World", GUILayout.Height(22f)))
+            {
+                ApplyPresetMega(config);
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+        }
+
+        private void DrawSearch()
+        {
+            EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+            GUILayout.Label("Filter", GUILayout.Width(40f));
+            searchQuery = EditorGUILayout.TextField(searchQuery);
+            if (GUILayout.Button("Clear", GUILayout.Width(52f)))
+            {
+                searchQuery = string.Empty;
+                GUI.FocusControl(null);
+            }
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(2f);
         }
 
         private void DrawProperty(string propertyName)
         {
+            if (!string.IsNullOrWhiteSpace(searchQuery) &&
+                propertyName.IndexOf(searchQuery.Trim(), System.StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return;
+            }
+
             SerializedProperty property = serializedObject.FindProperty(propertyName);
             if (property != null)
             {
                 EditorGUILayout.PropertyField(property, true);
             }
+        }
+
+        private void SetAllFoldouts(bool value)
+        {
+            showShape = value;
+            showNoise = value;
+            showBiomes = value;
+            showCityCave = value;
+            showResources = value;
+            showSpawns = value;
+            showRuntime = value;
+        }
+
+        private static void ApplyPresetBalanced(WorldGeneratorConfig config)
+        {
+            EnsureConfigSections(config);
+            Undo.RecordObject(config, "Apply balanced preset");
+            config.worldSizeInChunks = 48;
+            config.chunkSizeMeters = 256;
+            config.citySettings.maxCities = 18;
+            config.caveSettings.maxCaves = 220;
+            config.spawnSettings.maxMobZones = 360;
+            config.resourceSettings.baseNodeSpacing = 30f;
+            config.runtimeOptimization.maxActiveObjects = 6000;
+            config.runtimeOptimization.maxActiveResources = 2600;
+            config.runtimeOptimization.streamingRadiusMeters = 1400f;
+            config.sectorSettings.sectorSizeMeters = 768f;
+            config.sectorSettings.neighborLoadRadius = 1;
+            EditorUtility.SetDirty(config);
+        }
+
+        private static void ApplyPresetCinematic(WorldGeneratorConfig config)
+        {
+            EnsureConfigSections(config);
+            Undo.RecordObject(config, "Apply cinematic preset");
+            config.citySettings.maxCities = 24;
+            config.caveSettings.maxCaves = 300;
+            config.spawnSettings.maxMobZones = 460;
+            config.resourceSettings.baseNodeSpacing = 24f;
+            config.biomeClimate.variationStrength = 0.11f;
+            config.runtimeOptimization.maxActiveObjects = 9000;
+            config.runtimeOptimization.maxActiveResources = 4200;
+            config.runtimeOptimization.streamingRadiusMeters = 1800f;
+            EditorUtility.SetDirty(config);
+        }
+
+        private static void ApplyPresetPerformance(WorldGeneratorConfig config)
+        {
+            EnsureConfigSections(config);
+            Undo.RecordObject(config, "Apply performance preset");
+            config.citySettings.maxCities = Mathf.Min(config.citySettings.maxCities, 14);
+            config.caveSettings.maxCaves = Mathf.Min(config.caveSettings.maxCaves, 140);
+            config.spawnSettings.maxMobZones = 220;
+            config.resourceSettings.baseNodeSpacing = 42f;
+            config.runtimeOptimization.maxActiveObjects = 3000;
+            config.runtimeOptimization.maxActiveResources = 1200;
+            config.runtimeOptimization.streamingRadiusMeters = 1050f;
+            config.runtimeOptimization.refreshIntervalSeconds = 0.45f;
+            config.sectorSettings.sectorSizeMeters = 640f;
+            EditorUtility.SetDirty(config);
+        }
+
+        private static void ApplyPresetMega(WorldGeneratorConfig config)
+        {
+            EnsureConfigSections(config);
+            Undo.RecordObject(config, "Apply mega world preset");
+            config.worldSizeInChunks = 64;
+            config.chunkSizeMeters = 256;
+            config.citySettings.maxCities = 28;
+            config.caveSettings.maxCaves = 420;
+            config.spawnSettings.maxMobZones = 700;
+            config.resourceSettings.baseNodeSpacing = 34f;
+            config.runtimeOptimization.maxActiveObjects = 8200;
+            config.runtimeOptimization.maxActiveResources = 3800;
+            config.runtimeOptimization.streamingRadiusMeters = 1900f;
+            config.sectorSettings.sectorSizeMeters = 900f;
+            config.sectorSettings.neighborLoadRadius = 1;
+            EditorUtility.SetDirty(config);
+        }
+
+        private static void EnsureConfigSections(WorldGeneratorConfig config)
+        {
+            if (config.citySettings == null) { config.citySettings = new CityGenerationSettings(); }
+            if (config.caveSettings == null) { config.caveSettings = new CaveGenerationSettings(); }
+            if (config.resourceSettings == null) { config.resourceSettings = new ResourceGenerationSettings(); }
+            if (config.spawnSettings == null) { config.spawnSettings = new SpawnGenerationSettings(); }
+            if (config.runtimeOptimization == null) { config.runtimeOptimization = new RuntimeOptimizationSettings(); }
+            if (config.sectorSettings == null) { config.sectorSettings = new SectorGenerationSettings(); }
+            if (config.biomeClimate == null) { config.biomeClimate = new BiomeClimateSettings(); }
         }
     }
 }
