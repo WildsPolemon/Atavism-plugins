@@ -27,6 +27,11 @@ namespace AaaWorldGen
                     continue;
                 }
 
+                if (HasNearbyWater(p, config, sampleHeight01))
+                {
+                    continue;
+                }
+
                 float hN = sampleHeight01(p.x + 35f, p.y);
                 float hS = sampleHeight01(p.x - 35f, p.y);
                 float hE = sampleHeight01(p.x, p.y + 35f);
@@ -69,6 +74,40 @@ namespace AaaWorldGen
             }
 
             return cities;
+        }
+
+        private static bool HasNearbyWater(
+            Vector2 center,
+            WorldGeneratorConfig config,
+            Func<float, float, float> sampleHeight01)
+        {
+            float minAllowed = config.seaLevel01 + config.citySettings.minAreaHeightAboveSea01;
+            int samples = Mathf.Clamp(config.citySettings.waterProximitySamples, 8, 64);
+            float[] radii =
+            {
+                Mathf.Max(40f, config.citySettings.cityCoreRadius * 0.45f),
+                Mathf.Max(80f, config.citySettings.cityCoreRadius * 0.9f),
+                Mathf.Max(120f, config.citySettings.districtRingRadius * 0.65f),
+                Mathf.Max(180f, config.citySettings.districtRingRadius * 0.95f),
+            };
+
+            for (int r = 0; r < radii.Length; r++)
+            {
+                float radius = radii[r];
+                for (int i = 0; i < samples; i++)
+                {
+                    float angle = (i / (float)samples) * Mathf.PI * 2f;
+                    float x = center.x + Mathf.Cos(angle) * radius;
+                    float z = center.y + Mathf.Sin(angle) * radius;
+                    float h = sampleHeight01(x, z);
+                    if (h < minAllowed)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private static string ResolveCityTier(int sortedIndex)

@@ -1,9 +1,10 @@
 import json
+import math
 import statistics
 import unittest
 from pathlib import Path
 
-from unity_world_generator.tools.worldgen_preview import generate_world
+from unity_world_generator.tools.worldgen_preview import fbm01, generate_world
 
 
 class WorldGenPreviewTests(unittest.TestCase):
@@ -39,6 +40,24 @@ class WorldGenPreviewTests(unittest.TestCase):
         for city in result["cities"]:
             h01 = city["center"][1] / max_h
             self.assertGreaterEqual(h01, sea + min_margin)
+
+    def test_cities_are_not_adjacent_to_water_ring(self):
+        result = generate_world(self.config)
+        sea = self.config["sea_level01"]
+        min_area = self.config["cities"].get("min_area_height_above_sea01", 0.0)
+        min_allowed = sea + min_area
+        ring_radius = self.config["cities"]["district_ring_radius"] * 0.95
+        sample_count = max(8, int(self.config["cities"].get("water_proximity_samples", 24)))
+        noise_height = self.config["noise"]["height"]
+        seed = self.config["world_seed"]
+        for city in result["cities"]:
+            cx, _, cz = city["center"]
+            for i in range(sample_count):
+                angle = (i / sample_count) * 2.0 * math.pi
+                x = cx + math.cos(angle) * ring_radius
+                z = cz + math.sin(angle) * ring_radius
+                h01 = fbm01(x, z, seed, noise_height)
+                self.assertGreaterEqual(h01, min_allowed)
 
     def test_caves_are_outside_city_exclusion(self):
         result = generate_world(self.config)

@@ -592,9 +592,30 @@ def generate_world(config: dict):
     ranked = []
     min_city_h = sea + city_cfg.get("min_height_above_sea01", 0.025)
     shoreline_buffer = city_cfg.get("shoreline_buffer01", 0.06)
+    min_area_h = sea + city_cfg.get("min_area_height_above_sea01", 0.04)
+    proximity_samples = max(8, int(city_cfg.get("water_proximity_samples", 24)))
+
+    def has_nearby_water(cx, cz):
+        radii = [
+            max(40.0, city_cfg["city_core_radius"] * 0.45),
+            max(80.0, city_cfg["city_core_radius"] * 0.9),
+            max(120.0, city_cfg["district_ring_radius"] * 0.65),
+            max(180.0, city_cfg["district_ring_radius"] * 0.95),
+        ]
+        for radius in radii:
+            for i in range(proximity_samples):
+                angle = (i / max(1, proximity_samples)) * math.tau
+                x = cx + math.cos(angle) * radius
+                z = cz + math.sin(angle) * radius
+                if sample_height(x, z) < min_area_h:
+                    return True
+        return False
+
     for x, z in city_candidates:
         c = sample_height(x, z)
         if c < min_city_h:
+            continue
+        if has_nearby_water(x, z):
             continue
         slope = abs(c - sample_height(x + 35, z)) + abs(c - sample_height(x - 35, z)) + abs(c - sample_height(x, z + 35)) + abs(c - sample_height(x, z - 35))
         shoreline_distance = abs(c - sea)

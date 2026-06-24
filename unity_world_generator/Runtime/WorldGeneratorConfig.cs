@@ -134,6 +134,16 @@ namespace AaaWorldGen
                 messages.Add("citySettings.shorelineBuffer01 should be >= 0.");
             }
 
+            if (citySettings.minAreaHeightAboveSea01 < 0f)
+            {
+                messages.Add("citySettings.minAreaHeightAboveSea01 should be >= 0.");
+            }
+
+            if (citySettings.waterProximitySamples < 8)
+            {
+                messages.Add("citySettings.waterProximitySamples should be >= 8.");
+            }
+
             if (caveSettings.maxCaves < 0)
             {
                 messages.Add("caveSettings.maxCaves should be >= 0.");
@@ -281,6 +291,8 @@ namespace AaaWorldGen
         public int targetLotsPerCity = 120;
         [Range(0f, 0.2f)] public float minHeightAboveSea01 = 0.025f;
         [Range(0f, 0.3f)] public float shorelineBuffer01 = 0.06f;
+        [Range(0f, 0.3f)] public float minAreaHeightAboveSea01 = 0.04f;
+        [Range(8, 64)] public int waterProximitySamples = 24;
     }
 
     [Serializable]
