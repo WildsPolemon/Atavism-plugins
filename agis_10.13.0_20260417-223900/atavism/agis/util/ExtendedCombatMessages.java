@@ -302,7 +302,8 @@ public class ExtendedCombatMessages {
 		props.put("totalTalentPoints", skillInfo.getTalentPoints() + skillInfo.getTalentPointsSpent());
 		props.put("activeTalentLoadout", skillInfo.getActiveTalentLoadout());
 		props.put("talentLoadoutCount", ClassAbilityPlugin.TALENT_LOADOUT_COUNT);
-		props.put("talentTreeMaxPoints", ClassAbilityPlugin.TALENT_TREE_MAX_POINTS);
+		props.put("talentTierPointStep", ClassAbilityPlugin.TALENT_TIER_POINT_STEP);
+		props.put("talentExclusiveGroups", ClassAbilityPlugin.TALENT_EXCLUSIVE_GROUPS_ENABLED);
 		for (int tree = 0; tree < 3; tree++) {
 			props.put("tree" + tree + "PointsSpent", TalentTreeHelper.getPointsSpentInTree(skillInfo, tree));
 		}

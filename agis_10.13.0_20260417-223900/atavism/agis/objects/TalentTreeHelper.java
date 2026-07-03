@@ -10,7 +10,7 @@ import atavism.agis.util.RequirementCheckResult;
 import atavism.server.util.Log;
 
 /**
- * WoW-style talent tree validation: per-tree point totals, tier gates, and exclusive branch rows.
+ * WotLK-style talent tree validation: tier gates per tree, total point pool, optional exclusive groups.
  */
 public final class TalentTreeHelper {
 
@@ -67,38 +67,54 @@ public final class TalentTreeHelper {
 		return null;
 	}
 
+	public static int getRequiredTreePoints(SkillTemplate template) {
+		if (template.getTreePointsRequired() > 0) {
+			return template.getTreePointsRequired();
+		}
+		// WotLK default: tier 1 = 0, tier 2 = 5, tier 3 = 10, ...
+		if (template.getTier() > 1 && ClassAbilityPlugin.TALENT_TIER_POINT_STEP > 0) {
+			return (template.getTier() - 1) * ClassAbilityPlugin.TALENT_TIER_POINT_STEP;
+		}
+		return 0;
+	}
+
 	public static boolean checkTalentTreeRequirements(SkillInfo skillInfo, CombatInfo info, SkillTemplate template) {
 		if (!template.isTalent()) {
 			return true;
 		}
 
 		int treeId = template.getTreeId();
-		if (treeId >= 0 && template.getTreePointsRequired() > 0) {
+		int requiredTreePoints = getRequiredTreePoints(template);
+		if (treeId >= 0 && requiredTreePoints > 0) {
 			int spent = getPointsSpentInTree(skillInfo, treeId);
-			if (spent < template.getTreePointsRequired()) {
+			if (spent < requiredTreePoints) {
 				EventMessageHelper.SendRequirementFailedEvent(info.getOwnerOid(),
 						new RequirementCheckResult(RequirementCheckResult.RESULT_TALENT_TREE_POINTS_TOO_LOW, treeId,
-								"" + template.getTreePointsRequired()));
+								"" + requiredTreePoints));
 				return false;
 			}
 		}
 
-		if (ClassAbilityPlugin.TALENT_TREE_MAX_POINTS > 0 && treeId >= 0) {
-			int projected = getTreePointsAfterIncrease(skillInfo, template, 1);
-			if (projected > ClassAbilityPlugin.TALENT_TREE_MAX_POINTS) {
-				EventMessageHelper.SendRequirementFailedEvent(info.getOwnerOid(),
-						new RequirementCheckResult(RequirementCheckResult.RESULT_TALENT_TREE_MAX_REACHED, treeId,
-								"" + ClassAbilityPlugin.TALENT_TREE_MAX_POINTS));
-				return false;
-			}
-		}
-
-		SkillTemplate conflict = findExclusiveConflict(skillInfo, template);
-		if (conflict != null) {
+		// WotLK: total earned points cap across ALL trees (e.g. 71 at level 80), not per-tree.
+		int playerLevel = info.statGetCurrentValue("level");
+		int maxTotal = calculateTalentPointsForLevel(playerLevel) + skillInfo.getBoughtTalentPoints();
+		int projectedTotal = recalculateTalentPointsSpent(skillInfo)
+				+ Math.max(1, template.getSkillPointCost());
+		if (projectedTotal > maxTotal) {
 			EventMessageHelper.SendRequirementFailedEvent(info.getOwnerOid(),
-					new RequirementCheckResult(RequirementCheckResult.RESULT_TALENT_EXCLUSIVE_CONFLICT,
-							conflict.getSkillID(), conflict.getSkillName()));
+					new RequirementCheckResult(RequirementCheckResult.RESULT_TALENT_TREE_MAX_REACHED, -1,
+							"" + maxTotal));
 			return false;
+		}
+
+		if (ClassAbilityPlugin.TALENT_EXCLUSIVE_GROUPS_ENABLED) {
+			SkillTemplate conflict = findExclusiveConflict(skillInfo, template);
+			if (conflict != null) {
+				EventMessageHelper.SendRequirementFailedEvent(info.getOwnerOid(),
+						new RequirementCheckResult(RequirementCheckResult.RESULT_TALENT_EXCLUSIVE_CONFLICT,
+								conflict.getSkillID(), conflict.getSkillName()));
+				return false;
+			}
 		}
 
 		return true;

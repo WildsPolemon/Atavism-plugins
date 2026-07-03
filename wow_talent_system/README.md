@@ -1,76 +1,71 @@
-# WoW-Style Talent System for Atavism AGIS
+# WotLK Talent System for Atavism AGIS
 
-Full Classic/WotLK-style talent trees with:
+Wrath of the Lich King (3.3.5) talent rules:
 
 - **3 trees per class** (`tree_id` 0..2)
-- **Tier rows** (`tier`) with **tree point gates** (`tree_points_required`)
-- **Grid layout** (`column`)
-- **Exclusive branch choice** (`exclusive_group`) — pick one talent per group (WoW row branches)
-- **1 point / level from level 10** (configurable)
-- **51 points max per tree**
-- **Dual spec** (2 loadouts, `combat.SWITCH_TALENT_LOADOUT`)
-- **Respec cost** via currency game settings
+- **1 talent point per level from level 10**
+- **71 total points at level 80** — shared across all trees (can put 71 in one tree)
+- **Tier gates**: row N requires `(N-1) × 5` points spent in **that tree** (auto if `tree_points_required=0`)
+- **No exclusive row choices** — multiple talents in the same row are allowed (WotLK default)
+- **Dual spec** (patch 3.1+): 2 independent full allocations, switch **out of combat**
+- **Respec**: resets **active spec only**, optional gold cost, out of combat
 
 ## Install
 
-1. Run SQL migrations on your **content database**:
-   - `sql/001_talent_tree_columns.sql`
-   - `sql/002_wow_talent_game_settings.sql`
-2. Deploy patched AGIS JAR (rebuild from `agis_10.13.0_*/atavism/agis/`).
-3. Copy Unity scripts from `unity/` into your Atavism client project.
-4. Configure talents in Editor (Skills tab) or SQL — see `sql/sample_branch_choice_talents.sql`.
+1. `sql/001_talent_tree_columns.sql`
+2. `sql/002_wow_talent_game_settings.sql`
+3. Rebuild & deploy AGIS
+4. Copy `unity/Scripts/` to Unity client
 
-## Editor fields (Skills)
+## WotLK point table
 
-| Field | Meaning |
-|-------|---------|
-| `tree_id` | Tree index: 0, 1, 2 (Arms / Fury / Protection) |
-| `tier` | Row from top (1 = first row) |
-| `column` | Position in row (1 = left) |
-| `tree_points_required` | Points spent in **this tree** before node unlocks |
-| `exclusive_group` | Same group in same tree = **pick one branch** |
+| Level | Talent points |
+|-------|---------------|
+| 9 | 0 |
+| 10 | 1 |
+| 60 | 51 |
+| 70 | 61 |
+| 80 | 71 |
+
+Formula: `max(0, level - 10 + 1)`
+
+## Content authoring
+
+| Field | WotLK usage |
+|-------|-------------|
+| `tree_id` | 0 / 1 / 2 (e.g. Arms / Fury / Protection) |
+| `tier` | Row number (1 = top) |
+| `column` | Position in row |
+| `tree_points_required` | 0 = auto `(tier-1)*5`; or set manually |
+| `parentSkill` | Talent in column above (vertical prereq) |
+| `exclusive_group` | **Leave 0** for WotLK (only enable via setting for custom builds) |
 
 ## Game settings
 
-| Key | Default | Description |
-|-----|---------|-------------|
-| `TALENT_POINTS_START_LEVEL` | 10 | First level that grants talent points |
-| `TALENT_POINTS_PER_LEVEL` | 1 | Points per level after start |
-| `TALENT_TREE_MAX_POINTS` | 51 | Max points per tree |
-| `TALENT_LOADOUT_COUNT` | 2 | Dual spec loadouts |
-| `TALENT_RESET_CURRENCY_ID` | -1 | Currency for respec (-1 = free) |
-| `TALENT_RESET_CURRENCY_COST` | 0 | Respec price |
-| `TALENT_POINTS_GIVEN_PER_LEVEL` | 0 | Legacy formula disabled when start level > 1 |
+| Key | WotLK default |
+|-----|---------------|
+| `TALENT_POINTS_START_LEVEL` | 10 |
+| `TALENT_POINTS_PER_LEVEL` | 1 |
+| `TALENT_TIER_POINT_STEP` | 5 |
+| `TALENT_EXCLUSIVE_GROUPS_ENABLED` | 0 (off) |
+| `TALENT_SWITCH_REQUIRES_OUT_OF_COMBAT` | 1 |
+| `TALENT_RESET_REQUIRES_OUT_OF_COMBAT` | 1 |
+| `TALENT_LOADOUT_COUNT` | 2 |
+| `TALENT_TREE_MAX_POINTS` | 0 (disabled; uses level-based total) |
 
-## Exclusive branch choice (server)
+## Dual spec (WotLK)
 
-When `exclusive_group > 0`, the server blocks investing in talent B if talent A in the same group already has ranks. Player must reset or choose a different branch before switching.
+Each loadout stores its own talent ranks and points spent. Switching loadout:
 
-## Dual spec
+- Saves current spec snapshot
+- Loads other spec (full 71-point budget if unspent)
+- Blocked in combat
 
-Client calls:
+Client: `ClassAbilityClient.switchTalentLoadout(oid, loadoutIndex)` or `WowTalentTreeController.SwitchLoadout(n)`.
 
-```csharp
-AtavismClient.Instance.NetworkHelper.SendTargetedCommand(
-    OID.fromLong(playerOid), "combat.SWITCH_TALENT_LOADOUT", loadoutIndex);
-```
+## Differences from MoP+ / custom
 
-Or use `WowTalentTreeController.SwitchLoadout(int)` from the Unity module.
-
-## Unity module
-
-Copy `unity/Scripts/` to `Assets/YourGame/Scripts/WowTalents/`.
-
-Wire `WowTalentTreeWindow` in your UI canvas. It reads prefab skill data + live `skills` extension messages.
-
-## Server files changed
-
-- `SkillTemplate.java` — tree metadata
-- `TalentTreeHelper.java` — validation
-- `SkillInfo.java` — loadouts, tier/exclusive checks
-- `ClassAbilityPlugin.java` — settings + hooks
-- `ClassAbilityClient.java` — `SWITCH_TALENT_LOADOUT`
-- `CombatDatabase.java` — load new columns
-- `PrefabPlugin.java` — sync to client
-- `ExtendedCombatMessages.java` — enriched `sendSkills`
-- `RequirementCheckResult.java` — new failure types
+| Feature | WotLK | Our optional setting |
+|---------|-------|---------------------|
+| Pick 1 of 3 per row | No | `TALENT_EXCLUSIVE_GROUPS_ENABLED=1` |
+| Per-tree 51 cap | No (total pool) | `TALENT_TREE_MAX_POINTS` (legacy, default off) |

@@ -53,7 +53,7 @@ namespace WowTalents
             }
         }
 
-        public void Refresh(Dictionary<int, int> levels, int treePointsSpent, int treeMax,
+        public void Refresh(Dictionary<int, int> levels, int treePointsSpent,
             Func<int, bool> canLearn, Func<int, bool> exclusiveBlocked)
         {
             foreach (var node in _nodes)

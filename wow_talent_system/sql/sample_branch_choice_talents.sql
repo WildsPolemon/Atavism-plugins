@@ -1,27 +1,13 @@
--- Example: Arms warrior tier-3 branch choice (pick ONE of three talents in the same row).
--- Replace skill IDs / aspect / abilities with your project data.
--- exclusive_group: talents sharing the same positive ID in one tree are mutually exclusive.
+-- WotLK example: Arms warrior tier row (NO exclusive_group — all 3 can be taken if you have points).
+-- Set tree_points_required=0 to use auto formula (tier-1)*5.
 
--- Tree 0 = Arms, aspect = your warrior class id (example: 1)
--- Tier 3 row, 5 points required in tree (Classic WoW tier gate)
+-- Tier 1 (0 points in tree): column talents
+-- UPDATE skills SET talent=1, tree_id=0, tier=1, `column`=2, tree_points_required=0,
+--   exclusive_group=0, maxLevel=5, skillPointCost=1, playerLevelReq=10, aspect=1, mainAspectOnly=1
+-- WHERE id=10001;
 
--- UPDATE `skills` SET
---   talent = 1, tree_id = 0, tier = 3, `column` = 1,
---   tree_points_required = 5, exclusive_group = 301,
---   maxLevel = 5, skillPointCost = 1, playerLevelReq = 10, aspect = 1, mainAspectOnly = 1
--- WHERE id = 10001; -- Improved Heroic Strike
+-- Tier 2 (5 points in tree)
+-- UPDATE skills SET tier=2, tree_points_required=0 WHERE id IN (10010,10011,10012);
 
--- UPDATE `skills` SET
---   talent = 1, tree_id = 0, tier = 3, `column` = 2,
---   tree_points_required = 5, exclusive_group = 301,
---   maxLevel = 3, skillPointCost = 1, playerLevelReq = 10, aspect = 1, mainAspectOnly = 1
--- WHERE id = 10002; -- Deflection (branch B)
-
--- UPDATE `skills` SET
---   talent = 1, tree_id = 0, tier = 3, `column` = 3,
---   tree_points_required = 5, exclusive_group = 301,
---   maxLevel = 2, skillPointCost = 1, playerLevelReq = 10, aspect = 1, mainAspectOnly = 1
--- WHERE id = 10003; -- Improved Rend (branch C)
-
--- WoW Classic tier point gates (set tree_points_required on each tier row):
--- Tier 2: 5, Tier 3: 10, Tier 4: 15, Tier 5: 20, Tier 6: 25, Tier 7: 30, Tier 8: 35, Tier 9: 40, Tier 10: 45
+-- Vertical prereq: child.parentSkill = talent directly above in same column
+-- UPDATE skills SET parentSkill=10001, parentSkillLevelReq=1 WHERE id=10010;

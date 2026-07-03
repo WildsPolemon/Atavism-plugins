@@ -41,6 +41,7 @@ public class SkillInfo implements Serializable, Cloneable {
 	protected int talentPointsSpent;
 	protected int activeTalentLoadout = 0;
 	protected HashMap<Integer, HashMap<Integer, Integer>> talentLoadouts = new HashMap<Integer, HashMap<Integer, Integer>>();
+	protected HashMap<Integer, Integer> talentLoadoutSpent = new HashMap<Integer, Integer>();
 	// protected int experience;
 	protected transient HashMap<Integer, SkillData> skills = new HashMap<Integer, SkillData>();
 
@@ -155,6 +156,27 @@ public class SkillInfo implements Serializable, Cloneable {
 		this.talentLoadouts = talentLoadouts;
 	}
 
+	public HashMap<Integer, Integer> getTalentLoadoutSpent() {
+		return talentLoadoutSpent;
+	}
+
+	public void setTalentLoadoutSpent(HashMap<Integer, Integer> talentLoadoutSpent) {
+		this.talentLoadoutSpent = talentLoadoutSpent;
+	}
+
+	public void syncActiveLoadoutState() {
+		talentLoadouts.put(activeTalentLoadout, TalentTreeHelper.snapshotTalentLevels(this));
+		talentLoadoutSpent.put(activeTalentLoadout, talentPointsSpent);
+	}
+
+	public void refreshTalentPointsForActiveLoadout(int playerLevel) {
+		int earned = TalentTreeHelper.calculateTalentPointsForLevel(playerLevel);
+		talentPointsSpent = talentLoadoutSpent.containsKey(activeTalentLoadout)
+				? talentLoadoutSpent.get(activeTalentLoadout)
+				: TalentTreeHelper.recalculateTalentPointsSpent(this);
+		talentPoints = earned + talentPointsBought - talentPointsSpent;
+	}
+
 	public HashMap<Integer, SkillData> getSkills() {
 		return skills;
 	}
@@ -225,7 +247,7 @@ public class SkillInfo implements Serializable, Cloneable {
 			return ;
 		}
 		}
-		if (!canPlayerIncreaseSkill(skillInfo, info)) {
+		if (!template.isTalent() && !canPlayerIncreaseSkill(skillInfo, info)) {
 			ChatClient.sendObjChatMsg(info.getOwnerOid(), 2, "Your total skill level is already at the maximum");
 			return;
 		}
@@ -236,10 +258,12 @@ public class SkillInfo implements Serializable, Cloneable {
 		// int oppositeAspect = template.getOppositeAspect();
 		int upgradeCost = template.getSkillPointCost();
 
-		if (aspect == template.getAspect())
-			upgradeCost = template.getSkillPointCost();
-		else if (aspect == template.getOppositeAspect())
-			upgradeCost = template.getSkillPointCost() * 2;
+		if (!template.isTalent()) {
+			if (aspect == template.getAspect())
+				upgradeCost = template.getSkillPointCost();
+			else if (aspect == template.getOppositeAspect())
+				upgradeCost = template.getSkillPointCost() * 2;
+		}
 
 		// TODO: Check if the skill level will be higher than the player level?
 		int level = info.statGetCurrentValue("level");
@@ -283,6 +307,7 @@ if(!admin) {
 				if (template.isTalent() && ClassAbilityPlugin.USE_TALENT_PURCHASE_POINTS) {
 					skillInfo.talentPoints -= upgradeCost;
 					skillInfo.talentPointsSpent += upgradeCost;
+					skillInfo.syncActiveLoadoutState();
 					ChatClient.sendObjChatMsg(info.getOwnerOid(), 2, "You have " + skillInfo.talentPoints + " talent points left.");
 				}
 				checkAutoLearnSkills(skillInfo, info);
@@ -356,6 +381,7 @@ if(!admin) {
 						checkAutoLearnSkills(skillInfo, info);
 						skillInfo.talentPoints -= upgradeCost;
 						skillInfo.talentPointsSpent += upgradeCost;
+						skillInfo.syncActiveLoadoutState();
 						skillPointGain(info, skillID, skillData.getSkillLevel());
 						ChatClient.sendObjChatMsg(info.getOwnerOid(), 2, "You have " + skillInfo.talentPoints + " talent points left.");
 					}
@@ -436,6 +462,7 @@ if(!admin) {
 		if (template.isTalent()) {
 			skillInfo.talentPointsSpent -= downgradeCost;
 			skillInfo.talentPoints += downgradeCost;
+			skillInfo.syncActiveLoadoutState();
 			ChatClient.sendObjChatMsg(info.getOwnerOid(), 2, "You have " + skillInfo.talentPoints + " talent points left.");
 		}
 	}
@@ -1081,6 +1108,8 @@ if(!admin) {
 		int totalPoints = TalentTreeHelper.calculateTalentPointsForLevel(newLevel);
 		skillInfo.talentPoints = totalPoints + skillInfo.talentPointsBought;
 		skillInfo.talentPointsSpent = 0;
+		skillInfo.talentLoadoutSpent.put(skillInfo.activeTalentLoadout, 0);
+		skillInfo.talentLoadouts.put(skillInfo.activeTalentLoadout, TalentTreeHelper.snapshotTalentLevels(skillInfo));
 		if (Log.loggingDebug)
 			Log.debug("resetTalents talentPoints=" + skillInfo.talentPoints + " talentPointsSpent=" + skillInfo.talentPointsSpent);
 		if (Log.loggingDebug)
@@ -1108,8 +1137,12 @@ if(!admin) {
 		if (loadoutIndex == skillInfo.activeTalentLoadout) {
 			return;
 		}
+		if (ClassAbilityPlugin.TALENT_SWITCH_REQUIRES_OUT_OF_COMBAT && info.inCombat()) {
+			ChatClient.sendObjChatMsg(info.getOwnerOid(), 2, "You cannot switch talents while in combat.");
+			return;
+		}
 
-		skillInfo.talentLoadouts.put(skillInfo.activeTalentLoadout, TalentTreeHelper.snapshotTalentLevels(skillInfo));
+		skillInfo.syncActiveLoadoutState();
 		stripAllTalentEffects(skillInfo, info);
 
 		HashMap<Integer, Integer> target = skillInfo.talentLoadouts.get(loadoutIndex);
@@ -1131,10 +1164,9 @@ if(!admin) {
 		}
 
 		skillInfo.activeTalentLoadout = loadoutIndex;
-		skillInfo.talentPointsSpent = TalentTreeHelper.recalculateTalentPointsSpent(skillInfo);
 		int level = info.statGetCurrentValue("level");
-		int totalPoints = TalentTreeHelper.calculateTalentPointsForLevel(level);
-		skillInfo.talentPoints = totalPoints + skillInfo.talentPointsBought - skillInfo.talentPointsSpent;
+		skillInfo.refreshTalentPointsForActiveLoadout(level);
+		skillInfo.syncActiveLoadoutState();
 
 		Engine.getPersistenceManager().setDirty(info);
 		ClassAbilityClient.skillLevelChange(info.getOid());
@@ -1207,8 +1239,7 @@ if(!admin) {
 			skillInfo.skillPoints = totalPoints + skillInfo.pointsBought - skillInfo.pointsSpent;
 		}
 		if (ClassAbilityPlugin.USE_TALENT_PURCHASE_POINTS) {
-			int totalPoints = TalentTreeHelper.calculateTalentPointsForLevel(newLevel);
-			skillInfo.talentPoints = totalPoints + skillInfo.talentPointsBought - skillInfo.talentPointsSpent;
+			skillInfo.refreshTalentPointsForActiveLoadout(newLevel);
 		}
 		// Now we need to refund points for skills that now match the players level
 		/*

@@ -203,6 +203,26 @@ public class ClassAbilityPlugin extends EnginePlugin {
 			TALENT_TREE_MAX_POINTS = Integer.parseInt(talentTreeMaxPoints);
 		log.debug("Loaded Game Setting TALENT_TREE_MAX_POINTS="+TALENT_TREE_MAX_POINTS);
 
+		String talentTierPointStep = ctDB.loadGameSetting("TALENT_TIER_POINT_STEP");
+		if (talentTierPointStep != null)
+			TALENT_TIER_POINT_STEP = Integer.parseInt(talentTierPointStep);
+		log.debug("Loaded Game Setting TALENT_TIER_POINT_STEP="+TALENT_TIER_POINT_STEP);
+
+		String talentExclusiveGroups = ctDB.loadGameSetting("TALENT_EXCLUSIVE_GROUPS_ENABLED");
+		if (talentExclusiveGroups != null)
+			TALENT_EXCLUSIVE_GROUPS_ENABLED = Boolean.parseBoolean(talentExclusiveGroups);
+		log.debug("Loaded Game Setting TALENT_EXCLUSIVE_GROUPS_ENABLED="+TALENT_EXCLUSIVE_GROUPS_ENABLED);
+
+		String talentSwitchOoc = ctDB.loadGameSetting("TALENT_SWITCH_REQUIRES_OUT_OF_COMBAT");
+		if (talentSwitchOoc != null)
+			TALENT_SWITCH_REQUIRES_OUT_OF_COMBAT = Boolean.parseBoolean(talentSwitchOoc);
+		log.debug("Loaded Game Setting TALENT_SWITCH_REQUIRES_OUT_OF_COMBAT="+TALENT_SWITCH_REQUIRES_OUT_OF_COMBAT);
+
+		String talentResetOoc = ctDB.loadGameSetting("TALENT_RESET_REQUIRES_OUT_OF_COMBAT");
+		if (talentResetOoc != null)
+			TALENT_RESET_REQUIRES_OUT_OF_COMBAT = Boolean.parseBoolean(talentResetOoc);
+		log.debug("Loaded Game Setting TALENT_RESET_REQUIRES_OUT_OF_COMBAT="+TALENT_RESET_REQUIRES_OUT_OF_COMBAT);
+
 		String talentLoadoutCount = ctDB.loadGameSetting("TALENT_LOADOUT_COUNT");
 		if (talentLoadoutCount != null)
 			TALENT_LOADOUT_COUNT = Integer.parseInt(talentLoadoutCount);
@@ -1418,8 +1438,19 @@ public class ClassAbilityPlugin extends EnginePlugin {
     	    CombatInfo cInfo = CombatPlugin.getCombatInfo(oid);
     	    boolean skill = (boolean) EBMsg.getProperty("skill");
     	    log.debug("SkillResetHook: oid="+oid+" skill="+skill+" cInfo="+cInfo);
-    	    if (!skill && TALENT_RESET_CURRENCY_ID > 0 && TALENT_RESET_CURRENCY_COST > 0) {
-    	    	AgisInventoryClient.alterCurrency(oid, TALENT_RESET_CURRENCY_ID, -TALENT_RESET_CURRENCY_COST);
+    	    if (!skill) {
+    	    	if (TALENT_RESET_REQUIRES_OUT_OF_COMBAT && cInfo.inCombat()) {
+    	    		ChatClient.sendObjChatMsg(oid, 2, "You cannot reset talents while in combat.");
+    	    		return true;
+    	    	}
+    	    	if (TALENT_RESET_CURRENCY_ID > 0 && TALENT_RESET_CURRENCY_COST > 0) {
+    	    		InventoryInfo inv = AgisInventoryPlugin.getInventoryInfo(oid);
+    	    		if (inv == null || inv.getCurrencyAmount(TALENT_RESET_CURRENCY_ID, true) < TALENT_RESET_CURRENCY_COST) {
+    	    			ChatClient.sendObjChatMsg(oid, 2, "You do not have enough gold to reset your talents.");
+    	    			return true;
+    	    		}
+    	    		AgisInventoryClient.alterCurrency(oid, TALENT_RESET_CURRENCY_ID, -TALENT_RESET_CURRENCY_COST);
+    	    	}
     	    }
      	    if(skill)
     	    	SkillInfo.resetSkills(cInfo.getCurrentSkillInfo(), cInfo);
@@ -1908,7 +1939,11 @@ public class ClassAbilityPlugin extends EnginePlugin {
      public static int TALENT_POINTS_GIVEN_PER_LEVEL = 3;
     public static int TALENT_POINTS_START_LEVEL = 1;
     public static int TALENT_POINTS_PER_LEVEL = 1;
-    public static int TALENT_TREE_MAX_POINTS = 51;
+    public static int TALENT_TREE_MAX_POINTS = 0;
+    public static int TALENT_TIER_POINT_STEP = 5;
+    public static boolean TALENT_EXCLUSIVE_GROUPS_ENABLED = false;
+    public static boolean TALENT_SWITCH_REQUIRES_OUT_OF_COMBAT = true;
+    public static boolean TALENT_RESET_REQUIRES_OUT_OF_COMBAT = true;
     public static int TALENT_LOADOUT_COUNT = 2;
     public static int TALENT_RESET_CURRENCY_ID = -1;
     public static long TALENT_RESET_CURRENCY_COST = 0;

@@ -27,8 +27,9 @@ namespace WowTalents
         readonly Dictionary<int, WowTalentSkillDefinition> _definitions = new();
         readonly Dictionary<int, int> _playerLevels = new();
         int _talentPoints;
+        int _totalTalentPointsEarned;
         int _activeLoadout;
-        int _treeMaxPoints = 51;
+        bool _exclusiveGroupsEnabled;
         readonly int[] _treePointsSpent = new int[3];
 
         void Start()
@@ -61,10 +62,12 @@ namespace WowTalents
         {
             if (props.ContainsKey("talentPoints"))
                 _talentPoints = Convert.ToInt32(props["talentPoints"]);
+            if (props.ContainsKey("totalTalentPoints"))
+                _totalTalentPointsEarned = Convert.ToInt32(props["totalTalentPoints"]);
             if (props.ContainsKey("activeTalentLoadout"))
                 _activeLoadout = Convert.ToInt32(props["activeTalentLoadout"]);
-            if (props.ContainsKey("talentTreeMaxPoints"))
-                _treeMaxPoints = Convert.ToInt32(props["talentTreeMaxPoints"]);
+            if (props.ContainsKey("talentExclusiveGroups"))
+                _exclusiveGroupsEnabled = Convert.ToBoolean(props["talentExclusiveGroups"]);
 
             for (int t = 0; t < 3; t++)
             {
@@ -103,20 +106,17 @@ namespace WowTalents
         void RefreshAll()
         {
             if (talentPointsText != null)
-                talentPointsText.text = "Talent Points: " + _talentPoints;
+                talentPointsText.text = "Talent Points: " + _talentPoints + " / " + _totalTalentPointsEarned;
 
             for (int tree = 0; tree < 3; tree++)
             {
                 if (tree >= treePanels.Length || treePanels[tree] == null) continue;
-                treePanels[tree].Refresh(_playerLevels, _treePointsSpent[tree], _treeMaxPoints,
+                treePanels[tree].Refresh(_playerLevels, _treePointsSpent[tree],
                     id => CanLearn(id), id => IsExclusiveBlocked(id));
             }
 
             if (treePointsText != null && treePanels.Length > 0)
-            {
-                int activeTree = 0;
-                treePointsText.text = "Points in tree: " + _treePointsSpent[activeTree] + " / " + _treeMaxPoints;
-            }
+                treePointsText.text = "WotLK: total pool shared across trees";
 
             for (int i = 0; i < loadoutButtons.Length; i++)
             {
@@ -131,8 +131,9 @@ namespace WowTalents
         {
             if (!_definitions.TryGetValue(skillId, out var def)) return false;
             if (_talentPoints < def.PointCost) return false;
-            if (def.TreeId >= 0 && _treePointsSpent[def.TreeId] < def.TreePointsRequired) return false;
-            if (def.TreeId >= 0 && _treePointsSpent[def.TreeId] + def.PointCost > _treeMaxPoints) return false;
+            int required = def.TreePointsRequired > 0 ? def.TreePointsRequired
+                : (def.Tier > 1 ? (def.Tier - 1) * 5 : 0);
+            if (def.TreeId >= 0 && _treePointsSpent[def.TreeId] < required) return false;
             int cur = _playerLevels.ContainsKey(skillId) ? _playerLevels[skillId] : 0;
             if (cur >= def.MaxLevel) return false;
             if (IsExclusiveBlocked(skillId)) return false;
@@ -154,6 +155,7 @@ namespace WowTalents
         /// </summary>
         bool IsExclusiveBlocked(int skillId)
         {
+            if (!_exclusiveGroupsEnabled) return false;
             if (!_definitions.TryGetValue(skillId, out var def) || def.ExclusiveGroup <= 0)
                 return false;
 
