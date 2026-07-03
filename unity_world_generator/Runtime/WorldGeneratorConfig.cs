@@ -22,6 +22,9 @@ namespace AaaWorldGen
         [Header("Terrain Shape")]
         public TerrainShapeSettings terrainShape = new TerrainShapeSettings();
 
+        [Header("Unity Terrain")]
+        public TerrainGenerationSettings terrainGeneration = new TerrainGenerationSettings();
+
         [Header("Biome Climate")]
         public BiomeClimateSettings biomeClimate = new BiomeClimateSettings();
 
@@ -78,6 +81,23 @@ namespace AaaWorldGen
             if (maxHeightMeters <= 1f)
             {
                 messages.Add("maxHeightMeters should be > 1.");
+            }
+
+            if (terrainGeneration == null)
+            {
+                messages.Add("terrainGeneration should be assigned.");
+            }
+            else if (terrainGeneration.enableTerrainGeneration)
+            {
+                if (terrainGeneration.terrainTileSizeMeters < 32f)
+                {
+                    messages.Add("terrainGeneration.terrainTileSizeMeters should be >= 32.");
+                }
+
+                if (terrainGeneration.heightmapResolution < 33)
+                {
+                    messages.Add("terrainGeneration.heightmapResolution should be >= 33.");
+                }
             }
 
             if (biomeClimate == null)
@@ -284,6 +304,18 @@ namespace AaaWorldGen
             this.offsetX = offsetX;
             this.offsetZ = offsetZ;
         }
+    }
+
+    [Serializable]
+    public sealed class TerrainGenerationSettings
+    {
+        public bool enableTerrainGeneration = true;
+        public Transform terrainRoot;
+        public float terrainTileSizeMeters = 512f;
+        public int heightmapResolution = 257;
+        public bool clearTerrainBeforeGenerate = true;
+        public bool drawInstanced = true;
+        public Material terrainMaterial;
     }
 
     [Serializable]

@@ -231,6 +231,11 @@ namespace AaaWorldGen.Editor
                     DrawProperty("maxHeightMeters");
                     DrawProperty("seaLevel01");
                 });
+
+                DrawCard("Unity Terrain", () =>
+                {
+                    DrawProperty("terrainGeneration");
+                });
             }
 
             if (GroupVisible("noise", "temperature", "moisture", "climate", "variation", "terrain", "ridge", "continent"))
@@ -492,7 +497,11 @@ namespace AaaWorldGen.Editor
                 Undo.RecordObject(generator, "Generate World");
                 generator.Config = config;
                 WorldGenerationResult result = generator.GenerateNow();
-                statusLine = $"Generated: {result.cities.Count} cities, {result.worldRoads.Count} roads, {result.caves.Count} caves, {result.resources.Count} resources, {result.mobSpawnZones.Count} mob zones.";
+                TerrainGenerator.TerrainGenerationResult terrain = generator.LastTerrainResult;
+                string terrainInfo = terrain != null && terrain.terrains != null
+                    ? $", {terrain.terrains.Count} terrain tiles"
+                    : string.Empty;
+                statusLine = $"Generated: {result.cities.Count} cities, {result.worldRoads.Count} roads, {result.caves.Count} caves, {result.resources.Count} resources, {result.mobSpawnZones.Count} mob zones{terrainInfo}.";
             }
             catch (Exception ex)
             {
@@ -1226,6 +1235,7 @@ namespace AaaWorldGen.Editor
             if (target.terrainShape == null) { target.terrainShape = new TerrainShapeSettings(); }
             if (target.terrainShape.continentNoise == null) { target.terrainShape.continentNoise = new NoiseLayerSettings(0.00022f, 3, 2f, 0.5f, 201f, -144f); }
             if (target.terrainShape.ridgeNoise == null) { target.terrainShape.ridgeNoise = new NoiseLayerSettings(0.00092f, 4, 2.1f, 0.5f, -77f, 129f); }
+            if (target.terrainGeneration == null) { target.terrainGeneration = new TerrainGenerationSettings(); }
             if (target.biomes == null) { target.biomes = new List<BiomeDefinition>(); }
         }
 

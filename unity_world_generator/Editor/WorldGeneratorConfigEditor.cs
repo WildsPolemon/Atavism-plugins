@@ -9,6 +9,7 @@ namespace AaaWorldGen.Editor
     public sealed class WorldGeneratorConfigEditor : UnityEditor.Editor
     {
         private bool showShape = true;
+        private bool showTerrain = true;
         private bool showNoise = true;
         private bool showBiomes = true;
         private bool showCityCave = true;
@@ -35,6 +36,13 @@ namespace AaaWorldGen.Editor
                 DrawProperty("chunkSizeMeters");
                 DrawProperty("maxHeightMeters");
                 DrawProperty("seaLevel01");
+            }
+            EditorGUILayout.EndFoldoutHeaderGroup();
+
+            showTerrain = EditorGUILayout.BeginFoldoutHeaderGroup(showTerrain, "Unity Terrain");
+            if (showTerrain)
+            {
+                DrawProperty("terrainGeneration");
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
 
@@ -378,6 +386,7 @@ namespace AaaWorldGen.Editor
             if (config.runtimeOptimization == null) { config.runtimeOptimization = new RuntimeOptimizationSettings(); }
             if (config.sectorSettings == null) { config.sectorSettings = new SectorGenerationSettings(); }
             if (config.terrainShape == null) { config.terrainShape = new TerrainShapeSettings(); }
+            if (config.terrainGeneration == null) { config.terrainGeneration = new TerrainGenerationSettings(); }
             if (config.terrainShape.continentNoise == null) { config.terrainShape.continentNoise = new NoiseLayerSettings(0.00022f, 3, 2f, 0.5f, 201f, -144f); }
             if (config.terrainShape.ridgeNoise == null) { config.terrainShape.ridgeNoise = new NoiseLayerSettings(0.00092f, 4, 2.1f, 0.5f, -77f, 129f); }
             if (config.biomeClimate == null) { config.biomeClimate = new BiomeClimateSettings(); }
