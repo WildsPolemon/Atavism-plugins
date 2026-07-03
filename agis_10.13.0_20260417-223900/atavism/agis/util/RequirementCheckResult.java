@@ -19,5 +19,8 @@ public class RequirementCheckResult {
 	public static final String RESULT_SKILL_TOO_LOW= "RequirementResultSkillTooLow";
 	public static final String RESULT_GUILD_TOO_LOW= "RequirementResultGuildTooLow";
 	public static final String RESULT_STAT_TOO_LOW = "RequirementResultStatTooLow";
+	public static final String RESULT_TALENT_TREE_POINTS_TOO_LOW = "RequirementResultTalentTreePointsTooLow";
+	public static final String RESULT_TALENT_TREE_MAX_REACHED = "RequirementResultTalentTreeMaxReached";
+	public static final String RESULT_TALENT_EXCLUSIVE_CONFLICT = "RequirementResultTalentExclusiveConflict";
 	
 }

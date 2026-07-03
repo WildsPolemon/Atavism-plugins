@@ -39,6 +39,8 @@ public class SkillInfo implements Serializable, Cloneable {
 	protected int talentPoints;
 	protected int talentPointsBought;
 	protected int talentPointsSpent;
+	protected int activeTalentLoadout = 0;
+	protected HashMap<Integer, HashMap<Integer, Integer>> talentLoadouts = new HashMap<Integer, HashMap<Integer, Integer>>();
 	// protected int experience;
 	protected transient HashMap<Integer, SkillData> skills = new HashMap<Integer, SkillData>();
 
@@ -135,6 +137,22 @@ public class SkillInfo implements Serializable, Cloneable {
 
 	public void setTalentPointsSpent(int talentPointsSpent) {
 		this.talentPointsSpent = talentPointsSpent;
+	}
+
+	public int getActiveTalentLoadout() {
+		return activeTalentLoadout;
+	}
+
+	public void setActiveTalentLoadout(int activeTalentLoadout) {
+		this.activeTalentLoadout = activeTalentLoadout;
+	}
+
+	public HashMap<Integer, HashMap<Integer, Integer>> getTalentLoadouts() {
+		return talentLoadouts;
+	}
+
+	public void setTalentLoadouts(HashMap<Integer, HashMap<Integer, Integer>> talentLoadouts) {
+		this.talentLoadouts = talentLoadouts;
 	}
 
 	public HashMap<Integer, SkillData> getSkills() {
@@ -523,6 +541,9 @@ if(!admin) {
 			// Check Player Level
 			if (template.getPlayerLevelReq() > info.statGetCurrentValue("level")) {
 				EventMessageHelper.SendRequirementFailedEvent(info.getOwnerOid(), new RequirementCheckResult(RequirementCheckResult.RESULT_LEVEL_TOO_LOW, template.getPlayerLevelReq(), ""));
+				return false;
+			}
+			if (template.isTalent() && !TalentTreeHelper.checkTalentTreeRequirements(skillInfo, info, template)) {
 				return false;
 			}
 			Log.debug("checkSkillRequirement pass");
@@ -1057,7 +1078,7 @@ if(!admin) {
 		Log.debug("resetTalents reset points");
 
 		int newLevel = info.statGetCurrentValue("level");
-		int totalPoints = (newLevel - 1) * ClassAbilityPlugin.TALENT_POINTS_GIVEN_PER_LEVEL;
+		int totalPoints = TalentTreeHelper.calculateTalentPointsForLevel(newLevel);
 		skillInfo.talentPoints = totalPoints + skillInfo.talentPointsBought;
 		skillInfo.talentPointsSpent = 0;
 		if (Log.loggingDebug)
@@ -1077,7 +1098,102 @@ if(!admin) {
 	}
 
 	/**
-	 * Gives players skill points for having leveled up. WARNING: Verify this
+	 * Dual-spec support: swap active talent loadout (WoW-style second spec).
+	 */
+	public static void switchTalentLoadout(SkillInfo skillInfo, CombatInfo info, int loadoutIndex) {
+		if (loadoutIndex < 0 || loadoutIndex >= ClassAbilityPlugin.TALENT_LOADOUT_COUNT) {
+			ChatClient.sendObjChatMsg(info.getOwnerOid(), 2, "Invalid talent specialization.");
+			return;
+		}
+		if (loadoutIndex == skillInfo.activeTalentLoadout) {
+			return;
+		}
+
+		skillInfo.talentLoadouts.put(skillInfo.activeTalentLoadout, TalentTreeHelper.snapshotTalentLevels(skillInfo));
+		stripAllTalentEffects(skillInfo, info);
+
+		HashMap<Integer, Integer> target = skillInfo.talentLoadouts.get(loadoutIndex);
+		if (target == null) {
+			target = new HashMap<Integer, Integer>();
+		}
+		TalentTreeHelper.applyTalentSnapshot(skillInfo, target);
+
+		for (SkillData skillData : skillInfo.getSkills().values()) {
+			if (!skillData.getTalent() || skillData.getSkillLevel() <= 0) {
+				continue;
+			}
+			SkillTemplate template = Agis.SkillManager.get(skillData.getSkillID());
+			if (template == null) {
+				continue;
+			}
+			applyStatModifications(info, template, skillData.getSkillLevel());
+			applyNewAbilities(info, template, skillData.getSkillLevel());
+		}
+
+		skillInfo.activeTalentLoadout = loadoutIndex;
+		skillInfo.talentPointsSpent = TalentTreeHelper.recalculateTalentPointsSpent(skillInfo);
+		int level = info.statGetCurrentValue("level");
+		int totalPoints = TalentTreeHelper.calculateTalentPointsForLevel(level);
+		skillInfo.talentPoints = totalPoints + skillInfo.talentPointsBought - skillInfo.talentPointsSpent;
+
+		Engine.getPersistenceManager().setDirty(info);
+		ClassAbilityClient.skillLevelChange(info.getOid());
+		ExtendedCombatMessages.sendSkills(info.getOwnerOid(), skillInfo);
+		ExtendedCombatMessages.sendAbilities(info.getOwnerOid(), info.getCurrentAbilities());
+		ExtendedCombatMessages.sendActions(info.getOwnerOid(), info.getCurrentActions(), info.getCurrentActionBar());
+		ChatClient.sendObjChatMsg(info.getOwnerOid(), 2, "Talent specialization " + (loadoutIndex + 1) + " activated.");
+	}
+
+	private static void stripAllTalentEffects(SkillInfo skillInfo, CombatInfo info) {
+		Collection<Integer> currentAbilities = info.getCurrentAbilities();
+		ArrayList<ArrayList<String>> currentActions = info.getCurrentActions();
+
+		for (SkillData skillData : skillInfo.getSkills().values()) {
+			if (!skillData.getTalent() || skillData.getSkillLevel() <= 0) {
+				continue;
+			}
+			Integer skillID = skillData.getSkillID();
+			SkillTemplate template = Agis.SkillManager.get(skillID);
+			int skillLevel = skillData.getSkillLevel();
+			applyStatModifications(info, template, 0);
+
+			for (int j = 0; j <= skillLevel; j++) {
+				ArrayList<SkillAbility> abilities = template.getAbilitiesByLevel(j);
+				for (SkillAbility ability : abilities) {
+					AgisAbility ab = Agis.AbilityManager.get(ability.abilityID);
+					if (ab == null) {
+						continue;
+					}
+					Integer abilityID = ab.getID();
+					if (currentAbilities.contains(abilityID)) {
+						currentAbilities.remove(abilityID);
+						if (ab.getAbilityType() == 2 && ab instanceof FriendlyEffectAbility) {
+							FriendlyEffectAbility eAbility = (FriendlyEffectAbility) ab;
+							ArrayList<AbilityEffectDefinition> effectsToAdd = eAbility.getPowerUpDefinition(0L).getEffectDefinition();
+							for (int i = 0; i < effectsToAdd.size(); i++) {
+								AgisEffect.removeEffectByID(info, effectsToAdd.get(i).getEffectId());
+							}
+						}
+					}
+					for (int i = 0; i < currentActions.size(); i++) {
+						if (currentActions.get(i) != null) {
+							for (int k = 0; k < currentActions.get(i).size(); k++) {
+								if (currentActions.get(i).get(k).equals("a" + abilityID)) {
+									currentActions.get(i).set(k, "");
+								}
+							}
+						}
+					}
+				}
+			}
+			skillData.setSkillLevel(0);
+		}
+		info.setCurrentAbilities(currentAbilities);
+		info.setCurrentActions(currentActions);
+	}
+
+	/**
+	 * Clear all skills and give the player back their skill points. WARNING: Needs
 	 * function is still used, and open it up to allow the amount of points to be
 	 * set.
 	 * 
@@ -1091,7 +1207,7 @@ if(!admin) {
 			skillInfo.skillPoints = totalPoints + skillInfo.pointsBought - skillInfo.pointsSpent;
 		}
 		if (ClassAbilityPlugin.USE_TALENT_PURCHASE_POINTS) {
-			int totalPoints = (newLevel - 1) * ClassAbilityPlugin.TALENT_POINTS_GIVEN_PER_LEVEL;
+			int totalPoints = TalentTreeHelper.calculateTalentPointsForLevel(newLevel);
 			skillInfo.talentPoints = totalPoints + skillInfo.talentPointsBought - skillInfo.talentPointsSpent;
 		}
 		// Now we need to refund points for skills that now match the players level

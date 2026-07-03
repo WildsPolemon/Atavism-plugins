@@ -93,6 +93,7 @@ public class ClassAbilityPlugin extends EnginePlugin {
 	    filter.addType(ClassAbilityClient.MSG_TYPE_LEARN_ABILITY);
 	    filter.addType(ClassAbilityClient.MSG_TYPE_UNLEARN_ABILITY);
         filter.addType(CombatClient.MSG_TYPE_UPDATE_ACTIONBAR);
+        filter.addType(ClassAbilityClient.MSG_TYPE_SWITCH_TALENT_LOADOUT);
         Engine.getAgent().createSubscription(filter, this);
         
         // Create responder subscription
@@ -140,6 +141,7 @@ public class ClassAbilityPlugin extends EnginePlugin {
         getHookManager().addHook(ClassAbilityClient.MSG_TYPE_UNLEARN_ABILITY, new UnlearnAbilityHook());
         getHookManager().addHook(CombatClient.MSG_TYPE_UPDATE_ACTIONBAR, new UpdateActionBarHook());
         getHookManager().addHook(CombatClient.MSG_TYPE_COMBAT_SKILL_DIFF, new GetSkillDiffExpHook());
+        getHookManager().addHook(ClassAbilityClient.MSG_TYPE_SWITCH_TALENT_LOADOUT, new SwitchTalentLoadoutHook());
         
     
     }
@@ -185,6 +187,36 @@ public class ClassAbilityPlugin extends EnginePlugin {
 		if (talentPointsPerLevel != null)
 			TALENT_POINTS_GIVEN_PER_LEVEL = Integer.parseInt(talentPointsPerLevel);
 		log.debug("Loaded Game Setting TALENT_POINTS_GIVEN_PER_LEVEL="+TALENT_POINTS_GIVEN_PER_LEVEL);
+
+		String talentPointsStartLevel = ctDB.loadGameSetting("TALENT_POINTS_START_LEVEL");
+		if (talentPointsStartLevel != null)
+			TALENT_POINTS_START_LEVEL = Integer.parseInt(talentPointsStartLevel);
+		log.debug("Loaded Game Setting TALENT_POINTS_START_LEVEL="+TALENT_POINTS_START_LEVEL);
+
+		String talentPointsPerLevelWow = ctDB.loadGameSetting("TALENT_POINTS_PER_LEVEL");
+		if (talentPointsPerLevelWow != null)
+			TALENT_POINTS_PER_LEVEL = Integer.parseInt(talentPointsPerLevelWow);
+		log.debug("Loaded Game Setting TALENT_POINTS_PER_LEVEL="+TALENT_POINTS_PER_LEVEL);
+
+		String talentTreeMaxPoints = ctDB.loadGameSetting("TALENT_TREE_MAX_POINTS");
+		if (talentTreeMaxPoints != null)
+			TALENT_TREE_MAX_POINTS = Integer.parseInt(talentTreeMaxPoints);
+		log.debug("Loaded Game Setting TALENT_TREE_MAX_POINTS="+TALENT_TREE_MAX_POINTS);
+
+		String talentLoadoutCount = ctDB.loadGameSetting("TALENT_LOADOUT_COUNT");
+		if (talentLoadoutCount != null)
+			TALENT_LOADOUT_COUNT = Integer.parseInt(talentLoadoutCount);
+		log.debug("Loaded Game Setting TALENT_LOADOUT_COUNT="+TALENT_LOADOUT_COUNT);
+
+		String talentResetCurrencyId = ctDB.loadGameSetting("TALENT_RESET_CURRENCY_ID");
+		if (talentResetCurrencyId != null)
+			TALENT_RESET_CURRENCY_ID = Integer.parseInt(talentResetCurrencyId);
+		log.debug("Loaded Game Setting TALENT_RESET_CURRENCY_ID="+TALENT_RESET_CURRENCY_ID);
+
+		String talentResetCurrencyCost = ctDB.loadGameSetting("TALENT_RESET_CURRENCY_COST");
+		if (talentResetCurrencyCost != null)
+			TALENT_RESET_CURRENCY_COST = Long.parseLong(talentResetCurrencyCost);
+		log.debug("Loaded Game Setting TALENT_RESET_CURRENCY_COST="+TALENT_RESET_CURRENCY_COST);
 
 		
 		
@@ -1386,6 +1418,9 @@ public class ClassAbilityPlugin extends EnginePlugin {
     	    CombatInfo cInfo = CombatPlugin.getCombatInfo(oid);
     	    boolean skill = (boolean) EBMsg.getProperty("skill");
     	    log.debug("SkillResetHook: oid="+oid+" skill="+skill+" cInfo="+cInfo);
+    	    if (!skill && TALENT_RESET_CURRENCY_ID > 0 && TALENT_RESET_CURRENCY_COST > 0) {
+    	    	AgisInventoryClient.alterCurrency(oid, TALENT_RESET_CURRENCY_ID, -TALENT_RESET_CURRENCY_COST);
+    	    }
      	    if(skill)
     	    	SkillInfo.resetSkills(cInfo.getCurrentSkillInfo(), cInfo);
     	    else
@@ -1396,6 +1431,18 @@ public class ClassAbilityPlugin extends EnginePlugin {
 			
         	 log.debug("SkillResetHook: End");
         	 return true;
+    	}
+    }
+
+    class SwitchTalentLoadoutHook implements Hook {
+    	public boolean processMessage(Message msg, int flags) {
+    		ClassAbilityClient.switchTalentLoadoutMessage EBMsg = (ClassAbilityClient.switchTalentLoadoutMessage) msg;
+    		OID oid = EBMsg.getSubject();
+    		CombatInfo cInfo = CombatPlugin.getCombatInfo(oid);
+    		int loadout = (int) EBMsg.getProperty("loadout");
+    		log.debug("SwitchTalentLoadoutHook: oid=" + oid + " loadout=" + loadout);
+    		SkillInfo.switchTalentLoadout(cInfo.getCurrentSkillInfo(), cInfo, loadout);
+    		return true;
     	}
     }
     
@@ -1859,6 +1906,12 @@ public class ClassAbilityPlugin extends EnginePlugin {
     public static int SKILL_POINTS_GIVEN_PER_LEVEL = 3;
     public static boolean USE_TALENT_PURCHASE_POINTS = true;
      public static int TALENT_POINTS_GIVEN_PER_LEVEL = 3;
+    public static int TALENT_POINTS_START_LEVEL = 1;
+    public static int TALENT_POINTS_PER_LEVEL = 1;
+    public static int TALENT_TREE_MAX_POINTS = 51;
+    public static int TALENT_LOADOUT_COUNT = 2;
+    public static int TALENT_RESET_CURRENCY_ID = -1;
+    public static long TALENT_RESET_CURRENCY_COST = 0;
     public static boolean USE_SKILL_MAX = true;
     public static int SKILL_STARTING_MAX = 5;
     public static int EXP_MAX_LEVEL_DIFFERENCE = 10;

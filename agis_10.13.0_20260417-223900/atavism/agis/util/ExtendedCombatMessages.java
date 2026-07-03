@@ -13,6 +13,7 @@ import atavism.agis.objects.Currency;
 import atavism.agis.objects.InventoryInfo;
 import atavism.agis.objects.SkillInfo;
 import atavism.agis.objects.SkillData;
+import atavism.agis.objects.TalentTreeHelper;
 import atavism.agis.plugins.AgisInventoryPlugin;
 import atavism.agis.plugins.ClassAbilityPlugin;
 import atavism.server.engine.*;
@@ -299,6 +300,12 @@ public class ExtendedCombatMessages {
 		int totalPoints = skillInfo.getSkillPoints() + skillInfo.getPointsSpent();
 		props.put("totalSkillPoints", totalPoints);
 		props.put("totalTalentPoints", skillInfo.getTalentPoints() + skillInfo.getTalentPointsSpent());
+		props.put("activeTalentLoadout", skillInfo.getActiveTalentLoadout());
+		props.put("talentLoadoutCount", ClassAbilityPlugin.TALENT_LOADOUT_COUNT);
+		props.put("talentTreeMaxPoints", ClassAbilityPlugin.TALENT_TREE_MAX_POINTS);
+		for (int tree = 0; tree < 3; tree++) {
+			props.put("tree" + tree + "PointsSpent", TalentTreeHelper.getPointsSpentInTree(skillInfo, tree));
+		}
 		props.put("skillPointCost", ClassAbilityPlugin.GetSkillPointCost(totalPoints));
 		int numSkills = 0;
 		// Log.debug("SKILL: got " + skillInfo.getSkills().size() + " skills to send down");
@@ -311,6 +318,7 @@ public class ExtendedCombatMessages {
 			props.put("skill" + numSkills + "State", skillData.getState());
 			props.put("skill" + numSkills + "Xp", skillData.getExperience());
 			props.put("skill" + numSkills + "XpMax", skillData.getExperienceMax());
+			props.put("skill" + numSkills + "Talent", skillData.getTalent());
 			numSkills++;
 		}
 

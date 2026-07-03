@@ -72,6 +72,11 @@ export interface Skill {
   skill_profile_id: number;
   type: number;
   talent: boolean;
+  tree_id: number;
+  tier: number;
+  column: number;
+  tree_points_required: number;
+  exclusive_group: number;
   isactive: boolean;
   creationtimestamp: string;
   updatetimestamp: string;
@@ -135,6 +140,21 @@ export class SkillsService {
         filterVisible: true,
       },
       talent: {type: ConfigTypes.booleanType, visible: true, filterType: FilterTypes.booleanType, filterVisible: true},
+      tree_id: {type: ConfigTypes.numberType, visible: true, filterType: FilterTypes.integer, filterVisible: true},
+      tier: {type: ConfigTypes.numberType, visible: true, filterType: FilterTypes.integer, filterVisible: true},
+      column: {type: ConfigTypes.numberType, visible: true, filterType: FilterTypes.integer, filterVisible: true},
+      tree_points_required: {
+        type: ConfigTypes.numberType,
+        visible: true,
+        filterType: FilterTypes.integer,
+        filterVisible: true,
+      },
+      exclusive_group: {
+        type: ConfigTypes.numberType,
+        visible: true,
+        filterType: FilterTypes.integer,
+        filterVisible: true,
+      },
       type: {
         type: ConfigTypes.dropdown,
         visible: true,
@@ -265,6 +285,12 @@ export class SkillsService {
       skillPointCost: {name: 'skillPointCost', type: FormFieldType.integer, width: 33},
       automaticallyLearn: {name: 'automaticallyLearn', type: FormFieldType.boolean, width: 33},
       talent: {name: 'talent', type: FormFieldType.boolean, width: 33},
+      titleTalentTree: {name: '', label: 'WoW Talent Tree', type: FormFieldType.title},
+      tree_id: {name: 'tree_id', type: FormFieldType.integer, width: 20},
+      tier: {name: 'tier', type: FormFieldType.integer, width: 20},
+      column: {name: 'column', type: FormFieldType.integer, width: 20},
+      tree_points_required: {name: 'tree_points_required', type: FormFieldType.integer, width: 30},
+      exclusive_group: {name: 'exclusive_group', type: FormFieldType.integer, width: 30},
       type: {
         name: 'type',
         type: FormFieldType.dropdown,

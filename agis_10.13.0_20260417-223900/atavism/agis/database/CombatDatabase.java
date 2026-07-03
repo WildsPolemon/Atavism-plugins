@@ -4045,6 +4045,11 @@ public void LoadAbilityTriggers(AbilityPowerUpData data) {
     					}
     					skillTmpl.setPlayerLevelReq(rs.getInt("playerLevelReq"));
     					skillTmpl.setSkillProfileID(rs.getInt("skill_profile_id"));
+    					skillTmpl.setTreeId(readIntColumn(rs, "tree_id", -1));
+    					skillTmpl.setTier(readIntColumn(rs, "tier", 0));
+    					skillTmpl.setColumn(readIntColumn(rs, "column", 0));
+    					skillTmpl.setTreePointsRequired(readIntColumn(rs, "tree_points_required", 0));
+    					skillTmpl.setExclusiveGroup(readIntColumn(rs, "exclusive_group", 0));
     						// Load skill abilities
     					LoadSkillAbilities(skillTmpl);
     					Timestamp taxPaidUntil = rs.getTimestamp("updatetimestamp");
@@ -4062,6 +4067,14 @@ public void LoadAbilityTriggers(AbilityPowerUpData data) {
 			e.printStackTrace();
 		}
 		return skills;
+	}
+
+	private int readIntColumn(ResultSet rs, String column, int defaultValue) {
+		try {
+			return rs.getInt(column);
+		} catch (SQLException e) {
+			return defaultValue;
+		}
 	}
 
 	/**

@@ -48,6 +48,13 @@ public class SkillTemplate implements Serializable {
    
     protected boolean talent = false;
 
+    /** WoW-style tree metadata (only used when talent=true). */
+    protected int treeId = -1;
+    protected int tier = 0;
+    protected int column = 0;
+    protected int treePointsRequired = 0;
+    protected int exclusiveGroup = 0;
+
     /**
      *
      * @param type
@@ -237,6 +244,21 @@ public class SkillTemplate implements Serializable {
    
     public long getDate() { return date; }
     public void setDate(long date) { this.date = date; }
+
+    public int getTreeId() { return treeId; }
+    public void setTreeId(int treeId) { this.treeId = treeId; }
+
+    public int getTier() { return tier; }
+    public void setTier(int tier) { this.tier = tier; }
+
+    public int getColumn() { return column; }
+    public void setColumn(int column) { this.column = column; }
+
+    public int getTreePointsRequired() { return treePointsRequired; }
+    public void setTreePointsRequired(int treePointsRequired) { this.treePointsRequired = treePointsRequired; }
+
+    public int getExclusiveGroup() { return exclusiveGroup; }
+    public void setExclusiveGroup(int exclusiveGroup) { this.exclusiveGroup = exclusiveGroup; }
   
     public class SkillAbility {
     	public int skillLevelReq = 1;

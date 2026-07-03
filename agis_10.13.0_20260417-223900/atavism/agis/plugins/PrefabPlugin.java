@@ -2187,6 +2187,18 @@ public class PrefabPlugin extends EnginePlugin implements TcpAcceptCallback {
 				props.put("i" + c + "plylevreq", isp.getPlayerLevelReq());
 				props.put("i" + c + "pcost", isp.getSkillPointCost());
 				props.put("i" + c + "talent", isp.isTalent());
+				props.put("i" + c + "treeId", isp.getTreeId());
+				props.put("i" + c + "tier", isp.getTier());
+				props.put("i" + c + "column", isp.getColumn());
+				props.put("i" + c + "treePtsReq", isp.getTreePointsRequired());
+				props.put("i" + c + "exclGroup", isp.getExclusiveGroup());
+				props.put("i" + c + "prereq1", isp.getPrereqSkill1());
+				props.put("i" + c + "prereq1lev", isp.getPrereqSkill1Level());
+				props.put("i" + c + "prereq2", isp.getPrereqSkill2());
+				props.put("i" + c + "prereq2lev", isp.getPrereqSkill2Level());
+				props.put("i" + c + "prereq3", isp.getPrereqSkill3());
+				props.put("i" + c + "prereq3lev", isp.getPrereqSkill3Level());
+				props.put("i" + c + "maxLev", isp.getMaxLevel());
 				props.put("i" + c + "type", isp.getType());
 				
 				StringBuilder sbString = new StringBuilder("");
@@ -2262,6 +2274,14 @@ public class PrefabPlugin extends EnginePlugin implements TcpAcceptCallback {
 					props.put("i" + c + "plylevreq", prefabData.get("i" + i + "plylevreq"));
 					props.put("i" + c + "pcost", prefabData.get("i" + i + "pcost"));
 					props.put("i" + c + "talent", prefabData.get("i" + i + "talent"));
+					props.put("i" + c + "treeId", prefabData.get("i" + i + "treeId"));
+					props.put("i" + c + "tier", prefabData.get("i" + i + "tier"));
+					props.put("i" + c + "column", prefabData.get("i" + i + "column"));
+					props.put("i" + c + "treePtsReq", prefabData.get("i" + i + "treePtsReq"));
+					props.put("i" + c + "exclGroup", prefabData.get("i" + i + "exclGroup"));
+					props.put("i" + c + "prereq1", prefabData.get("i" + i + "prereq1"));
+					props.put("i" + c + "prereq1lev", prefabData.get("i" + i + "prereq1lev"));
+					props.put("i" + c + "maxLev", prefabData.get("i" + i + "maxLev"));
 					props.put("i" + c + "type", prefabData.get("i" + i + "type"));
 					props.put("i" + c + "abilites", prefabData.get("i" + i + "abilites"));
 					props.put("i" + c + "abilitesLev", prefabData.get("i" + i + "abilitesLev"));
@@ -2282,6 +2302,14 @@ public class PrefabPlugin extends EnginePlugin implements TcpAcceptCallback {
 				props.put("i" + c + "plylevreq", prefabData.get("i" + i + "plylevreq"));
 				props.put("i" + c + "pcost", prefabData.get("i" + i + "pcost"));
 				props.put("i" + c + "talent", prefabData.get("i" + i + "talent"));
+				props.put("i" + c + "treeId", prefabData.get("i" + i + "treeId"));
+				props.put("i" + c + "tier", prefabData.get("i" + i + "tier"));
+				props.put("i" + c + "column", prefabData.get("i" + i + "column"));
+				props.put("i" + c + "treePtsReq", prefabData.get("i" + i + "treePtsReq"));
+				props.put("i" + c + "exclGroup", prefabData.get("i" + i + "exclGroup"));
+				props.put("i" + c + "prereq1", prefabData.get("i" + i + "prereq1"));
+				props.put("i" + c + "prereq1lev", prefabData.get("i" + i + "prereq1lev"));
+				props.put("i" + c + "maxLev", prefabData.get("i" + i + "maxLev"));
 				props.put("i" + c + "type", prefabData.get("i" + i + "type"));
 				props.put("i" + c + "abilites", prefabData.get("i" + i + "abilites"));
 				props.put("i" + c + "abilitesLev", prefabData.get("i" + i + "abilitesLev"));

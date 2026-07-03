@@ -492,6 +492,26 @@ public class ClassAbilityClient {
 		Log.debug("CLASSABILITY CLIENT: sent addTalentPoints");
 	}
 
+	public static void switchTalentLoadout(OID oid, int loadout) {
+		switchTalentLoadoutMessage msg = new switchTalentLoadoutMessage(oid, loadout);
+		Engine.getAgent().sendBroadcast(msg);
+		Log.debug("CLASSABILITY CLIENT: sent switchTalentLoadout loadout=" + loadout);
+	}
+
+	public static class switchTalentLoadoutMessage extends PropertyMessage {
+		private static final long serialVersionUID = 1L;
+
+		public switchTalentLoadoutMessage() {
+			super();
+		}
+
+		public switchTalentLoadoutMessage(OID oid, int loadout) {
+			super(oid);
+			setMsgType(MSG_TYPE_SWITCH_TALENT_LOADOUT);
+			setProperty("loadout", loadout);
+		}
+	}
+
 	/**
 	 * Message used to tell the Combat system that the specified player is to learn
 	 * the given ability.
@@ -538,4 +558,5 @@ public class ClassAbilityClient {
     public static final MessageType MSG_TYPE_LEARN_ABILITY = MessageType.intern("combat.LEARN_ABILITY");
     public static final MessageType MSG_TYPE_UNLEARN_ABILITY = MessageType.intern("combat.UNLEARN_ABILITY");
     public static final MessageType MSG_TYPE_SET_SKILL_STATE = MessageType.intern("combat.SET_SKILL_STATE");
+    public static final MessageType MSG_TYPE_SWITCH_TALENT_LOADOUT = MessageType.intern("combat.SWITCH_TALENT_LOADOUT");
 }
