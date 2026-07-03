@@ -88,35 +88,35 @@ namespace AaaWorldGen.Editor
             EditorGUILayout.Space(6f);
             EditorGUILayout.BeginHorizontal();
 
-            if (WorldGenEditorUi.DrawPrimaryButton("  GENERATE WORLD  ", 44f))
+            if (WorldGenEditorUi.DrawPrimaryButton("  GENERATE WORLD  ", 48f))
             {
                 TryGenerateWorld();
             }
 
-            if (GUILayout.Button("Generate + Export", GUILayout.Height(44f), GUILayout.Width(130f)))
+            if (GUILayout.Button("Terrain Only", GUILayout.Height(48f), GUILayout.Width(96f)))
             {
-                TryGenerateAndExportQuick();
+                TryGenerateTerrainOnly();
             }
 
-            if (GUILayout.Button("Validate", GUILayout.Height(44f), GUILayout.Width(80f)))
+            if (GUILayout.Button("Validate", GUILayout.Height(48f), GUILayout.Width(72f)))
             {
                 RefreshValidation();
             }
 
-            if (GUILayout.Button("Random Seed", GUILayout.Height(44f), GUILayout.Width(100f)))
+            if (GUILayout.Button("Random Seed", GUILayout.Height(48f), GUILayout.Width(96f)))
             {
                 RandomizeSeed();
             }
 
             GUILayout.FlexibleSpace();
-            DrawBindings();
+            DrawCompactBindings();
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(4f);
         }
 
-        private void DrawBindings()
+        private void DrawCompactBindings()
         {
-            EditorGUILayout.BeginVertical(GUILayout.Width(360f));
+            EditorGUILayout.BeginVertical(GUILayout.Width(300f));
             generator = (WorldGenerator)EditorGUILayout.ObjectField("Generator", generator, typeof(WorldGenerator), true);
             config = (WorldGeneratorConfig)EditorGUILayout.ObjectField("Config", config, typeof(WorldGeneratorConfig), false);
             if (generator != null && config != null && generator.Config != config)
@@ -257,11 +257,11 @@ namespace AaaWorldGen.Editor
             EditorGUILayout.EndHorizontal();
             WorldGenEditorUi.EndPanel();
 
-            WorldGenEditorUi.BeginPanel("Pipeline", "Generation order: terrain → biomes → cities → roads → caves → resources → spawns → sectors");
-            EditorGUILayout.LabelField("1. Unity Terrain tiles (heightmap)");
-            EditorGUILayout.LabelField("2. City placement + road network");
-            EditorGUILayout.LabelField("3. Caves, resources, MMO spawn zones");
-            EditorGUILayout.LabelField("4. Sector grid for AOI / streaming");
+            WorldGenEditorUi.BeginPanel("Pipeline", "Layout from height function → Unity terrain bake → optional runtime spawn");
+            EditorGUILayout.LabelField("1. Sample height + biome fields (analytical)");
+            EditorGUILayout.LabelField("2. Cities, roads, caves, resources, spawns, sectors");
+            EditorGUILayout.LabelField("3. Bake Unity Terrain heightmaps (post-process + erosion)");
+            EditorGUILayout.LabelField("4. Spawn markers / streaming (if enabled on generator)");
             WorldGenEditorUi.EndPanel();
 
             if (PropertyVisible("runtime"))
@@ -279,6 +279,14 @@ namespace AaaWorldGen.Editor
 
         private void DrawTerrainSection()
         {
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.BeginVertical(GUILayout.Width(300f));
+            WorldGenEditorUi.BeginPanel("Height Preview", "Live 2D map — tweak seed/shape then Refresh.");
+            WorldGenTerrainPreview.DrawPreview(config, 280);
+            WorldGenEditorUi.EndPanel();
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.BeginVertical();
             WorldGenEditorUi.BeginPanel("World Dimensions");
             DrawProperty("worldSeed");
             DrawProperty("worldSizeInChunks");
@@ -287,9 +295,11 @@ namespace AaaWorldGen.Editor
             DrawProperty("seaLevel01");
             WorldGenEditorUi.EndPanel();
 
-            WorldGenEditorUi.BeginPanel("Unity Terrain", "Creates Terrain + TerrainData tiles in scene.");
+            WorldGenEditorUi.BeginPanel("Unity Terrain", "Smoothing + erosion polish baked into heightmaps.");
             DrawProperty("terrainGeneration");
             WorldGenEditorUi.EndPanel();
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndHorizontal();
 
             WorldGenEditorUi.BeginPanel("Height Noise");
             DrawProperty("heightNoise");
@@ -413,9 +423,8 @@ namespace AaaWorldGen.Editor
             }
             WorldGenEditorUi.EndPanel();
 
-            WorldGenEditorUi.BeginPanel("Export & Tools");
+            WorldGenEditorUi.BeginPanel("Tools");
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Export JSON", GUILayout.Height(26f))) { TryExportJson(); }
             if (GUILayout.Button("Copy Snapshot", GUILayout.Height(26f))) { CopyConfigSnapshot(); }
             if (GUILayout.Button("Ping Roots", GUILayout.Height(26f))) { PingSpawnRoots(); }
             if (GUILayout.Button("Open README", GUILayout.Height(26f))) { RevealGeneratorFolder(); }
@@ -465,6 +474,7 @@ namespace AaaWorldGen.Editor
                 string terrainInfo = terrain?.terrains != null ? $", {terrain.terrains.Count} terrain tiles" : string.Empty;
                 statusLine = $"Done — {result.cities.Count} cities, {result.resources.Count} resources{terrainInfo}";
                 activeSection = Section.Results;
+                WorldGenTerrainPreview.Invalidate();
                 Repaint();
             }
             catch (Exception ex)
@@ -474,27 +484,25 @@ namespace AaaWorldGen.Editor
             }
         }
 
-        private void TryGenerateAndExportQuick()
+        private void TryGenerateTerrainOnly()
         {
-            if (generator == null || config == null) { statusLine = "Assign generator and config."; return; }
+            if (generator == null) { statusLine = "No WorldGenerator in scene."; return; }
+            if (config == null) { statusLine = "No config selected."; return; }
             try
             {
+                Undo.RecordObject(generator, "Generate terrain");
                 generator.Config = config;
-                generator.GenerateNow();
-                string path = Path.Combine(Path.GetTempPath(), $"worldgen_{DateTime.Now:yyyyMMdd_HHmmss}.json");
-                generator.ExportLastResultJson(path);
-                statusLine = $"Exported: {path}";
+                TerrainGenerator.TerrainGenerationResult terrain = generator.GenerateTerrainOnly();
+                statusLine = $"Terrain baked — {terrain.terrains.Count} tiles";
+                activeSection = Section.Terrain;
+                WorldGenTerrainPreview.Invalidate();
+                Repaint();
             }
-            catch (Exception ex) { statusLine = "Export failed."; Debug.LogException(ex); }
-        }
-
-        private void TryExportJson()
-        {
-            if (generator == null) { statusLine = "No generator."; return; }
-            string path = EditorUtility.SaveFilePanel("Export World JSON", Application.dataPath, "generated_world_layout", "json");
-            if (string.IsNullOrEmpty(path)) return;
-            try { generator.Config = config; generator.ExportLastResultJson(path); statusLine = $"Exported: {path}"; }
-            catch (Exception ex) { statusLine = "Export failed."; Debug.LogException(ex); }
+            catch (Exception ex)
+            {
+                statusLine = "Terrain bake failed.";
+                Debug.LogException(ex);
+            }
         }
 
         private void RandomizeSeed()

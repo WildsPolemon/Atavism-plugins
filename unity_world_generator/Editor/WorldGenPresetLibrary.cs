@@ -66,6 +66,8 @@ namespace AaaWorldGen.Editor
             if (target.terrainShape == null) { target.terrainShape = new TerrainShapeSettings(); }
             if (target.terrainShape.continentNoise == null) { target.terrainShape.continentNoise = new NoiseLayerSettings(0.00022f, 3, 2f, 0.5f, 201f, -144f); }
             if (target.terrainShape.ridgeNoise == null) { target.terrainShape.ridgeNoise = new NoiseLayerSettings(0.00092f, 4, 2.1f, 0.5f, -77f, 129f); }
+            if (target.terrainShape.valleyNoise == null) { target.terrainShape.valleyNoise = new NoiseLayerSettings(0.0018f, 3, 2.05f, 0.48f, 88f, -41f); }
+            if (target.terrainShape.detailNoise == null) { target.terrainShape.detailNoise = new NoiseLayerSettings(0.0065f, 2, 2.2f, 0.42f, -33f, 67f); }
             if (target.terrainGeneration == null) { target.terrainGeneration = new TerrainGenerationSettings(); }
             if (target.biomeClimate == null) { target.biomeClimate = new BiomeClimateSettings(); }
             if (target.biomes == null) { target.biomes = new List<BiomeDefinition>(); }
@@ -166,6 +168,11 @@ namespace AaaWorldGen.Editor
             config.terrainShape.lowlandThreshold01 = 0.53f;
             config.terrainShape.mountainBoostStart01 = 0.72f;
             config.terrainShape.mountainBoostStrength = 0.29f;
+            config.terrainShape.mountainPeakPower = 1.42f;
+            config.terrainShape.valleyCarveStrength = 0.14f;
+            config.terrainShape.detailStrength = 0.05f;
+            config.terrainShape.coastalFalloffStrength = 0.32f;
+            config.terrainShape.coastalFalloffWidth01 = 0.16f;
             config.biomes = new List<BiomeDefinition>
             {
                 new BiomeDefinition { biomeId = "forest", minHeight01 = 0.05f, maxHeight01 = 0.66f, idealMoisture01 = 0.66f, idealTemperature01 = 0.57f, blendWeight = 1.35f },
@@ -196,6 +203,9 @@ namespace AaaWorldGen.Editor
             config.terrainGeneration.enableTerrainGeneration = true;
             config.terrainGeneration.terrainTileSizeMeters = 512f;
             config.terrainGeneration.heightmapResolution = 257;
+            config.terrainGeneration.applyHeightmapSmoothing = true;
+            config.terrainGeneration.postProcessSmoothIterations = 1;
+            config.terrainGeneration.erosionStrength = 0.16f;
         }
     }
 }

@@ -316,6 +316,10 @@ namespace AaaWorldGen
         public bool clearTerrainBeforeGenerate = true;
         public bool drawInstanced = true;
         public Material terrainMaterial;
+        [Tooltip("Softens heightmap before baking to reduce harsh noise.")]
+        public bool applyHeightmapSmoothing = true;
+        [Range(0, 3)] public int postProcessSmoothIterations = 1;
+        [Range(0f, 0.5f)] public float erosionStrength = 0.14f;
     }
 
     [Serializable]
@@ -326,10 +330,17 @@ namespace AaaWorldGen
         public NoiseLayerSettings continentNoise = new NoiseLayerSettings(0.00022f, 3, 2f, 0.5f, 201f, -144f);
         [Range(0f, 1f)] public float ridgeStrength = 0.19f;
         public NoiseLayerSettings ridgeNoise = new NoiseLayerSettings(0.00092f, 4, 2.1f, 0.5f, -77f, 129f);
+        [Range(0f, 0.35f)] public float valleyCarveStrength = 0.12f;
+        public NoiseLayerSettings valleyNoise = new NoiseLayerSettings(0.0018f, 3, 2.05f, 0.48f, 88f, -41f);
+        [Range(0f, 0.12f)] public float detailStrength = 0.045f;
+        public NoiseLayerSettings detailNoise = new NoiseLayerSettings(0.0065f, 2, 2.2f, 0.42f, -33f, 67f);
+        [Range(0f, 1f)] public float coastalFalloffStrength = 0.35f;
+        [Range(0.05f, 0.45f)] public float coastalFalloffWidth01 = 0.18f;
         [Range(0f, 1f)] public float lowlandFlattenStrength = 0.35f;
         [Range(0f, 1f)] public float lowlandThreshold01 = 0.38f;
         [Range(0f, 1f)] public float mountainBoostStart01 = 0.62f;
         [Range(0f, 1f)] public float mountainBoostStrength = 0.24f;
+        [Range(1f, 2.4f)] public float mountainPeakPower = 1.35f;
     }
 
     [Serializable]

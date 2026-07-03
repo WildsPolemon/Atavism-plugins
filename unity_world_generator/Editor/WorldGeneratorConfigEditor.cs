@@ -28,6 +28,7 @@ namespace AaaWorldGen.Editor
             DrawMetrics(config);
             DrawTopActions(config);
             DrawPresetCards(config);
+            DrawTerrainPreview(config);
             DrawSearch();
 
             showShape = DrawFoldoutSection(showShape, "World Shape", () =>
@@ -129,6 +130,18 @@ namespace AaaWorldGen.Editor
                 WorldGeneratorDashboardWindow.Open();
             }
 
+            WorldGenerator sceneGen = FindSceneGenerator();
+            EditorGUI.BeginDisabledGroup(sceneGen == null);
+            if (GUILayout.Button("Generate World", GUILayout.Height(32f)))
+            {
+                TryGenerateFromInspector(sceneGen, config);
+            }
+            if (GUILayout.Button("Terrain Only", GUILayout.Height(32f)))
+            {
+                TryTerrainOnlyFromInspector(sceneGen, config);
+            }
+            EditorGUI.EndDisabledGroup();
+
             if (GUILayout.Button("Validate", GUILayout.Height(32f)))
             {
                 List<string> messages = config.GetValidationMessages();
@@ -184,6 +197,36 @@ namespace AaaWorldGen.Editor
             }
             EditorGUILayout.EndHorizontal();
             WorldGenEditorUi.EndPanel();
+        }
+
+        private void DrawTerrainPreview(WorldGeneratorConfig config)
+        {
+            WorldGenEditorUi.BeginPanel("Terrain Preview", "Quick height map without full generation.");
+            WorldGenTerrainPreview.DrawPreview(config, 220);
+            WorldGenEditorUi.EndPanel();
+        }
+
+        private static WorldGenerator FindSceneGenerator()
+        {
+            return UnityEngine.Object.FindObjectOfType<WorldGenerator>();
+        }
+
+        private static void TryGenerateFromInspector(WorldGenerator generator, WorldGeneratorConfig config)
+        {
+            if (generator == null) return;
+            Undo.RecordObject(generator, "Generate world");
+            generator.Config = config;
+            generator.GenerateNow();
+            WorldGenTerrainPreview.Invalidate();
+        }
+
+        private static void TryTerrainOnlyFromInspector(WorldGenerator generator, WorldGeneratorConfig config)
+        {
+            if (generator == null) return;
+            Undo.RecordObject(generator, "Generate terrain");
+            generator.Config = config;
+            generator.GenerateTerrainOnly();
+            WorldGenTerrainPreview.Invalidate();
         }
 
         private void DrawSearch()

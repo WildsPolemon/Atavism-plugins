@@ -8,8 +8,8 @@ namespace AaaWorldGen
     {
         [SerializeField] private WorldGeneratorConfig config;
         [SerializeField] private bool spawnRuntimePrefabs = true;
-        [SerializeField] private bool exportJsonAfterGeneration = false;
-        [SerializeField] private string exportFileName = "generated_world_layout.json";
+        [HideInInspector] [SerializeField] private bool exportJsonAfterGeneration = false;
+        [HideInInspector] [SerializeField] private string exportFileName = "generated_world_layout.json";
 
         private WorldGenerationResult lastResult;
         private TerrainGenerator.TerrainGenerationResult lastTerrainResult;
@@ -224,6 +224,27 @@ namespace AaaWorldGen
             }
 
             return lastResult;
+        }
+
+        /// <summary>Bakes Unity terrain tiles only — fast iteration without layout/spawn pass.</summary>
+        public TerrainGenerator.TerrainGenerationResult GenerateTerrainOnly()
+        {
+            if (config == null)
+            {
+                throw new InvalidOperationException("WorldGeneratorConfig is missing.");
+            }
+
+            TerrainGenerationSettings terrainSettings = config.terrainGeneration ?? new TerrainGenerationSettings();
+            if (!terrainSettings.enableTerrainGeneration)
+            {
+                throw new InvalidOperationException("terrainGeneration.enableTerrainGeneration is disabled.");
+            }
+
+            Func<float, float, float> sampleHeight01 = HeightSampler.BuildHeight01Sampler(config);
+            Transform terrainRoot = EnsureTerrainRoot(terrainSettings);
+            lastTerrainResult = TerrainGenerator.Generate(config, sampleHeight01, terrainRoot);
+            Debug.Log($"Terrain-only bake: {lastTerrainResult.terrains.Count} tiles.");
+            return lastTerrainResult;
         }
 
         private Transform EnsureTerrainRoot(TerrainGenerationSettings settings)

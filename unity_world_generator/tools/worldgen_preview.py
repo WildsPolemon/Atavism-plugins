@@ -126,6 +126,27 @@ DEFAULT_TERRAIN_SHAPE = {
     "lowland_threshold01": 0.38,
     "mountain_boost_start01": 0.62,
     "mountain_boost_strength": 0.24,
+    "mountain_peak_power": 1.35,
+    "valley_carve_strength": 0.12,
+    "valley_noise": {
+        "frequency": 0.0018,
+        "octaves": 3,
+        "lacunarity": 2.05,
+        "persistence": 0.48,
+        "offset_x": 88.0,
+        "offset_z": -41.0,
+    },
+    "detail_strength": 0.045,
+    "detail_noise": {
+        "frequency": 0.0065,
+        "octaves": 2,
+        "lacunarity": 2.2,
+        "persistence": 0.42,
+        "offset_x": -33.0,
+        "offset_z": 67.0,
+    },
+    "coastal_falloff_strength": 0.35,
+    "coastal_falloff_width01": 0.18,
 }
 
 
@@ -143,7 +164,7 @@ def build_terrain_shape_cfg(config: dict) -> dict:
     return shape_cfg
 
 
-def apply_terrain_shape(base_height, x, z, seed, shape_cfg):
+def apply_terrain_shape(base_height, x, z, seed, shape_cfg, world_size_meters=14336.0, sea_level01=0.32):
     h = clamp01(base_height)
     if not shape_cfg.get("enable_advanced_shaping", True):
         return h
@@ -157,6 +178,18 @@ def apply_terrain_shape(base_height, x, z, seed, shape_cfg):
     h += (ridged - 0.5) * shape_cfg["ridge_strength"]
     h = clamp01(h)
 
+    valley_strength = shape_cfg.get("valley_carve_strength", 0.0)
+    if valley_strength > 0.001:
+        valley_noise = shape_cfg.get("valley_noise", DEFAULT_TERRAIN_SHAPE["valley_noise"])
+        valley_source = fbm01(x, z, seed + 467, valley_noise)
+        valley = (1.0 - abs(valley_source * 2.0 - 1.0)) ** 1.6
+        mountain_start = min(0.999, max(0.0, shape_cfg["mountain_boost_start01"]))
+        midland_mask = 1.0 - clamp01((h - mountain_start) / max(1e-6, 1.0 - mountain_start))
+        lowland_threshold = max(1e-6, shape_cfg["lowland_threshold01"])
+        midland_mask *= clamp01(h / lowland_threshold)
+        h -= valley * valley_strength * midland_mask
+        h = clamp01(h)
+
     lowland_threshold = max(1e-6, shape_cfg["lowland_threshold01"])
     lowland_mask = 1.0 - clamp01((h - lowland_threshold) / lowland_threshold)
     smooth_h = smoothstep(h)
@@ -165,7 +198,28 @@ def apply_terrain_shape(base_height, x, z, seed, shape_cfg):
 
     mountain_start = min(0.999, max(0.0, shape_cfg["mountain_boost_start01"]))
     mountain_mask = clamp01((h - mountain_start) / max(1e-6, 1.0 - mountain_start))
-    h += (mountain_mask ** 2) * shape_cfg["mountain_boost_strength"]
+    boosted = h + (mountain_mask ** 2) * shape_cfg["mountain_boost_strength"]
+    peak_power = max(1.0, shape_cfg.get("mountain_peak_power", 1.35))
+    h = clamp01(boosted) ** (1.0 / peak_power)
+
+    detail_strength = shape_cfg.get("detail_strength", 0.0)
+    if detail_strength > 0.001:
+        detail_noise = shape_cfg.get("detail_noise", DEFAULT_TERRAIN_SHAPE["detail_noise"])
+        detail = fbm01(x, z, seed + 523, detail_noise) - 0.5
+        detail_mask = 1.0 - lowland_mask * 0.65
+        h += detail * detail_strength * detail_mask
+        h = clamp01(h)
+
+    coastal_strength = shape_cfg.get("coastal_falloff_strength", 0.0)
+    if coastal_strength > 0.001 and world_size_meters > 1.0:
+        edge_x = min(x, world_size_meters - x) / world_size_meters
+        edge_z = min(z, world_size_meters - z) / world_size_meters
+        edge01 = min(edge_x, edge_z)
+        width = max(0.05, shape_cfg.get("coastal_falloff_width01", 0.18))
+        t = clamp01((edge01 - 0.0) / width)
+        coast_mask = 1.0 - (t * t * (3.0 - 2.0 * t))
+        h = h + (sea_level01 * 0.85 - h) * (coast_mask * coastal_strength)
+
     return clamp01(h)
 
 
@@ -173,7 +227,9 @@ def sample_height01(config: dict, x: float, z: float, shape_cfg: dict = None) ->
     if shape_cfg is None:
         shape_cfg = build_terrain_shape_cfg(config)
     base = fbm01(x, z, config["world_seed"], config["noise"]["height"])
-    return apply_terrain_shape(base, x, z, config["world_seed"], shape_cfg)
+    world_size = config.get("world_size_in_chunks", config.get("world_size_chunks", 48)) * config["chunk_size_meters"]
+    sea = config.get("sea_level01", 0.32)
+    return apply_terrain_shape(base, x, z, config["world_seed"], shape_cfg, world_size, sea)
 
 
 def poisson(bounds_w: float, bounds_h: float, min_dist: float, seed: int, k: int = 30):

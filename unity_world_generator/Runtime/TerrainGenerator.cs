@@ -123,6 +123,7 @@ namespace AaaWorldGen
                 }
             }
 
+            HeightmapPostProcessor.Apply(heights, settings);
             data.SetHeights(0, 0, heights);
 
             Vector3 position = new Vector3(originX, 0f, originZ);
