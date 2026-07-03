@@ -6,7 +6,7 @@ namespace AaaWorldGen.Editor
 {
     public static class WorldGeneratorMenu
     {
-        [MenuItem("Tools/World Generation/Open Generator Dashboard")]
+        [MenuItem("Tools/World Generation/Open WorldGen Studio")]
         private static void OpenDashboard()
         {
             WorldGeneratorDashboardWindow.Open();
