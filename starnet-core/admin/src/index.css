@@ -1,0 +1,5 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+body { @apply bg-[#0a0d14] text-white antialiased; }
+.glass { @apply rounded-2xl border border-white/10 bg-white/5; }
