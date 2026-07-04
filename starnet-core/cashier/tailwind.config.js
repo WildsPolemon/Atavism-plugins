@@ -4,7 +4,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        pos: { bg: '#0a0e1a', panel: '#111827', card: '#1a2236', border: '#2d3a52', accent: '#3b82f6', success: '#10b981', danger: '#ef4444' },
+        pos: {
+          bg: '#f0f2f5',
+          panel: '#ffffff',
+          border: '#e5e7eb',
+          header: '#1db8c8',
+          accent: '#22c55e',
+          text: '#1f2937',
+          muted: '#6b7280',
+        },
+      },
+      boxShadow: {
+        card: '0 1px 3px rgba(0,0,0,.08)',
       },
     },
   },

@@ -3,54 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StarNet Core — POS та склад для магазину</title>
+  <title>StarNet Core — POS та склад</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>body{font-family:Inter,sans-serif}</style>
 </head>
-<body class="bg-slate-950 text-white">
-  <header class="border-b border-white/10 bg-slate-950/80 backdrop-blur">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-      <div class="flex items-center gap-2">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500 font-bold">S</div>
-        <span class="font-bold">StarNet Core</span>
-      </div>
-      <nav class="hidden gap-6 text-sm text-slate-400 md:flex">
-        <a href="#pos">POS</a><a href="#inventory">Склад</a><a href="#crm">CRM</a><a href="#pricing">Тарифи</a>
-      </nav>
-      <a href="http://localhost:5174" class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium">Увійти</a>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col items-center justify-center p-6">
+  <div class="text-center max-w-lg">
+    <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-500 text-2xl font-bold">S</div>
+    <h1 class="text-3xl font-bold">StarNet Core</h1>
+    <p class="mt-2 text-slate-400">Хмарна POS-система для роздрібної торгівлі</p>
+    <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+      <a href="http://localhost:5175" class="rounded-xl bg-cyan-500 px-8 py-3 font-semibold text-white">Точка продаж →</a>
+      <a href="http://localhost:5174" class="rounded-xl border border-white/20 px-8 py-3">Адмін-панель</a>
     </div>
-  </header>
-
-  <section class="mx-auto max-w-6xl px-6 py-20 text-center">
-    <h1 class="text-4xl font-bold leading-tight md:text-5xl">Спростіть керування магазином</h1>
-    <p class="mx-auto mt-4 max-w-2xl text-slate-400">Хмарна платформа: POS, склад, CRM, звіти. Аналог AinurPOS для України.</p>
-    <div class="mt-8 flex justify-center gap-4">
-      <a href="http://localhost:5174" class="rounded-xl bg-indigo-500 px-6 py-3 font-semibold">Спробувати безкоштовно</a>
-      <a href="http://localhost:5175" class="rounded-xl border border-white/20 px-6 py-3">Відкрити касу</a>
-    </div>
-  </section>
-
-  <section id="pos" class="border-t border-white/10 bg-slate-900/50 py-16">
-    <div class="mx-auto grid max-w-6xl gap-8 px-6 md:grid-cols-3">
-      <div class="rounded-2xl border border-white/10 p-6"><h3 class="font-bold text-indigo-400">POS</h3><p class="mt-2 text-sm text-slate-400">Продаж, штрихкоди, знижки, split pay, відкладений чек</p></div>
-      <div class="rounded-2xl border border-white/10 p-6"><h3 class="font-bold text-indigo-400">Склад</h3><p class="mt-2 text-sm text-slate-400">Закупівлі, інвентаризація, багатосклад</p></div>
-      <div class="rounded-2xl border border-white/10 p-6"><h3 class="font-bold text-indigo-400">CRM</h3><p class="mt-2 text-sm text-slate-400">Клієнти, лояльність, борги</p></div>
-    </div>
-  </section>
-
-  <section id="pricing" class="py-16">
-    <div class="mx-auto max-w-6xl px-6">
-      <h2 class="mb-8 text-center text-2xl font-bold">Тарифи (як AinurPOS)</h2>
-      <div class="grid gap-4 md:grid-cols-4">
-        <div class="rounded-2xl border border-white/10 p-6 text-center"><p class="text-2xl font-bold">$0</p><p class="text-sm text-slate-400">Базовий</p></div>
-        <div class="rounded-2xl border border-white/10 p-6 text-center"><p class="text-2xl font-bold">$9</p><p class="text-sm text-slate-400">Ощадливий</p></div>
-        <div class="rounded-2xl border border-indigo-500 p-6 text-center ring-2 ring-indigo-500/50"><p class="text-2xl font-bold">$19</p><p class="text-sm text-indigo-400">Оптимальний TOP</p></div>
-        <div class="rounded-2xl border border-white/10 p-6 text-center"><p class="text-2xl font-bold">$49</p><p class="text-sm text-slate-400">Професійний</p></div>
-      </div>
-    </div>
-  </section>
-
-  <footer class="border-t border-white/10 py-8 text-center text-sm text-slate-500">StarNet Core © 2026 · Аналог AinurPOS</footer>
+    <p class="mt-8 text-xs text-slate-500">Каса: cashier@starnetcore.local / cashier123</p>
+  </div>
 </body>
 </html>

@@ -52,6 +52,22 @@ class PosController extends BaseApiController
         return $this->ok(db_connect()->table('shifts')->where('id', $shift['id'])->get()->getRowArray());
     }
 
+    public function products()
+    {
+        $cat = $this->request->getGet('category_id');
+        $db = db_connect();
+        $b = model(ProductModel::class)->where('active', 1);
+        if ($cat) {
+            $b->where('category_id', (int) $cat);
+        }
+        $products = $b->orderBy('name')->findAll(60);
+        foreach ($products as &$p) {
+            $stock = $db->table('stock')->selectSum('quantity')->where('product_id', $p['id'])->get()->getRow('quantity');
+            $p['stock_qty'] = (float) ($stock ?? 0);
+        }
+        return $this->ok(['products' => $products]);
+    }
+
     public function search()
     {
         $q = trim($this->request->getGet('q') ?? '');

@@ -1,6 +1,8 @@
-# StarNet Core
+# StarNet Core — POS система
 
-Повний аналог [AinurPOS](https://ainurpos.com.ua/) на **CodeIgniter 4** + React.
+Веб-POS за зразком [AinurPOS web.ainur.app](https://web.ainur.app/pos/home) (світлий інтерфейс каси: сітка товарів + кошик-таблиця).
+
+Сайт ainurpos.com.ua використовувався лише для **вивчення списку функцій**, не для копіювання маркетингу.
 
 ## Модулі (як AinurPOS)
 

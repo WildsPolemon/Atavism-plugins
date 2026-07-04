@@ -18,6 +18,8 @@ export const api = {
   shift: () => req('/api/pos/shift'),
   openShift: (cash) => req('/api/pos/shift/open', { method: 'POST', body: JSON.stringify({ opening_cash: cash }) }),
   closeShift: (cash) => req('/api/pos/shift/close', { method: 'POST', body: JSON.stringify({ closing_cash: cash }) }),
+  products: (categoryId) => req(`/api/pos/products${categoryId ? `?category_id=${categoryId}` : ''}`),
+  categories: () => req('/api/products/categories'),
   searchProducts: (q) => req(`/api/pos/search?q=${encodeURIComponent(q)}`),
   barcode: (code) => req(`/api/barcode/${encodeURIComponent(code)}`),
   heldSales: () => req('/api/pos/sales/held'),

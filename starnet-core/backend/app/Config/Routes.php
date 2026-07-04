@@ -35,6 +35,7 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
         $routes->get('pos/shift', 'Api\PosController::shift');
         $routes->post('pos/shift/open', 'Api\PosController::openShiftAction');
         $routes->post('pos/shift/close', 'Api\PosController::closeShiftAction');
+        $routes->get('pos/products', 'Api\PosController::products');
         $routes->get('pos/search', 'Api\PosController::search');
         $routes->get('pos/sales', 'Api\PosController::sales');
         $routes->get('pos/sales/held', 'Api\PosController::heldSales');
