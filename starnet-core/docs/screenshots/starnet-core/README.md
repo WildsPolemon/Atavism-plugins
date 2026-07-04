@@ -9,8 +9,8 @@
 | `pos-item-edit.png` | Edit modal — ЗАСТОСУВАТИ (orange) |
 | `pos-product-add.png` | Add new product from POS |
 | `pos-payment-split.png` | Split payment screen |
-| `pos-settings.png` | POS settings |
-| `pos-barcode.png` | Barcode scanner |
+| `pos-settings-equipment.png` | Налаштування → Обладнання (ваги, принтер, Privat24) |
+| `pos-payment-terminal.png` | Оплата карткою через термінал Privat24 |
 | `pos-menu.png` | Side menu |
 
 ## Admin (`:5174`)

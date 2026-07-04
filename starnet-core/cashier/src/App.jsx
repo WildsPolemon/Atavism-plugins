@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { FolderOpen, ScanBarcode, User, Mail, Lock, QrCode } from 'lucide-react';
 import { api, getToken, setToken } from './api';
 import { fmt } from './utils';
+import { printReceipt, readScaleWeight } from './utils/hardware';
 import ProductGrid from './components/ProductGrid';
 import CartPanel from './components/CartPanel';
 import FooterBar from './components/FooterBar';
@@ -116,11 +117,18 @@ export default function App() {
     } catch (ex) { setErr(ex.message); }
   };
 
-  const addToCart = (p) => {
+  const addToCart = async (p) => {
+    let qty = 1;
+    if (p.is_weighted && settings.pos_scale_enabled === '1') {
+      try {
+        const w = await readScaleWeight(settings);
+        if (w > 0) qty = w;
+      } catch { /* use qty 1 */ }
+    }
     setCart((c) => {
       const i = c.findIndex((x) => x.product_id === p.id);
-      if (i >= 0) { const n = [...c]; n[i] = { ...n[i], qty: n[i].qty + 1 }; return n; }
-      return [...c, { product_id: p.id, name: p.name, price: priceOf(p), qty: 1, disc: 0 }];
+      if (i >= 0) { const n = [...c]; n[i] = { ...n[i], qty: n[i].qty + qty }; return n; }
+      return [...c, { product_id: p.id, name: p.name, price: priceOf(p), qty, disc: 0 }];
     });
   };
 
@@ -156,17 +164,32 @@ export default function App() {
   };
 
   const completePay = async ({ payment_cash, payment_card, payment_deferred, notes, print_receipt }) => {
+    const soldItems = [...cart];
     const sale = await api.sale({
-      items: cart.map((i) => ({ product_id: i.product_id, quantity: i.qty, price: i.price, discount: i.disc || 0 })),
+      items: soldItems.map((i) => ({ product_id: i.product_id, quantity: i.qty, price: i.price, discount: i.disc || 0 })),
       payment_cash: payment_cash || 0, payment_card: payment_card || 0, payment_deferred: payment_deferred || 0,
       customer_id: customer?.id, notes: notes || saleComment,
     });
-    setLastSale({ sale: { ...sale, payment_cash, payment_card, payment_deferred, total, created_at: new Date().toLocaleString('uk-UA') }, items: [...cart] });
+    setLastSale({ sale: { ...sale, payment_cash, payment_card, payment_deferred, total, created_at: new Date().toLocaleString('uk-UA') }, items: soldItems });
     setCart([]); setSaleComment('');
     if (payment_deferred > 0 && customer) setCustomer({ ...customer, debt: Number(customer.debt || 0) + payment_deferred });
     else setCustomer(null);
     setPayOpen(false);
-    if (print_receipt) setTimeout(() => window.print(), 100);
+    if (print_receipt) {
+      if (settings.pos_printer_enabled === '1') {
+        const lines = [
+          settings.company_name || 'StarNet Core',
+          settings.receipt_address || '',
+          `Чек · ${new Date().toLocaleString('uk-UA')}`,
+          ...soldItems.map((i) => `${i.name} x${i.qty} = ${fmt(i.price * i.qty)}`),
+          `РАЗОМ: ${fmt(total)}`,
+          settings.receipt_footer || '',
+        ];
+        printReceipt(settings, lines).catch(() => window.print());
+      } else {
+        setTimeout(() => window.print(), 100);
+      }
+    }
   };
 
   const cartAction = (id) => {
@@ -260,7 +283,7 @@ export default function App() {
       <FooterBar storeName={settings.company_name || 'StarNet Core'} shift={shift} onMenu={() => setMenuOpen(true)} />
 
       {menuOpen && <SideMenu user={user} onClose={() => setMenuOpen(false)} onAction={menuAction} />}
-      {payOpen && <PaymentScreen total={total} customer={customer} printDefault={settings.pos_print_default !== '0'}
+      {payOpen && <PaymentScreen total={total} customer={customer} settings={settings} printDefault={settings.pos_print_default !== '0'}
         onClose={() => setPayOpen(false)} onPay={completePay} onChangeCustomer={() => setCustomerOpen(true)} />}
       {editItem && <ItemEditModal item={editItem} onClose={() => setEditItem(null)} onSave={(u) => { setCart((c) => c.map((x) => x.product_id === u.product_id ? u : x)); setEditItem(null); }} />}
       {customerOpen && <CustomerModal query={customerQ} setQuery={setCustomerQ} customers={customers} startNew={newCustomerOpen}

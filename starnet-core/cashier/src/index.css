@@ -16,3 +16,7 @@ body {
   #receipt-print, #receipt-print * { visibility: visible; }
   #receipt-print { position: absolute; left: 0; top: 0; width: 80mm; }
 }
+
+.inp { @apply w-full rounded-lg border border-ainur-border px-3 py-2 text-sm focus:border-ainur-blue focus:outline-none; }
+.lbl { @apply mb-1 block text-xs text-ainur-muted; }
+.btn-secondary { @apply rounded-lg border border-ainur-border px-4 py-2 text-sm hover:bg-gray-50; }

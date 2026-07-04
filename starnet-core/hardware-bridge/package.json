@@ -1,0 +1,14 @@
+{
+  "name": "starnet-hardware-bridge",
+  "version": "1.0.0",
+  "description": "Локальний міст: ваги COM/USB, USB-принтер ESC/POS, термінал Privat24",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "serialport": "^12.0.0"
+  }
+}

@@ -39,9 +39,19 @@ cd starnet-core/landing && npm i && npm run dev
 
 **Логіни:** `admin@starnetcore.local` / `admin123` · `cashier@starnetcore.local` / `cashier123`
 
+## Обладнання каси
+
+Ваги (COM/USB), USB-принтер чека, термінал **Privat24** — **Каса → Меню → Налаштування → Обладнання**.
+
+```bash
+cd starnet-core/hardware-bridge && npm i && npm start
+```
+
+Детально: `docs/HARDWARE.md`
+
 ## Скріншоти
 
-Див. `docs/screenshots/` — адмін-панель, каса, штрихкод lookup, лендінг.
+Див. `docs/screenshots/` — адмін-панель, каса, налаштування обладнання, лендінг.
 
 ## Референс AinurPOS
 

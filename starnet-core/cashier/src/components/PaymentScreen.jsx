@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Banknote, CreditCard, HandCoins } from 'lucide-react';
+import { Banknote, CreditCard, HandCoins, Loader2 } from 'lucide-react';
 import { fmt } from '../utils';
+import { privat24Pay } from '../utils/hardware';
 
-export default function PaymentScreen({ total, customer, printDefault = true, onClose, onPay, onChangeCustomer }) {
+export default function PaymentScreen({ total, customer, settings = {}, printDefault = true, onClose, onPay, onChangeCustomer }) {
   const [tab, setTab] = useState('cash');
   const [cash, setCash] = useState(0);
   const [card, setCard] = useState(0);
@@ -10,6 +11,8 @@ export default function PaymentScreen({ total, customer, printDefault = true, on
   const [comment, setComment] = useState('');
   const [print, setPrint] = useState(printDefault);
   const [err, setErr] = useState('');
+  const [terminalLoading, setTerminalLoading] = useState(false);
+  const terminalOn = settings.pos_terminal_enabled === '1';
 
   const values = { cash, card, deferred };
   const setters = { cash: setCash, card: setCard, deferred: setDeferred };
@@ -30,6 +33,27 @@ export default function PaymentScreen({ total, customer, printDefault = true, on
     setDeferred(0);
     setTab('cash');
   }, [total]);
+
+  const payViaTerminal = async () => {
+    setErr('');
+    setTerminalLoading(true);
+    try {
+      const amount = tab === 'card' ? (tabAmount || total) : total;
+      const res = await privat24Pay(settings, amount);
+      setCard(amount);
+      setCash(0);
+      setDeferred(0);
+      onPay({
+        payment_cash: 0,
+        payment_card: amount,
+        payment_deferred: 0,
+        notes: comment + (res.rrn ? ` | RRN: ${res.rrn}` : ''),
+        print_receipt: print,
+        terminal_auth: res.auth_code,
+      });
+    } catch (e) { setErr(e.message); }
+    finally { setTerminalLoading(false); }
+  };
 
   const confirm = () => {
     setErr('');
@@ -114,6 +138,14 @@ export default function PaymentScreen({ total, customer, printDefault = true, on
                 ))}
               </div>
             </>
+          )}
+
+          {tab === 'card' && terminalOn && (
+            <button type="button" onClick={payViaTerminal} disabled={terminalLoading}
+              className="mb-4 flex w-full max-w-lg items-center justify-center gap-2 rounded-lg border-2 border-ainur-blue bg-blue-50 py-3 text-sm font-semibold text-ainur-blue hover:bg-blue-100 disabled:opacity-50">
+              {terminalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+              Оплата через термінал Privat24
+            </button>
           )}
 
           {err && <p className="mb-4 text-sm text-red-600">{err}</p>}

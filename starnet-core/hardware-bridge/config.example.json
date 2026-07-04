@@ -1,0 +1,19 @@
+{
+  "scale": {
+    "port": "COM3",
+    "baud": 9600,
+    "dataBits": 8,
+    "stopBits": 1,
+    "parity": "none"
+  },
+  "printer": {
+    "port": "COM4",
+    "baud": 9600
+  },
+  "privat24": {
+    "host": "192.168.1.100",
+    "port": 2000,
+    "merchant_id": "",
+    "terminal_id": ""
+  }
+}
