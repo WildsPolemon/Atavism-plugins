@@ -7,6 +7,7 @@ async function req(path, opts = {}) {
     ...opts,
     headers: { 'Content-Type': 'application/json', ...(token() ? { Authorization: `Bearer ${token()}` } : {}), ...opts.headers },
   });
+  if (opts.raw) return r;
   const b = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(b.error || `HTTP ${r.status}`);
   return b;
@@ -18,11 +19,29 @@ export const api = {
   overview: () => req('/api/dashboard/overview'),
   salesChart: (d) => req(`/api/dashboard/sales-chart?days=${d}`),
   lookupBarcode: (code) => req(`/api/barcode/${encodeURIComponent(code)}`),
+  settings: () => req('/api/settings'),
+  saveSettings: (d) => req('/api/settings', { method: 'PUT', body: JSON.stringify(d) }),
   categories: () => req('/api/products/categories'),
   products: (page, search) => req(`/api/products?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ''}`),
   createProduct: (d) => req('/api/products', { method: 'POST', body: JSON.stringify(d) }),
-  stock: () => req('/api/warehouse/stock'),
+  updateProduct: (id, d) => req(`/api/products/${id}`, { method: 'PATCH', body: JSON.stringify(d) }),
+  stock: (wid) => req(`/api/warehouse/stock${wid ? `?warehouse_id=${wid}` : ''}`),
+  warehouses: () => req('/api/warehouse/warehouses'),
+  warehouseOps: () => req('/api/warehouse/operations'),
+  warehouseOp: (d) => req('/api/warehouse/operations', { method: 'POST', body: JSON.stringify(d) }),
+  warehouseReport: () => req('/api/warehouse/report'),
+  purchases: () => req('/api/purchases'),
+  createPurchase: (d) => req('/api/purchases', { method: 'POST', body: JSON.stringify(d) }),
+  receivePurchase: (id) => req(`/api/purchases/${id}/receive`, { method: 'POST' }),
+  inventoryCounts: () => req('/api/inventory'),
+  createInventory: (d) => req('/api/inventory', { method: 'POST', body: JSON.stringify(d) }),
+  inventoryDetail: (id) => req(`/api/inventory/${id}`),
+  updateInventoryItem: (id, itemId, actual_qty) => req(`/api/inventory/${id}/items/${itemId}`, { method: 'PATCH', body: JSON.stringify({ actual_qty }) }),
+  completeInventory: (id) => req(`/api/inventory/${id}/complete`, { method: 'POST' }),
   customers: (s) => req(`/api/crm/customers${s ? `?search=${encodeURIComponent(s)}` : ''}`),
+  createCustomer: (d) => req('/api/crm/customers', { method: 'POST', body: JSON.stringify(d) }),
+  customer: (id) => req(`/api/crm/customers/${id}`),
+  updateCustomer: (id, d) => req(`/api/crm/customers/${id}`, { method: 'PATCH', body: JSON.stringify(d) }),
   suppliers: () => req('/api/suppliers'),
   createSupplier: (d) => req('/api/suppliers', { method: 'POST', body: JSON.stringify(d) }),
   stores: () => req('/api/stores'),
@@ -30,8 +49,23 @@ export const api = {
   reportFinance: () => req('/api/reports/finance'),
   reportProfit: (d) => req(`/api/reports/profit?days=${d}`),
   reportEmployees: (d) => req(`/api/reports/employees?days=${d}`),
+  reportSales: () => req('/api/reports/sales'),
   topProducts: (limit = 10, days = 30) => req(`/api/reports/top-products?limit=${limit}&days=${days}`),
+  estoreOrders: () => req('/api/estore/orders'),
+  updateEstoreOrder: (id, status) => req(`/api/estore/orders/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  exportProducts: () => req('/api/export/products', { raw: true }),
+  exportCustomers: () => req('/api/export/customers', { raw: true }),
+  importProducts: (rows) => req('/api/import/products', { method: 'POST', body: JSON.stringify({ rows }) }),
 };
 
 export const fmtUah = (n) => `${new Intl.NumberFormat('uk-UA').format(n ?? 0)} ₴`;
 export const fmt = (n) => new Intl.NumberFormat('uk-UA').format(n ?? 0);
+
+export async function downloadExport(fn, filename) {
+  const r = await fn();
+  const blob = await r.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}

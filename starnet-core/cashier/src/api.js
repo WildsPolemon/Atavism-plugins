@@ -17,11 +17,17 @@ export const api = {
   me: () => req('/api/auth/me'),
   shift: () => req('/api/pos/shift'),
   openShift: (cash) => req('/api/pos/shift/open', { method: 'POST', body: JSON.stringify({ opening_cash: cash }) }),
+  closeShift: (cash) => req('/api/pos/shift/close', { method: 'POST', body: JSON.stringify({ closing_cash: cash }) }),
   searchProducts: (q) => req(`/api/pos/search?q=${encodeURIComponent(q)}`),
+  barcode: (code) => req(`/api/barcode/${encodeURIComponent(code)}`),
   heldSales: () => req('/api/pos/sales/held'),
   holdSale: (data) => req('/api/pos/sale', { method: 'POST', body: JSON.stringify({ ...data, status: 'held', payment_cash: 0, payment_card: 0 }) }),
   sale: (data) => req('/api/pos/sale', { method: 'POST', body: JSON.stringify(data) }),
   deleteHeld: (id) => req(`/api/pos/sales/${id}/held`, { method: 'DELETE' }),
+  sales: (status) => req(`/api/pos/sales${status ? `?status=${status}` : ''}`),
+  returnSale: (id) => req(`/api/pos/sales/${id}/return`, { method: 'POST' }),
+  xzReport: (type = 'X') => req(`/api/pos/xz-report?type=${type}`),
+  receiptSettings: () => req('/api/pos/receipt-settings'),
 };
 
 export const fmt = (n) => `${new Intl.NumberFormat('uk-UA', { minimumFractionDigits: 2 }).format(n ?? 0)} ₴`;

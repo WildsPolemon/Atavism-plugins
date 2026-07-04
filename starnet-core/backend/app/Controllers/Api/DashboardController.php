@@ -26,6 +26,7 @@ class DashboardController extends BaseApiController
             'profitToday' => (float) $profitToday,
             'productsCount' => $db->table('products')->where('active', 1)->countAllResults(),
             'customersCount' => $db->table('customers')->countAllResults(),
+            'lowStockCount' => (int) $db->query("SELECT COUNT(*) as c FROM stock st JOIN products p ON p.id=st.product_id WHERE st.quantity <= 5 AND p.active=1")->getRow('c'),
             'openShift' => $db->table('shifts')->where('status', 'open')->get()->getRowArray(),
             'totalDebt' => (float) $db->table('customers')->selectSum('debt')->get()->getRow('debt'),
         ]);

@@ -9,17 +9,28 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
     $routes->post('auth/login', 'Api\AuthController::login');
     $routes->get('auth/me', 'Api\AuthController::me', ['filter' => 'apiauth']);
 
+    $routes->get('estore/catalog', 'Api\EstoreController::catalog');
+    $routes->post('estore/order', 'Api\EstoreController::order');
+    $routes->get('pos/receipt-settings', 'Api\PosController::receiptSettings');
+
     $routes->get('barcode/(:segment)', 'Api\BarcodeController::show/$1', ['filter' => 'apiauth']);
 
     $routes->group('', ['filter' => 'apiauth'], static function ($routes) {
         $routes->get('dashboard/overview', 'Api\DashboardController::overview');
         $routes->get('dashboard/sales-chart', 'Api\DashboardController::salesChart');
 
+        $routes->get('settings', 'Api\SettingsController::index');
+        $routes->put('settings', 'Api\SettingsController::update');
+
         $routes->get('products/categories', 'Api\ProductController::categories');
         $routes->post('products/categories', 'Api\ProductController::createCategory');
         $routes->get('products', 'Api\ProductController::index');
         $routes->post('products', 'Api\ProductController::create');
         $routes->patch('products/(:num)', 'Api\ProductController::update/$1');
+
+        $routes->get('export/products', 'Api\ExportController::products');
+        $routes->get('export/customers', 'Api\ExportController::customers');
+        $routes->post('import/products', 'Api\ExportController::importProducts');
 
         $routes->get('pos/shift', 'Api\PosController::shift');
         $routes->post('pos/shift/open', 'Api\PosController::openShiftAction');
@@ -30,10 +41,23 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
         $routes->post('pos/sale', 'Api\PosController::sale');
         $routes->post('pos/sales/(:num)/return', 'Api\PosController::returnSale/$1');
         $routes->get('pos/xz-report', 'Api\PosController::xzReport');
+        $routes->delete('pos/sales/(:num)/held', 'Api\PosController::cancelHeld/$1');
 
         $routes->get('warehouse/stock', 'Api\WarehouseController::stock');
         $routes->get('warehouse/warehouses', 'Api\WarehouseController::warehouses');
+        $routes->get('warehouse/operations', 'Api\WarehouseController::operations');
         $routes->post('warehouse/operations', 'Api\WarehouseController::createOperation');
+        $routes->get('warehouse/report', 'Api\WarehouseController::report');
+
+        $routes->get('purchases', 'Api\PurchaseController::index');
+        $routes->post('purchases', 'Api\PurchaseController::create');
+        $routes->post('purchases/(:num)/receive', 'Api\PurchaseController::receive/$1');
+
+        $routes->get('inventory', 'Api\InventoryController::index');
+        $routes->post('inventory', 'Api\InventoryController::create');
+        $routes->get('inventory/(:num)', 'Api\InventoryController::show/$1');
+        $routes->patch('inventory/(:num)/items/(:num)', 'Api\InventoryController::updateItem/$1/$2');
+        $routes->post('inventory/(:num)/complete', 'Api\InventoryController::complete/$1');
 
         $routes->get('suppliers', 'Api\SupplierController::index');
         $routes->post('suppliers', 'Api\SupplierController::create');
@@ -45,12 +69,15 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
         $routes->get('crm/customers', 'Api\CrmController::customers');
         $routes->post('crm/customers', 'Api\CrmController::createCustomer');
         $routes->get('crm/customers/(:num)', 'Api\CrmController::show/$1');
+        $routes->patch('crm/customers/(:num)', 'Api\CrmController::updateCustomer/$1');
 
         $routes->get('reports/sales', 'Api\ReportController::sales');
         $routes->get('reports/finance', 'Api\ReportController::finance');
         $routes->get('reports/profit', 'Api\ReportController::profit');
         $routes->get('reports/employees', 'Api\ReportController::employees');
         $routes->get('reports/top-products', 'Api\ReportController::topProducts');
-        $routes->delete('pos/sales/(:num)/held', 'Api\PosController::cancelHeld/$1');
+
+        $routes->get('estore/orders', 'Api\EstoreController::orders');
+        $routes->patch('estore/orders/(:num)', 'Api\EstoreController::updateOrderStatus/$1');
     });
 });

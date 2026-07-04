@@ -1,24 +1,94 @@
 import { useEffect, useState } from 'react';
-import { api } from '../api';
+import { Plus } from 'lucide-react';
+import { api, fmtUah } from '../api';
 
 export default function CRM() {
   const [customers, setCustomers] = useState([]);
-  useEffect(() => { api.customers().then((r) => setCustomers(r.customers || [])); }, []);
+  const [search, setSearch] = useState('');
+  const [detail, setDetail] = useState(null);
+  const [show, setShow] = useState(false);
+  const [form, setForm] = useState({ name: '', phone: '', email: '', discount_percent: 0, card_number: '' });
+
+  const load = () => api.customers(search).then((r) => setCustomers(r.customers || []));
+  useEffect(() => { load(); }, [search]);
+
+  const save = async (e) => {
+    e.preventDefault();
+    await api.createCustomer(form);
+    setShow(false);
+    setForm({ name: '', phone: '', email: '', discount_percent: 0, card_number: '' });
+    load();
+  };
+
+  const open = async (id) => {
+    const r = await api.customer(id);
+    setDetail(r);
+  };
 
   return (
     <div>
-      <h1 className="text-2xl font-bold">CRM</h1>
-      <p className="mb-6 text-sm text-muted">Клієнти, лояльність, борги</p>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {customers.map((c) => (
-          <div key={c.id} className="glass p-5">
-            <p className="font-semibold">{c.name}</p>
-            <p className="text-sm text-muted">{c.phone || '—'}</p>
-            {c.debt > 0 && <p className="mt-2 text-sm text-danger">Борг: {c.debt} ₴</p>}
-          </div>
-        ))}
-        {!customers.length && <p className="text-muted">Немає клієнтів</p>}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">CRM</h1>
+          <p className="text-sm text-muted">Клієнти, лояльність, борги, історія — як AinurPOS</p>
+        </div>
+        <div className="flex gap-2">
+          <input placeholder="Пошук..." value={search} onChange={(e) => setSearch(e.target.value)} className="rounded-xl border border-surface-border bg-surface-elevated px-4 py-2 text-sm" />
+          <button onClick={() => setShow(true)} className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium"><Plus className="h-4 w-4" /> Додати</button>
+        </div>
       </div>
+
+      {!detail ? (
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {customers.map((c) => (
+            <button key={c.id} onClick={() => open(c.id)} className="glass p-4 text-left">
+              <p className="font-medium">{c.name}</p>
+              <p className="text-sm text-muted">{c.phone}</p>
+              <div className="mt-2 flex gap-3 text-xs">
+                <span className="text-accent">Бали: {c.loyalty_points}</span>
+                <span className="text-warning">Знижка: {c.discount_percent}%</span>
+                {c.debt > 0 && <span className="text-danger">Борг: {fmtUah(c.debt)}</span>}
+              </div>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div>
+          <button onClick={() => setDetail(null)} className="mb-4 text-sm text-accent">← Назад</button>
+          <div className="glass mb-4 p-4">
+            <h2 className="text-lg font-bold">{detail.name}</h2>
+            <p className="text-muted">{detail.phone} · {detail.email}</p>
+            <p className="mt-2 text-sm">Картка: {detail.card_number || '—'} · Бали: {detail.loyalty_points} · Знижка: {detail.discount_percent}%</p>
+          </div>
+          <h3 className="mb-2 font-semibold">Історія покупок</h3>
+          <div className="space-y-2">
+            {detail.purchases?.map((p) => (
+              <div key={p.id} className="glass flex justify-between p-3 text-sm">
+                <span>Чек #{p.id} · {p.created_at}</span>
+                <span className="text-accent">{fmtUah(p.total)}</span>
+              </div>
+            ))}
+            {!detail.purchases?.length && <p className="text-muted text-sm">Покупок ще немає</p>}
+          </div>
+        </div>
+      )}
+
+      {show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <form onSubmit={save} className="glass w-full max-w-md p-6">
+            <h3 className="mb-4 text-lg font-bold">Новий клієнт</h3>
+            <input required placeholder="Ім'я" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mb-3 w-full rounded-xl border border-surface-border bg-surface-elevated px-4 py-2 text-sm" />
+            <input placeholder="Телефон" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="mb-3 w-full rounded-xl border border-surface-border bg-surface-elevated px-4 py-2 text-sm" />
+            <input placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mb-3 w-full rounded-xl border border-surface-border bg-surface-elevated px-4 py-2 text-sm" />
+            <input placeholder="№ дисконтної картки" value={form.card_number} onChange={(e) => setForm({ ...form, card_number: e.target.value })} className="mb-3 w-full rounded-xl border border-surface-border bg-surface-elevated px-4 py-2 text-sm" />
+            <input type="number" placeholder="Знижка %" value={form.discount_percent} onChange={(e) => setForm({ ...form, discount_percent: e.target.value })} className="mb-4 w-full rounded-xl border border-surface-border bg-surface-elevated px-4 py-2 text-sm" />
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setShow(false)} className="flex-1 rounded-xl border py-2 text-sm">Скасувати</button>
+              <button type="submit" className="flex-1 rounded-xl bg-accent py-2 text-sm font-medium">Зберегти</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

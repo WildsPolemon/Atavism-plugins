@@ -2,6 +2,7 @@
 
 namespace App\Controllers\Api;
 
+use App\Libraries\StockService;
 use App\Models\ProductModel;
 use App\Models\SaleModel;
 
@@ -62,7 +63,7 @@ class PosController extends BaseApiController
             ->groupStart()->like('name', $q)->orLike('sku', $q)->orLike('barcode', $q)->groupEnd()
             ->findAll(20);
         $customers = model(\App\Models\CustomerModel::class)
-            ->groupStart()->like('name', $q)->orLike('phone', $q)->groupEnd()
+            ->groupStart()->like('name', $q)->orLike('phone', $q)->orLike('card_number', $q)->groupEnd()
             ->findAll(10);
         return $this->ok(compact('products', 'customers'));
     }
@@ -93,7 +94,13 @@ class PosController extends BaseApiController
         }
 
         $discount = (float) ($body['discount'] ?? 0);
-        $total = $subtotal - $discount;
+        if (!empty($body['customer_id'])) {
+            $customer = $db->table('customers')->where('id', $body['customer_id'])->get()->getRowArray();
+            if ($customer && $customer['discount_percent'] > 0) {
+                $discount += $subtotal * ((float) $customer['discount_percent'] / 100);
+            }
+        }
+        $total = max(0, $subtotal - $discount);
         $cash = (float) ($body['payment_cash'] ?? 0);
         $card = (float) ($body['payment_card'] ?? 0);
         $status = ($body['status'] ?? '') === 'held' ? 'held' : 'completed';
@@ -123,11 +130,15 @@ class PosController extends BaseApiController
                 'total' => $li['total'],
             ]);
             if ($status === 'completed' && $shift) {
-                $wh = $db->table('warehouses')->limit(1)->get()->getRow('id');
+                $wh = (int) ($db->table('warehouses')->limit(1)->get()->getRow('id') ?? 0);
                 if ($wh) {
-                    $db->query('UPDATE stock SET quantity = quantity - ? WHERE warehouse_id=? AND product_id=?', [$li['qty'], $wh, $li['product_id']]);
+                    (new StockService())->adjust($wh, (int) $li['product_id'], -(float) $li['qty']);
                 }
             }
+        }
+
+        if ($status === 'completed' && !empty($body['customer_id'])) {
+            $db->query('UPDATE customers SET loyalty_points = loyalty_points + ? WHERE id = ?', [floor($total / 10), $body['customer_id']]);
         }
 
         if ($shift && $status === 'completed') {
@@ -180,9 +191,40 @@ class PosController extends BaseApiController
     public function returnSale(int $id)
     {
         $sale = model(SaleModel::class)->find($id);
-        if (!$sale || $sale['status'] === 'returned') return $this->err('Invalid sale', 400);
+        if (!$sale || $sale['status'] === 'returned') {
+            return $this->err('Чек не знайдено', 400);
+        }
+
+        $db = db_connect();
+        $items = $db->table('sale_items')->where('sale_id', $id)->get()->getResultArray();
+        $wh = (int) ($db->table('warehouses')->limit(1)->get()->getRow('id') ?? 0);
+        $stock = new StockService();
+
+        foreach ($items as $it) {
+            if ($wh) {
+                $stock->adjust($wh, (int) $it['product_id'], (float) $it['quantity']);
+            }
+        }
+
+        if ($sale['shift_id']) {
+            $db->table('shifts')->where('id', $sale['shift_id'])->update([
+                'cash_sales' => max(0, (float) $db->table('shifts')->where('id', $sale['shift_id'])->get()->getRow('cash_sales') - (float) $sale['payment_cash']),
+                'card_sales' => max(0, (float) $db->table('shifts')->where('id', $sale['shift_id'])->get()->getRow('card_sales') - (float) $sale['payment_card']),
+            ]);
+        }
+
         model(SaleModel::class)->update($id, ['status' => 'returned']);
         return $this->ok(['ok' => true]);
+    }
+
+    public function receiptSettings()
+    {
+        $rows = db_connect()->table('settings')->get()->getResultArray();
+        $out = [];
+        foreach ($rows as $r) {
+            $out[$r['key']] = $r['value'];
+        }
+        return $this->ok(['settings' => $out]);
     }
 
     public function xzReport()

@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Package, Warehouse, Users, BarChart3, Store, Truck, Building2, Settings, ShoppingCart } from 'lucide-react';
+import { LayoutDashboard, Package, Warehouse, Users, BarChart3, Store, Truck, Building2, Settings, ShoppingCart, ClipboardList, ScanBarcode, ShoppingBag, Globe } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api, fmtUah } from './api';
 
@@ -7,9 +7,13 @@ const NAV = [
   { to: '/', label: 'Огляд', icon: LayoutDashboard, end: true },
   { to: '/products', label: 'Товари', icon: Package },
   { to: '/warehouse', label: 'Склад', icon: Warehouse },
+  { to: '/purchases', label: 'Закупівлі', icon: ClipboardList },
+  { to: '/inventory', label: 'Інвентаризація', icon: ScanBarcode },
+  { to: '/price-tags', label: 'Цінники', icon: ScanBarcode },
   { to: '/suppliers', label: 'Постачальники', icon: Truck },
   { to: '/stores', label: 'Магазини', icon: Building2 },
   { to: '/crm', label: 'CRM', icon: Users },
+  { to: '/estore', label: 'eStore', icon: Globe },
   { to: '/reports', label: 'Звіти', icon: BarChart3 },
   { to: '/settings', label: 'Налаштування', icon: Settings },
 ];

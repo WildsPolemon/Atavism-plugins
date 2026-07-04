@@ -10,6 +10,10 @@ import CRM from './pages/CRM';
 import Reports from './pages/Reports';
 import Suppliers from './pages/Suppliers';
 import Stores from './pages/Stores';
+import Purchases from './pages/Purchases';
+import Inventory from './pages/Inventory';
+import PriceTags from './pages/PriceTags';
+import Estore from './pages/Estore';
 import Settings from './pages/Settings';
 
 function Guard({ children }) {
@@ -27,6 +31,10 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="products" element={<Products />} />
         <Route path="warehouse" element={<Warehouse />} />
+        <Route path="purchases" element={<Purchases />} />
+        <Route path="inventory" element={<Inventory />} />
+        <Route path="price-tags" element={<PriceTags />} />
+        <Route path="estore" element={<Estore />} />
         <Route path="suppliers" element={<Suppliers />} />
         <Route path="stores" element={<Stores />} />
         <Route path="crm" element={<CRM />} />

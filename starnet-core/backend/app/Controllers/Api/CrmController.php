@@ -23,6 +23,8 @@ class CrmController extends BaseApiController
             'name' => $body['name'],
             'phone' => $body['phone'] ?? '',
             'email' => $body['email'] ?? '',
+            'card_number' => $body['card_number'] ?? null,
+            'discount_percent' => (float) ($body['discount_percent'] ?? 0),
             'notes' => $body['notes'] ?? '',
             'created_at' => date('Y-m-d H:i:s'),
         ]);
@@ -35,5 +37,17 @@ class CrmController extends BaseApiController
         if (!$c) return $this->err('Not found', 404);
         $purchases = db_connect()->table('sales')->where('customer_id', $id)->orderBy('created_at', 'DESC')->limit(50)->get()->getResultArray();
         return $this->ok([...$c, 'purchases' => $purchases]);
+    }
+
+    public function updateCustomer(int $id)
+    {
+        $body = $this->request->getJSON(true) ?? [];
+        $allowed = ['name', 'phone', 'email', 'notes', 'debt', 'discount_percent', 'loyalty_points', 'card_number'];
+        $data = array_intersect_key($body, array_flip($allowed));
+        if (!$data) {
+            return $this->err('Немає даних');
+        }
+        model(CustomerModel::class)->update($id, $data);
+        return $this->ok(model(CustomerModel::class)->find($id));
     }
 }

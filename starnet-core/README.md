@@ -28,6 +28,9 @@ cd starnet-core/admin && npm i && npm run dev
 # Cashier
 cd starnet-core/cashier && npm i && npm run dev
 
+# eStore (static)
+cd starnet-core/estore && python3 -m http.server 5176
+
 # Landing
 cd starnet-core/landing && npm i && npm run dev
 ```
