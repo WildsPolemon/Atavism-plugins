@@ -303,6 +303,14 @@ public class ClassAbilityPlugin extends EnginePlugin {
 			ACTION_BAR_SWAP_ACTIONS = Boolean.parseBoolean(swap_action);
 		log.debug("Loaded Game Setting ACTION_BAR_SWAP_ACTIONS="+ACTION_BAR_SWAP_ACTIONS);
 
+		String classAbilitiesByLevel = ctDB.loadGameSetting("CLASS_ABILITIES_BY_LEVEL_ENABLED");
+		if (classAbilitiesByLevel != null) {
+			ClassAbilityByLevelHelper.setEnabled(Boolean.parseBoolean(classAbilitiesByLevel));
+		}
+		log.debug("Loaded Game Setting CLASS_ABILITIES_BY_LEVEL_ENABLED="+ClassAbilityByLevelHelper.isEnabled());
+
+		ClassAbilityByLevelHelper.load(cDB.loadClassAbilitiesByLevel());
+
     }
 
     	
@@ -1597,6 +1605,8 @@ public class ClassAbilityPlugin extends EnginePlugin {
 				handleLevelExpRewards(oid, cInfo, newLevel, lowestLevel, highestLevel);
 			//}
 
+			ClassAbilityByLevelHelper.syncOnLevelChange(cInfo, oldLevel, newLevel);
+
     		if (USE_SKILL_PURCHASE_POINTS ||USE_TALENT_PURCHASE_POINTS) {
     			SkillInfo.levelChanged(cInfo.getCurrentSkillInfo(), cInfo, newLevel);
     		}
@@ -1628,7 +1638,9 @@ public class ClassAbilityPlugin extends EnginePlugin {
 								{
 									if (ab.getAbilityType() == 2) {								
 										SkillInfo.removePassiveEffect(ab, cInfo);
-									} 
+									} else {
+										SkillInfo.unlearnAbility(cInfo, reward.reward_value);
+									}
 								}
 								break;
 							case EFFECT:
@@ -1695,11 +1707,7 @@ public class ClassAbilityPlugin extends EnginePlugin {
 							AgisAbility ab = Agis.AbilityManager.get(reward.reward_value);
 							if (ab != null) 
 							{
-								if (ab.getAbilityType() == 2) {
-									SkillInfo.applyPassiveEffects(ab, cInfo);
-								} else {
-									CombatClient.startAbility(reward.reward_value, oid, oid, null, null);
-								}
+								SkillInfo.learnAbility(cInfo, reward.reward_value);
 							}
 							break;
 						case EFFECT:

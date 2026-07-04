@@ -14,8 +14,46 @@ Wrath of the Lich King (3.3.5) talent rules:
 
 1. `sql/001_talent_tree_columns.sql`
 2. `sql/002_wow_talent_game_settings.sql`
-3. Rebuild & deploy AGIS
-4. Copy `unity/Scripts/` to Unity client
+3. `sql/003_class_ability_by_level.sql`
+4. (Optional) `sql/sample_warrior_abilities_by_level.sql` — remap `ability_id` to your abilities
+5. Rebuild & deploy AGIS
+6. Copy `unity/Scripts/` to Unity client
+
+## WoW model: spells vs talents
+
+| WoW | Atavism implementation |
+|-----|------------------------|
+| **Class spells** auto-learned at character level 1, 4, 6… | `class_ability_by_level` table + `ClassAbilityByLevelHelper` |
+| **Talent points** from level 10, spent in 3 trees | `skills` with `talent=1` + WotLK talent rules |
+| Trainer / rank upgrades | Optional: level rewards or future trainer effect |
+
+On level-up the server learns abilities from `class_ability_by_level` where `player_level <= new level`.  
+Talents remain **separate** — they only modify gameplay via talent ranks, not replace the core spell list.
+
+### `class_ability_by_level` columns
+
+| Column | Purpose |
+|--------|---------|
+| `aspect` | Class ID (same as `skills.aspect`) |
+| `player_level` | Character level when spell is learned |
+| `ability_id` | `abilities.id` |
+| `auto_learn` | Learn on level-up / login sync |
+| `unlearn_on_delevel` | Remove if `LOST_LEVEL=true` and player delevels |
+
+Game setting: `CLASS_ABILITIES_BY_LEVEL_ENABLED` (default `true`).
+
+### Example Warrior (WotLK-style)
+
+| Level | Spell |
+|-------|-------|
+| 1 | Battle Stance, Heroic Strike |
+| 4 | Charge |
+| 6 | Rend |
+| 8 | Thunder Clap |
+| 10 | Bloodrage (+ first talent point) |
+| 20 | Cleave, Slam |
+
+See `sql/sample_warrior_abilities_by_level.sql` — replace placeholder IDs `100001+` with your ability IDs.
 
 ## WotLK point table
 

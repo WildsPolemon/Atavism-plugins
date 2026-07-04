@@ -1782,6 +1782,8 @@ public class CombatPlugin extends atavism.server.engine.EnginePlugin {
 			}
 		}
 
+		ClassAbilityByLevelHelper.syncOnLogin(info);
+
 		if (STEALTH_STAT != null) {
 			AgisStat stat = (AgisStat) info.getProperty(STEALTH_STAT);
 			if (stat != null) {

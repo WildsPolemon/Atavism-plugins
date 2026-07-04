@@ -4330,6 +4330,42 @@ public void LoadAbilityTriggers(AbilityPowerUpData data) {
 	}
 
 	/**
+	 * WoW-style class abilities granted at character level (not talent rank).
+	 */
+	public HashMap<Integer, ArrayList<ClassAbilityByLevelEntry>> loadClassAbilitiesByLevel() {
+		HashMap<Integer, ArrayList<ClassAbilityByLevelEntry>> byAspect = new HashMap<>();
+		try (PreparedStatement ps = queries.prepare(
+				"SELECT * FROM `class_ability_by_level` WHERE isactive = 1 ORDER BY aspect, player_level, sort_order")) {
+			try (ResultSet rs = queries.executeSelect(ps)) {
+				if (rs != null) {
+					while (rs.next()) {
+						int aspect = rs.getInt("aspect");
+						ClassAbilityByLevelEntry entry = new ClassAbilityByLevelEntry(
+								rs.getInt("id"),
+								aspect,
+								rs.getInt("player_level"),
+								rs.getInt("ability_id"),
+								rs.getBoolean("auto_learn"),
+								rs.getBoolean("unlearn_on_delevel"),
+								rs.getInt("sort_order"));
+						ArrayList<ClassAbilityByLevelEntry> list = byAspect.get(aspect);
+						if (list == null) {
+							list = new ArrayList<>();
+							byAspect.put(aspect, list);
+						}
+						list.add(entry);
+					}
+				}
+			}
+		} catch (SQLException e) {
+			if (Log.loggingDebug) {
+				Log.debug("loadClassAbilitiesByLevel: table missing or error: " + e.getMessage());
+			}
+		}
+		return byAspect;
+	}
+
+	/**
 	 * Having too many connection errors, so adding this function to help cope
 	 * with it
 	 */
