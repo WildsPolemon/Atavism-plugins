@@ -19,6 +19,14 @@ Wrath of the Lich King (3.3.5) talent rules:
 5. Rebuild & deploy AGIS
 6. Copy `unity/Scripts/` to Unity client
 
+## Atavism Editor
+
+After applying SQL, open the editor:
+
+- **Character → Class Abilities by Level** — CRUD for `class_ability_by_level` (class, player level, ability)
+- **Combat → Skills** — WoW talent fields (`tree_id`, `tier`, `column`) when **Talent** is checked
+- **Character → Player Templates** — starting skills only; level-up spells are in Class Abilities by Level
+
 ## WoW model: spells vs talents
 
 | WoW | Atavism implementation |

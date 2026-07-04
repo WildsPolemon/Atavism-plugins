@@ -11,6 +11,7 @@ export const enchantProfileTable = 'item_enchant_profile';
 export const itemQualityTable = 'item_quality';
 export const skillsTable = 'skills';
 export const skillAbilityGainTable = 'skill_ability_gain';
+export const classAbilityByLevelTable = 'class_ability_by_level';
 export const buildObjectTable = 'build_object_template';
 export const buildObjectStageTable = 'build_object_stage';
 export const buildObjectStageItemsTable = 'build_object_stage_items';
@@ -124,6 +125,7 @@ export const TabByTable: Record<string, string> = {
   item_quality: 'ENCHANT_PROFILE.TITLE',
   skills: 'SKILLS.TITLE',
   skill_ability_gain: 'SKILLS.TITLE',
+  class_ability_by_level: 'CLASS_ABILITY_BY_LEVEL.TITLE',
   build_object_template: 'BUILD_OBJECT.TITLE',
   build_object_stage: 'BUILD_OBJECT.TITLE',
   quests: 'QUESTS.TITLE',

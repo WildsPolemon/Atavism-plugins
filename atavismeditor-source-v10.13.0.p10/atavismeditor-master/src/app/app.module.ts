@@ -77,6 +77,7 @@ import {InteractiveObjectProfileComponent} from './entry/interactive-object-prof
 import {PetProfileComponent} from './entry/pet-profile/pet-profile.component';
 import {SlotProfileComponent} from './entry/slot-profile/slot-profile.component';
 import {PvpRanksComponent} from './entry/pvp-ranks/pvp-ranks.component';
+import {ClassAbilityByLevelComponent} from './entry/class-ability-by-level/class-ability-by-level.component';
 
 @NgModule({
   declarations: [
@@ -117,6 +118,7 @@ import {PvpRanksComponent} from './entry/pvp-ranks/pvp-ranks.component';
     SkillProfilesComponent,
     AbilitiesComponent,
     PlayerCharacterComponent,
+    ClassAbilityByLevelComponent,
     HomeComponent,
     ThresholdsComponent,
     EffectsTriggersComponent,

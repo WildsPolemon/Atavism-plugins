@@ -285,6 +285,11 @@ export class SkillsService {
       skillPointCost: {name: 'skillPointCost', type: FormFieldType.integer, width: 33},
       automaticallyLearn: {name: 'automaticallyLearn', type: FormFieldType.boolean, width: 33},
       talent: {name: 'talent', type: FormFieldType.boolean, width: 33},
+      titleClassSpells: {
+        name: '',
+        label: this.translate.instant(this.tableKey + '.CLASS_SPELLS_TITLE'),
+        type: FormFieldType.title,
+      },
       titleTalentTree: {name: '', label: 'WoW Talent Tree', type: FormFieldType.title},
       tree_id: {name: 'tree_id', type: FormFieldType.integer, width: 20},
       tier: {name: 'tier', type: FormFieldType.integer, width: 20},

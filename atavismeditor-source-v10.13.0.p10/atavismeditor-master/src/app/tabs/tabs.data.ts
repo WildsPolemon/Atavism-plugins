@@ -55,6 +55,7 @@ import {
 import {PetProfileComponent} from '../entry/pet-profile/pet-profile.component';
 import {SlotProfileComponent} from '../entry/slot-profile/slot-profile.component';
 import {PvpRanksComponent} from '../entry/pvp-ranks/pvp-ranks.component';
+import {ClassAbilityByLevelComponent} from '../entry/class-ability-by-level/class-ability-by-level.component';
 
 export enum TabType {
   server = 'server',
@@ -441,6 +442,14 @@ export const tabs: Tab[] = [
     title: 'PLAYER_CHARACTER.TITLE',
     type: TabType.character,
     component: PlayerCharacterComponent,
+    locked: false,
+  },
+  {
+    id: TabTypes.CLASS_ABILITY_BY_LEVEL,
+    icon: 'skills.png',
+    title: 'CLASS_ABILITY_BY_LEVEL.TITLE',
+    type: TabType.character,
+    component: ClassAbilityByLevelComponent,
     locked: false,
   },
   {
