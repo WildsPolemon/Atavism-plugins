@@ -61,6 +61,7 @@ import {
   questsTable,
   resourceNodeTemplateTable,
   skillAbilityGainTable,
+  classAbilityByLevelTable,
   skillsTable,
   slotsInGroupTable,
   slotsInProfileTable,
@@ -3051,6 +3052,14 @@ export const dependencies: Record<TabTypes, UsageModel[]> = {
       tableType: TabTypes.SKILLS,
       table: skillAbilityGainTable,
       field: `abilityID`,
+    },
+    {
+      dbType: DataBaseType.world_content,
+      usageType: UsageType.deleteRecord,
+      section: 'CLASS_ABILITY_BY_LEVEL.TITLE',
+      tableType: TabTypes.CLASS_ABILITY_BY_LEVEL,
+      table: classAbilityByLevelTable,
+      field: `ability_id`,
     },
     {
       dbType: DataBaseType.world_content,
@@ -6957,4 +6966,5 @@ export const dependencies: Record<TabTypes, UsageModel[]> = {
   [TabTypes.PVP_RANKS]:[
 
   ],
+  [TabTypes.CLASS_ABILITY_BY_LEVEL]: [],
 };

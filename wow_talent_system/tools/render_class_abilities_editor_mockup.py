@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""DEPRECATED: Use atavismeditor-master/tools/screenshot-setup/capture_real_editor.sh
+for a real Atavism Editor screenshot (Electron + MariaDB), not this PIL mockup.
+"""
 """Mockup screenshot: Atavism Editor — Class Abilities by Level tab."""
 
 from __future__ import annotations

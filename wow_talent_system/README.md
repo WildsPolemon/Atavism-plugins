@@ -27,6 +27,15 @@ After applying SQL, open the editor:
 - **Combat → Skills** — WoW talent fields (`tree_id`, `tier`, `column`) when **Talent** is checked
 - **Character → Player Templates** — starting skills only; level-up spells are in Class Abilities by Level
 
+Real editor screenshot (not a mockup): `releases/editor_media_2026-07-04/class_abilities_by_level_editor_real.png`. To regenerate locally:
+
+```bash
+cd atavismeditor-source-v10.13.0.p10/atavismeditor-master
+bash tools/screenshot-setup/capture_real_editor.sh
+```
+
+Requires MariaDB, `yarn install`, and `ng serve -c dev` (or the script starts Electron against an existing dev server on port 4200).
+
 ## WoW model: spells vs talents
 
 | WoW | Atavism implementation |
