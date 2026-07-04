@@ -1,8 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Menu, ScanBarcode, User, Search } from 'lucide-react';
+import { FolderOpen, ScanBarcode, User, Mail, Lock, QrCode } from 'lucide-react';
 import { api, getToken, setToken } from './api';
 import { fmt } from './utils';
-import CategoryTabs from './components/CategoryTabs';
 import ProductGrid from './components/ProductGrid';
 import CartPanel from './components/CartPanel';
 import FooterBar from './components/FooterBar';
@@ -32,6 +31,7 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [customerOpen, setCustomerOpen] = useState(false);
+  const [newCustomerOpen, setNewCustomerOpen] = useState(false);
   const [customerQ, setCustomerQ] = useState('');
   const [customers, setCustomers] = useState([]);
   const [editItem, setEditItem] = useState(null);
@@ -67,8 +67,7 @@ export default function App() {
   const loadSuggestions = useCallback(() => {
     const ids = cart.map((c) => c.product_id).join(',');
     api.recommendations(ids).then((r) => {
-      const list = (r.products || []).filter((p) => !cart.find((c) => c.product_id === p.id));
-      setSuggestions(list.slice(0, 6));
+      setSuggestions((r.products || []).filter((p) => !cart.find((c) => c.product_id === p.id)).slice(0, 4));
     }).catch(() => setSuggestions([]));
   }, [cart]);
 
@@ -93,8 +92,9 @@ export default function App() {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') {
-        setMenuOpen(false); setPayOpen(false); setCustomerOpen(false); setEditItem(null);
-        setJournalOpen(false); setSettingsOpen(false); setBarcodeOpen(false); setProductAddOpen(null); setCommentOpen(false);
+        setMenuOpen(false); setPayOpen(false); setCustomerOpen(false); setNewCustomerOpen(false);
+        setEditItem(null); setJournalOpen(false); setSettingsOpen(false); setBarcodeOpen(false);
+        setProductAddOpen(null); setCommentOpen(false);
       }
       if (e.key === 'f' || e.key === 'F') { if (!payOpen && !customerOpen && !settingsOpen) { e.preventDefault(); searchRef.current?.focus(); } }
       if (e.key === 'c' || e.key === 'C') { if (!payOpen && !settingsOpen) { e.preventDefault(); setCustomerOpen(true); } }
@@ -117,7 +117,6 @@ export default function App() {
   };
 
   const addToCart = (p) => {
-    if (settings.pos_sound !== 'off') try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp6dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2d').play(); } catch { /* */ }
     setCart((c) => {
       const i = c.findIndex((x) => x.product_id === p.id);
       if (i >= 0) { const n = [...c]; n[i] = { ...n[i], qty: n[i].qty + 1 }; return n; }
@@ -150,14 +149,17 @@ export default function App() {
     loadCatalog();
   };
 
+  const openSale = () => {
+    if (!shift) { setErr('Відкрийте зміну'); return; }
+    if (!cart.length) { setErr('Додайте товари'); return; }
+    setPayOpen(true);
+  };
+
   const completePay = async ({ payment_cash, payment_card, payment_deferred, notes, print_receipt }) => {
     const sale = await api.sale({
       items: cart.map((i) => ({ product_id: i.product_id, quantity: i.qty, price: i.price, discount: i.disc || 0 })),
-      payment_cash: payment_cash || 0,
-      payment_card: payment_card || 0,
-      payment_deferred: payment_deferred || 0,
-      customer_id: customer?.id,
-      notes: notes || saleComment,
+      payment_cash: payment_cash || 0, payment_card: payment_card || 0, payment_deferred: payment_deferred || 0,
+      customer_id: customer?.id, notes: notes || saleComment,
     });
     setLastSale({ sale: { ...sale, payment_cash, payment_card, payment_deferred, total, created_at: new Date().toLocaleString('uk-UA') }, items: [...cart] });
     setCart([]); setSaleComment('');
@@ -165,6 +167,12 @@ export default function App() {
     else setCustomer(null);
     setPayOpen(false);
     if (print_receipt) setTimeout(() => window.print(), 100);
+  };
+
+  const cartAction = (id) => {
+    if (id === 'hold' && cart.length) menuAction('hold');
+    if (id === 'cancel' && cart.length) menuAction('cancel');
+    if (id === 'comment') setCommentOpen(true);
   };
 
   const menuAction = async (id) => {
@@ -176,76 +184,90 @@ export default function App() {
     if (id === 'held') { setHeld((await api.heldSales()).sales || []); }
     if (id === 'settings') setSettingsOpen(true);
     if (id === 'add-product') setProductAddOpen('');
-    if (id === 'xz') { const r = await api.xzReport('X'); alert(`X-звіт: ${r.sales?.count} чеків, ${fmt(r.sales?.total)}`); }
+    if (id === 'old-version') alert('Стара версія недоступна в StarNet Core');
+    if (id === 'debt-return') alert('Повернення боргу — оберіть клієнта в CRM');
     if (id === 'cancel' && cart.length) setCart([]);
   };
 
   if (!user) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-ainur-bg px-4">
-        <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-ainur-blue text-2xl font-bold text-white">A</div>
-          <h1 className="text-xl font-semibold">StarNet Core</h1>
-          <p className="text-sm text-ainur-muted">Точка продаж</p>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#f8f9fa] px-4">
+        <div className="mb-8 flex items-center gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1a3b5d] text-white">
+            <div className="h-4 w-4 rounded-sm bg-white" />
+          </div>
+          <span className="text-2xl font-bold text-[#1a3b5d]">StarNet POS</span>
         </div>
-        <form onSubmit={login} className="w-full max-w-sm rounded-lg border border-ainur-border bg-white p-8 shadow-sm">
-          <h2 className="mb-6 text-center text-lg font-medium">Авторизація</h2>
+        <form onSubmit={login} className="w-full max-w-md rounded-lg border border-ainur-border bg-white p-8 shadow-sm">
+          <h2 className="mb-8 text-center text-xl text-ainur-text">Авторизація</h2>
           {err && <p className="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-600">{err}</p>}
-          <input name="email" type="email" defaultValue="cashier@starnetcore.local" placeholder="Email" className="mb-3 w-full rounded border border-ainur-border px-4 py-3 text-sm" />
-          <input name="password" type="password" defaultValue="cashier123" placeholder="Пароль" className="mb-6 w-full rounded border border-ainur-border px-4 py-3 text-sm" />
-          <button type="submit" className="w-full rounded-lg bg-ainur-blue py-3 text-sm font-semibold text-white">Увійти</button>
+          <div className="relative mb-3">
+            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input name="email" type="email" defaultValue="cashier@starnetcore.local" placeholder="Email або телефон"
+              className="w-full rounded border border-ainur-border py-3 pl-10 pr-4 text-sm" />
+          </div>
+          <div className="relative mb-2">
+            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input name="password" type="password" defaultValue="cashier123" placeholder="Пароль"
+              className="w-full rounded border border-ainur-border py-3 pl-10 pr-4 text-sm" />
+          </div>
+          <p className="mb-6 text-right text-xs text-ainur-muted">Я забув пароль</p>
+          <button type="submit" className="w-full rounded bg-ainur-green py-3 text-sm font-semibold lowercase text-white hover:opacity-90">увійти</button>
+          <div className="mt-6 border-t border-ainur-border pt-4 text-center">
+            <button type="button" className="inline-flex items-center gap-2 text-sm text-ainur-muted"><QrCode className="h-4 w-4" /> Увійти по QR-коду</button>
+          </div>
         </form>
+        <p className="mt-6 text-sm text-ainur-muted">У вас немає облікового запису? <span className="text-ainur-blue">Реєстрація</span></p>
       </div>
     );
   }
 
   return (
     <div className="flex h-screen flex-col bg-ainur-bg">
-      <header className="flex h-header shrink-0 items-center gap-2 bg-ainur-blue px-3 text-white">
-        <button type="button" onClick={() => setMenuOpen(true)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg hover:bg-white/10">
-          <Menu className="h-6 w-6" />
+      {/* Шапка — біла, як AinurPOS */}
+      <header className="flex shrink-0 items-center gap-2 border-b border-ainur-border bg-white px-3 py-2">
+        <button type="button" onClick={() => setCategoryId('')} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-ainur-blue text-white">
+          <FolderOpen className="h-5 w-5" />
         </button>
-        <span className="hidden shrink-0 text-lg font-bold sm:block">StarNet POS</span>
-        <div className="relative mx-2 flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ainur-muted" />
+        <div className="relative flex-1">
           <input ref={searchRef} value={q} onChange={(e) => setQ(e.target.value)}
             placeholder="Пошук за найменуванням, артикулом, штрихкодом, кодом та описом"
-            className="w-full rounded-lg border-0 bg-white py-2.5 pl-10 pr-12 text-sm text-ainur-text focus:outline-none focus:ring-2 focus:ring-ainur-orange" />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded bg-gray-200 px-1.5 text-[10px] text-ainur-muted">F</span>
+            className="w-full rounded-lg border border-ainur-border bg-ainur-bg py-2.5 pl-4 pr-12 text-sm focus:border-ainur-blue focus:outline-none" />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded border border-ainur-border bg-white px-1.5 text-[10px] text-ainur-muted">F</span>
         </div>
-        <button type="button" onClick={() => setBarcodeOpen(true)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/15 hover:bg-white/25">
+        <button type="button" onClick={() => setBarcodeOpen(true)} className="hidden h-10 w-10 items-center justify-center rounded-lg border border-ainur-border text-ainur-blue hover:bg-blue-50 sm:flex">
           <ScanBarcode className="h-5 w-5" />
         </button>
-        <button type="button" onClick={() => setCustomerOpen(true)} className="hidden items-center gap-1 rounded-lg bg-white/15 px-3 py-2 text-sm hover:bg-white/25 sm:flex">
-          Клієнт <span className="rounded bg-white/20 px-1 text-[10px]">C</span>
-        </button>
-        <button type="button" onClick={() => setCustomerOpen(true)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ainur-orange">
-          <User className="h-5 w-5" />
+        <button type="button" className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200">
+          <User className="h-4 w-4 text-ainur-muted" />
         </button>
       </header>
 
-      <CategoryTabs categories={categories} categoryId={categoryId} setCategoryId={setCategoryId} productCount={catalog.length} />
-
       <div className="flex flex-1 overflow-hidden">
-        <ProductGrid products={catalog} cart={cart} onAdd={addToCart} onQty={setQty} />
-        <CartPanel cart={cart} customer={customer} onChangeCustomer={() => setCustomerOpen(true)}
+        <ProductGrid categories={categories} categoryId={categoryId} setCategoryId={setCategoryId}
+          products={catalog} cart={cart} onAdd={addToCart} onQty={setQty} />
+        <CartPanel
+          cart={cart} customer={customer}
+          onChangeCustomer={() => setCustomerOpen(true)}
+          onNewCustomer={() => { setCustomerOpen(true); setNewCustomerOpen(true); }}
           suggestions={suggestions} subtotal={subtotal} discountPct={custDiscPct} discountAmt={custDiscAmt} total={total}
-          onRemove={(id) => setCart((c) => c.filter((x) => x.product_id !== id))} onEdit={setEditItem} onAddSuggestion={addToCart} />
+          onRemove={(id) => setCart((c) => c.filter((x) => x.product_id !== id))}
+          onEdit={setEditItem} onAddSuggestion={addToCart}
+          onSale={openSale} onActions={cartAction} cartEmpty={!cart.length}
+        />
       </div>
 
-      <FooterBar storeName={settings.company_name || 'StarNet Core'} shift={shift} total={total} userName={user?.name}
-        onMenu={() => setMenuOpen(true)} onSale={() => shift && cart.length ? setPayOpen(true) : setErr('Відкрийте зміну або додайте товари')}
-        onHold={() => cart.length && menuAction('hold')} onCancel={() => cart.length && menuAction('cancel')}
-        onComment={() => setCommentOpen(true)} cartEmpty={!cart.length} />
+      <FooterBar storeName={settings.company_name || 'StarNet Core'} shift={shift} onMenu={() => setMenuOpen(true)} />
 
       {menuOpen && <SideMenu user={user} onClose={() => setMenuOpen(false)} onAction={menuAction} />}
-      {payOpen && <PaymentScreen total={total} customer={customer} printDefault={settings.pos_print_default !== '0'} onClose={() => setPayOpen(false)} onPay={completePay} />}
+      {payOpen && <PaymentScreen total={total} customer={customer} printDefault={settings.pos_print_default !== '0'}
+        onClose={() => setPayOpen(false)} onPay={completePay} onChangeCustomer={() => setCustomerOpen(true)} />}
       {editItem && <ItemEditModal item={editItem} onClose={() => setEditItem(null)} onSave={(u) => { setCart((c) => c.map((x) => x.product_id === u.product_id ? u : x)); setEditItem(null); }} />}
-      {customerOpen && <CustomerModal query={customerQ} setQuery={setCustomerQ} customers={customers}
+      {customerOpen && <CustomerModal query={customerQ} setQuery={setCustomerQ} customers={customers} startNew={newCustomerOpen}
         onSearch={async () => setCustomers((await api.searchCustomers(customerQ)).customers || [])}
-        onSelect={(c) => { setCustomer(c); setCustomerOpen(false); }}
-        onCreate={async (data) => { const c = await api.createCustomer(data); setCustomer(c); setCustomerOpen(false); }}
-        onClose={() => setCustomerOpen(false)} />}
+        onSelect={(c) => { setCustomer(c); setCustomerOpen(false); setNewCustomerOpen(false); }}
+        onCreate={async (data) => { const c = await api.createCustomer(data); setCustomer(c); setCustomerOpen(false); setNewCustomerOpen(false); }}
+        onClose={() => { setCustomerOpen(false); setNewCustomerOpen(false); }} />}
       {journalOpen && <ReceiptJournal sales={sales} onClose={() => setJournalOpen(false)} onReturn={async (id) => { await api.returnSale(id); setSales((await api.sales()).sales || []); }} />}
       {settingsOpen && <PosSettings settings={settings} onClose={() => setSettingsOpen(false)} onSave={async (s) => { const r = await api.updateSettings(s); setSettings(r.settings || s); setSettingsOpen(false); loadCatalog(); }} />}
       {barcodeOpen && <BarcodeModal onScan={scanBarcode} onClose={() => setBarcodeOpen(false)} />}
@@ -254,8 +276,8 @@ export default function App() {
       {commentOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-6">
-            <h3 className="mb-3 font-semibold">Оскарження / коментар</h3>
-            <textarea value={saleComment} onChange={(e) => setSaleComment(e.target.value)} rows={4} className="mb-4 w-full rounded-lg border border-ainur-border p-3 text-sm" placeholder="Введіть коментар до чека..." />
+            <h3 className="mb-3 font-semibold">Оскарження</h3>
+            <textarea value={saleComment} onChange={(e) => setSaleComment(e.target.value)} rows={4} className="mb-4 w-full rounded-lg border border-ainur-border p-3 text-sm" />
             <button type="button" onClick={() => setCommentOpen(false)} className="w-full rounded-lg bg-ainur-blue py-2 text-sm text-white">Зберегти</button>
           </div>
         </div>
@@ -271,7 +293,7 @@ export default function App() {
           ))}
         </div>
       )}
-      {err && <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 cursor-pointer rounded-lg bg-red-600 px-4 py-2 text-sm text-white" onClick={() => setErr('')}>{err}</div>}
+      {err && <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 cursor-pointer rounded-lg bg-red-600 px-4 py-2 text-sm text-white" onClick={() => setErr('')}>{err}</div>}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 
-export default function CustomerModal({ query, setQuery, customers, onSearch, onSelect, onCreate, onClose }) {
-  const [newMode, setNewMode] = useState(false);
+export default function CustomerModal({ query, setQuery, customers, onSearch, onSelect, onCreate, onClose, startNew = false }) {
+  const [newMode, setNewMode] = useState(startNew);
   const [form, setForm] = useState({ name: '', phone: '', email: '', discount_percent: 0 });
 
   return (
