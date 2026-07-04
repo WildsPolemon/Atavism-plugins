@@ -86,8 +86,8 @@ public class ExtendedCombatMessages {
         	failmessageType = 7;
         else if (result == AbilityResult.MISSING_AMMO)
         	failmessageType = 8;
-        //else if (result == AbilityResult.WRONG_STANCE)
-        //	failmessageType = 9;
+        else if (result == AbilityResult.WRONG_STANCE)
+        	failmessageType = 9;
         else if (result == AbilityResult.INSUFFICIENT_VIGOR)
         	failmessageType = 12;
         else if (result == AbilityResult.EFFECT_MISSING)

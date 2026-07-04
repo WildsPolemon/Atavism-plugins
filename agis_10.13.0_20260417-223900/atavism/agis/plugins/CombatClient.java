@@ -1218,6 +1218,13 @@ public class CombatClient {
 		Engine.getAgent().sendBroadcast(msg);
 		Log.debug("COMBATCLIENT: sendAlterThreat hit 2");
 	}
+
+	public static void sendTaunt(OID subjectOid, OID attackerOid) {
+		AlterThreatMessage msg = new AlterThreatMessage(subjectOid, attackerOid, 0);
+		msg.setTaunt(true);
+		Engine.getAgent().sendBroadcast(msg);
+		Log.debug("COMBATCLIENT: sendTaunt");
+	}
 	
 	public static class AlterThreatMessage extends SubjectMessage {
         public AlterThreatMessage() {
@@ -1245,6 +1252,16 @@ public class CombatClient {
         	this.attackerOid = attackerOid;
         }
         OID attackerOid = null;
+
+        public boolean isTaunt() {
+            return taunt;
+        }
+
+        public void setTaunt(boolean taunt) {
+            this.taunt = taunt;
+        }
+
+        boolean taunt = false;
 
         private static final long serialVersionUID = 1L;
     }

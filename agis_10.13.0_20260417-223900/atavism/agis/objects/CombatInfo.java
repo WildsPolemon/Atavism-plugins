@@ -708,6 +708,22 @@ public class CombatInfo extends Entity implements Runnable, Cooldown.CooldownObj
     	}
     }
 
+    public int getNextSwingAbility() {
+        Object value = getProperty(COMBAT_PROP_NEXT_SWING_ABILITY);
+        if (value instanceof Integer) {
+            return (Integer) value;
+        }
+        return -1;
+    }
+
+    public void setNextSwingAbility(int abilityId) {
+        setProperty(COMBAT_PROP_NEXT_SWING_ABILITY, abilityId);
+    }
+
+    public void clearNextSwingAbility() {
+        setProperty(COMBAT_PROP_NEXT_SWING_ABILITY, -1);
+    }
+
     public void sendStatusUpdate() {
     }
     
@@ -1360,6 +1376,7 @@ public class CombatInfo extends Entity implements Runnable, Cooldown.CooldownObj
 	 * Cycles through the vitalityStats map to see if any vitality stats should have the shift run.
 	 */
 	public void runCombatTick() {
+		WoWCombatHelper.tickRageDecay(this);
 		for (String statName : vitalityStats.keySet()) {
 			// Has enough time elapsed for another shift update
 			//Log.debug("COMBAT: comparing statUpdateTime: " + vitalityStats.get(statName) + " against current time: " + System.currentTimeMillis());
@@ -1382,6 +1399,9 @@ public class CombatInfo extends Entity implements Runnable, Cooldown.CooldownObj
 	}
 	
 	private void applyStatShift(String statName) {
+		if (WoWCombatHelper.isEnabled() && WoWCombatHelper.isManaStat(statName) && WoWCombatHelper.isInFiveSecondRule(this)) {
+			return;
+		}
 		AgisStat stat = (AgisStat) getProperty(statName);
 		VitalityStatDef statDef = (VitalityStatDef) CombatPlugin.lookupStatDef(statName);
 		// Is there a shift to run?
@@ -1626,6 +1646,9 @@ public class CombatInfo extends Entity implements Runnable, Cooldown.CooldownObj
 	public final static String COMBAT_PROP_DEADSTATE = "deadstate";
 	public final static String COMBAT_PROP_ATTACKABLE = "attackable";
 	public final static String COMBAT_PROP_STATE = "state";
+	public final static String COMBAT_PROP_NEXT_SWING_ABILITY = "combat.nextSwingAbility";
+	public final static String COMBAT_PROP_LAST_MANA_SPEND = "combat.lastManaSpend";
+	public final static String COMBAT_PROP_CONSUMING_SWING = "combat.consumingSwing";
 	public final static String COMBAT_PROP_WEAPON_STATE = "weaponsSheathed";
 	public final static String COMBAT_PROP_FALLING_START_HEIGHT = "fallingStartHeight";
 	

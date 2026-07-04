@@ -2791,6 +2791,11 @@ public class CombatDatabase {
 						rs.getInt("id"), HelperFunctions.readEncodedString(rs.getBytes("name")));
 				effect.setIcon(HelperFunctions.readEncodedString(rs.getBytes("icon")));
 				effect.setAlterValue(rs.getInt("intValue1"));
+				try {
+					effect.setTaunt(rs.getBoolean("boolValue1"));
+				} catch (SQLException ignored) {
+					// optional column usage
+				}
 				loadBonusEffect(effect, rs);
 				loadTagsForEffect(effect,rs);
 				return effect;
@@ -3468,6 +3473,14 @@ public class CombatDatabase {
 			ability.setCombatState(rs.getInt("combatState"));
 
 			ability.setInterceptType(rs.getInt("interceptType"));
+			try {
+				String stance = HelperFunctions.readEncodedString(rs.getBytes("stanceReq"));
+				if (stance != null && !stance.isEmpty()) {
+					ability.setStance(stance);
+				}
+			} catch (SQLException ignored) {
+				// optional column
+			}
 			ability.setReqTarget(rs.getBoolean("reqTarget"));
 			ability.setReqFacingTarget(rs.getBoolean("reqFacingTarget"));
 			//ability.autoRotateToTarget(rs.getBoolean("autoRotateToTarget"));

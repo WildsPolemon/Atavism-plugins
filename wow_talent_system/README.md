@@ -15,9 +15,10 @@ Wrath of the Lich King (3.3.5) talent rules:
 1. `sql/001_talent_tree_columns.sql`
 2. `sql/002_wow_talent_game_settings.sql`
 3. `sql/003_class_ability_by_level.sql`
-4. (Optional) `sql/sample_warrior_abilities_by_level.sql` — remap `ability_id` to your abilities
-5. Rebuild & deploy AGIS
-6. Copy `unity/Scripts/` to Unity client
+4. `sql/004_wow_combat_settings.sql` — WotLK combat layer (stances, rage, GCD 1.5s, taunt, 5SR)
+5. (Optional) `sql/sample_warrior_abilities_by_level.sql` — remap `ability_id` to your abilities
+6. Rebuild & deploy AGIS
+7. Copy `unity/Scripts/` to Unity client
 
 ## Atavism Editor
 
@@ -35,6 +36,26 @@ bash tools/screenshot-setup/capture_real_editor.sh
 ```
 
 Requires MariaDB, `yarn install`, and `ng serve -c dev` (or the script starts Electron against an existing dev server on port 4200).
+
+## WoW combat layer (`WoWCombatHelper`)
+
+Server-side WotLK combat feel on top of AGIS abilities/stats. Enable with `WOW_COMBAT_ENABLED=true` (see `sql/004_wow_combat_settings.sql`).
+
+| Feature | How it works |
+|---------|----------------|
+| **Stances** | `abilities.stanceReq` must match `CombatInfo.state` (set via PropertyEffect / stance abilities). Wrong stance → `WRONG_STANCE` client message. |
+| **Rage** | Auto-generated on deal/take damage into vitality stat `rage` (configurable). OOC decay per regen tick. |
+| **On-next-swing** | Set ability `interceptType = 2` (Heroic Strike style). Queues on auto-attack swing instead of firing instantly. |
+| **GCD** | `WOW_GLOBAL_COOLDOWN` / `GLOBAL_COOLDOWN` default **1.5s** when enabled. |
+| **Taunt** | `ThreatEffect` with `boolValue1 = 1` forces mob threat to top + target swap. |
+| **Mana 5-second rule** | Spirit-style mana regen paused for 5s after spending `mana` stat. |
+
+Content setup examples:
+
+- Battle Stance ability → effect sets `state` property to `Battle`
+- Charge → `stanceReq = Battle`
+- Heroic Strike → `interceptType = 2`, `activationCostType = rage`
+- Taunt ability → `ThreatEffect` with `intValue1` threat bonus and `boolValue1 = 1` for true taunt
 
 ## WoW model: spells vs talents
 

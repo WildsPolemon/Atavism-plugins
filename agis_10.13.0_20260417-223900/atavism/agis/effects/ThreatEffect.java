@@ -35,6 +35,10 @@ public class ThreatEffect extends AgisEffect {
 			Log.debug("ThreatEffect: this effect is not for buildings");
 			return;
 		}
+		if (taunt) {
+			CombatClient.sendTaunt(state.getTargetOid(), state.getSourceOid());
+			return;
+		}
 		CombatClient.sendAlterThreat(state.getTargetOid(), state.getSourceOid(), alterValue);
 		
     }
@@ -42,6 +46,10 @@ public class ThreatEffect extends AgisEffect {
     public int getAlterValue() { return alterValue; }
     public void setAlterValue(int alterValue) { this.alterValue = alterValue; }
     protected int alterValue = 0;
+
+    public boolean isTaunt() { return taunt; }
+    public void setTaunt(boolean taunt) { this.taunt = taunt; }
+    protected boolean taunt = false;
     
     private static final long serialVersionUID = 1L;
 }

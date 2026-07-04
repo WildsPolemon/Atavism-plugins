@@ -527,6 +527,7 @@ public class CombatPlugin extends atavism.server.engine.EnginePlugin {
 
 
 		cDB.loadEditorOptions();
+		WoWCombatHelper.loadSettings(cDB);
 		ItemDatabase iDB = new ItemDatabase(false);
 		iDB.LoadSlotsDefinition();
 
@@ -760,6 +761,10 @@ public class CombatPlugin extends atavism.server.engine.EnginePlugin {
 			}
 			for (EffectState es : toRemove) {
 				AgisEffect.removeEffect(es);
+			}
+
+			if (WoWCombatHelper.isEnabled() && ci != null && ci.isUser()) {
+				WoWCombatHelper.addRageFromDamageTaken(ci, dmgMsg.getDamage());
 			}
 
 			Log.debug("DamageHook: End");
@@ -1553,6 +1558,22 @@ public class CombatPlugin extends atavism.server.engine.EnginePlugin {
 		}
 
 		int abilityID = (Integer) info.getProperty(CombatInfo.COMBAT_PROP_AUTOATTACK_ABILITY);
+
+		int queuedSwing = info.getNextSwingAbility();
+		if (queuedSwing > 0) {
+			info.clearNextSwingAbility();
+			AgisAbility queued = Agis.AbilityManager.get(queuedSwing);
+			if (queued != null) {
+				Log.debug("AUTO: resolving on-next-swing ability " + queuedSwing);
+				info.setProperty(CombatInfo.COMBAT_PROP_CONSUMING_SWING, true);
+				try {
+					AgisAbility.startAbility(queued, info, target, null);
+				} finally {
+					info.setProperty(CombatInfo.COMBAT_PROP_CONSUMING_SWING, false);
+				}
+				return;
+			}
+		}
 
 		int autoattack = abilityID;
 		if (!info.isUser()) {

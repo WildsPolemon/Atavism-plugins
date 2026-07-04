@@ -515,7 +515,25 @@ public class CombatBehavior extends Behavior {
     }
 
     private void handleAlterThreat(CombatClient.AlterThreatMessage clMsg) {
+        if (clMsg.isTaunt()) {
+            handleTaunt(clMsg.getAttackerOid());
+            return;
+        }
         addTargetToThreatMap(clMsg.getAttackerOid(), clMsg.getThreatChange());
+    }
+
+    private void handleTaunt(OID attackerOid) {
+        if (attackerOid == null) {
+            return;
+        }
+        int maxThreat = 0;
+        for (Integer threat : threatMap.values()) {
+            if (threat != null && threat > maxThreat) {
+                maxThreat = threat;
+            }
+        }
+        addTargetToThreatMap(attackerOid, (maxThreat + 1) - threatMap.getOrDefault(attackerOid, 0));
+        attackTarget(attackerOid);
     }
 
 	private void handleInvalidPath() {

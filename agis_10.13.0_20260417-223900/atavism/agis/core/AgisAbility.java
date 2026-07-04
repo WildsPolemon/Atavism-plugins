@@ -449,6 +449,10 @@ public class AgisAbility {
     public int getInterceptType() { return interceptType;}
     public void setInterceptType(int interceptType) { this.interceptType = interceptType; }
     protected int interceptType = 0;
+
+    public boolean isOnNextSwing() {
+        return WoWCombatHelper.isOnNextSwing(interceptType);
+    }
     
     public boolean isToggle() { return toggle;}
     public void isToggle(boolean val) { this.toggle = val; }
@@ -2483,6 +2487,7 @@ if(state.casterLoc==null){
 				}
 
 				combatInfo.statModifyBaseValue(costProp, (int) -Math.round((activationCost + percentage) * costMultiply));
+				WoWCombatHelper.onResourceSpent(combatInfo, costProp);
 				combatInfo.sendStatusUpdate();
 			}
 		}
@@ -2904,6 +2909,7 @@ if(state.casterLoc==null){
 							Log.debug("AgisAbility: CostMod calculated="+calculated+" mod="+costMultiply);
 					}
 					combatInfo.statModifyBaseValue(costProp, (int) -Math.round((activationCost + percentage) * costMultiply));
+					WoWCombatHelper.onResourceSpent(combatInfo, costProp);
 					combatInfo.sendStatusUpdate();
 				}
 			} else {
@@ -5000,8 +5006,17 @@ if(state.casterLoc==null){
 	
     
     protected AbilityResult checkStance(CombatInfo obj, CombatInfo target, ActivationState state) {
-    	//OID playerOid = obj.getOwnerOid();
-    	return AbilityResult.SUCCESS;
+        if (!WoWCombatHelper.isEnabled() || stanceReq == null || stanceReq.isEmpty()) {
+            return AbilityResult.SUCCESS;
+        }
+        String current = obj.getState();
+        if (current == null) {
+            current = "";
+        }
+        if (stanceReq.equalsIgnoreCase(current)) {
+            return AbilityResult.SUCCESS;
+        }
+        return AbilityResult.WRONG_STANCE;
     }
     
     /*
@@ -5486,9 +5501,9 @@ if(state.casterLoc==null){
     	    return result;
     	
     	// Check for stance
-    	/*result = checkStance(obj, target, state);
+    	result = checkStance(obj, target, state);
     	if (result != AbilityResult.SUCCESS)
-    	    return result;*/
+    	    return result;
 
         tChecksMid1 = System.nanoTime();
     	if (!skipChecks) {
@@ -5569,6 +5584,20 @@ if(state.casterLoc==null){
 		  if (Log.loggingDebug)Log.debug("AgisAbility.startAbility cooldowns ready ");
 		Prometheus.registry().timer("start_ability_cooldowns", "ability",
 				ability.getClass().getSimpleName()).record(Duration.ofMillis(System.currentTimeMillis() - t0));
+
+        if (WoWCombatHelper.isEnabled() && ability.isOnNextSwing() && source.isUser()) {
+            Object consuming = source.getProperty(CombatInfo.COMBAT_PROP_CONSUMING_SWING);
+            if (!(consuming instanceof Boolean) || !(Boolean) consuming) {
+            AgisAbilityState precheckState = ability.generateState(source, target, item, loc, claimId, claimObjId, destLoc);
+            AbilityResult precheck = ability.checkAbility(source, target, ActivationState.INIT, precheckState, false);
+            if (precheck != AbilityResult.SUCCESS) {
+                ExtendedCombatMessages.sendAbilityFailMessage(source, precheck, ability.getID(), ability.getCostProperty());
+                return false;
+            }
+            source.setNextSwingAbility(ability.getID());
+            return true;
+            }
+        }
       
         long tStateStart = System.currentTimeMillis();
         AgisAbilityState state = ability.generateState(source, target, item, loc, claimId, claimObjId, destLoc);

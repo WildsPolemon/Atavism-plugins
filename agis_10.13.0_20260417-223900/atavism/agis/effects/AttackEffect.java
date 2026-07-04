@@ -380,6 +380,10 @@ public class AttackEffect extends AgisEffect {
 		if (target != null) {
 			Engine.getAgent().sendBroadcast(new CombatClient.DamageMessage(target.getOwnerOid(), state.getSource().getOwnerOid(), dmg, damageType, threat));
 
+			if (dmg > 0) {
+				WoWCombatHelper.addRageFromDamageDealt(caster, dmg);
+			}
+
 			// Hopefully this will make the ai respond even if the attack was a miss etc.
 			target.statModifyBaseValue(getDamageProperty(), -dmg);
 			target.statSendUpdate(false);
