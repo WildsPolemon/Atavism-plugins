@@ -4,19 +4,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        pos: {
-          bg: '#f0f2f5',
-          panel: '#ffffff',
-          border: '#e5e7eb',
-          header: '#1db8c8',
-          accent: '#22c55e',
-          text: '#1f2937',
-          muted: '#6b7280',
+        ainur: {
+          blue: '#2E7BD6',
+          'blue-dark': '#1E5BA6',
+          orange: '#FF8C00',
+          bg: '#F5F5F5',
+          border: '#E0E0E0',
+          text: '#333333',
+          muted: '#666666',
         },
       },
-      boxShadow: {
-        card: '0 1px 3px rgba(0,0,0,.08)',
-      },
+      width: { cart: '380px' },
+      height: { header: '56px', footer: '52px' },
     },
   },
   plugins: [],

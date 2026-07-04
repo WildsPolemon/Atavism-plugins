@@ -30,6 +30,7 @@ export const api = {
   returnSale: (id) => req(`/api/pos/sales/${id}/return`, { method: 'POST' }),
   xzReport: (type = 'X') => req(`/api/pos/xz-report?type=${type}`),
   receiptSettings: () => req('/api/pos/receipt-settings'),
+  searchCustomers: (q) => req(`/api/crm/customers?search=${encodeURIComponent(q)}`),
 };
 
 export const fmt = (n) => `${new Intl.NumberFormat('uk-UA', { minimumFractionDigits: 2 }).format(n ?? 0)} ₴`;
