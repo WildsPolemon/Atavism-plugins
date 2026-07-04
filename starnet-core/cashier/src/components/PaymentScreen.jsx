@@ -21,8 +21,8 @@ export default function PaymentScreen({ total, customer, printDefault = true, on
   };
 
   const tabAmount = values[tab];
-  const quick = [remaining || total, total, Math.ceil(total / 5) * 5, 200, 500, 2000]
-    .filter((v, i, a) => v > 0 && a.indexOf(v) === i).slice(0, 6);
+  const quick = [total, Math.ceil(total / 5) * 5 || total, 200, 500, 2000, 5000]
+    .filter((v, i, a) => v > 0 && a.indexOf(v) === i);
 
   useEffect(() => {
     setCash(total);
@@ -83,7 +83,7 @@ export default function PaymentScreen({ total, customer, printDefault = true, on
             </div>
           </div>
           <div className="mb-6 grid max-w-lg grid-cols-3 gap-2">
-            {[{ id: 'cash', label: 'Готівка', icon: '💵' }, { id: 'card', label: 'Безготівковий', icon: '💳' }, { id: 'deferred', label: 'Відстрочення', icon: '🤝' }].map((t) => (
+            {[{ id: 'cash', label: 'Готівка', icon: '💵' }, { id: 'card', label: tab === 'card' ? 'КАРТА' : 'Безготівковий', icon: '💳' }, { id: 'deferred', label: 'Відстрочення', icon: '🤝' }].map((t) => (
               <button key={t.id} onClick={() => setTab(t.id)} className={`rounded-lg border-2 py-4 text-center text-sm font-medium ${tab === t.id ? 'border-ainur-blue bg-blue-50 text-ainur-blue' : 'border-ainur-border'}`}>
                 <div className="text-2xl mb-1">{t.icon}</div>{t.label}
                 <div className="text-xs mt-1">{fmt(values[t.id])}</div>
@@ -99,7 +99,7 @@ export default function PaymentScreen({ total, customer, printDefault = true, on
             <button type="button" onClick={() => { setCash(0); setCard(0); setDeferred(0); }} className="rounded-lg border border-red-200 text-red-600 px-4 py-2 text-sm">Скинути</button>
           </div>
           {err && <p className="mb-4 text-sm text-red-600">{err}</p>}
-          <button onClick={confirm} className="w-full max-w-lg rounded-lg bg-ainur-blue py-4 text-lg font-bold text-white hover:bg-ainur-blue-dark">
+          <button onClick={confirm} className="w-full max-w-lg rounded-lg bg-ainur-green py-4 text-lg font-bold text-white hover:opacity-90">
             ПРИЙНЯТИ {fmt(total).toUpperCase()} <span className="float-right text-sm font-normal opacity-80">[ENTER]</span>
           </button>
         </div>

@@ -76,12 +76,38 @@ class PosController extends BaseApiController
         }
         $products = model(ProductModel::class)
             ->where('active', 1)
-            ->groupStart()->like('name', $q)->orLike('sku', $q)->orLike('barcode', $q)->groupEnd()
+            ->groupStart()->like('name', $q)->orLike('sku', $q)->orLike('barcode', $q)->orLike('description', $q)->groupEnd()
             ->findAll(20);
         $customers = model(\App\Models\CustomerModel::class)
             ->groupStart()->like('name', $q)->orLike('phone', $q)->orLike('card_number', $q)->groupEnd()
             ->findAll(10);
         return $this->ok(compact('products', 'customers'));
+    }
+
+    public function recommendations()
+    {
+        $cartIds = array_filter(array_map('intval', explode(',', $this->request->getGet('cart_ids') ?? '')));
+        $db = db_connect();
+        $products = [];
+
+        if ($cartIds) {
+            $placeholders = implode(',', array_fill(0, count($cartIds), '?'));
+            $rows = $db->query("
+                SELECT p.id, p.name, p.sale_price, p.retail_price, p.image_url, COUNT(*) as freq
+                FROM sale_items si1
+                JOIN sale_items si2 ON si1.sale_id = si2.sale_id AND si1.product_id != si2.product_id
+                JOIN products p ON p.id = si2.product_id AND p.active = 1
+                WHERE si1.product_id IN ($placeholders) AND si2.product_id NOT IN ($placeholders)
+                GROUP BY p.id ORDER BY freq DESC LIMIT 6
+            ", [...$cartIds, ...$cartIds])->getResultArray();
+            $products = $rows;
+        }
+
+        if (!$products) {
+            $products = model(ProductModel::class)->where('active', 1)->orderBy('updated_at', 'DESC')->findAll(6);
+        }
+
+        return $this->ok(['products' => $products]);
     }
 
     public function sale()

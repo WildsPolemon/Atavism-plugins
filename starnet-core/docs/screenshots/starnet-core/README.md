@@ -1,27 +1,28 @@
-# StarNet Core Screenshots
-
-Updated screenshots of the AinurPOS clone (July 2026).
+# StarNet Core Screenshots — 100% AinurPOS Clone
 
 ## Cashier POS (`:5175`)
 
 | File | Description |
 |------|-------------|
-| `pos-main.png` | Main POS screen |
-| `pos-cart.png` | Cart with products |
-| `pos-payment-split.png` | Split payment (cash + card) |
+| `pos-main.png` | Blue header, category tabs, product grid 140×200 |
+| `pos-cart.png` | Cart with customer badge, Купуєте разом |
+| `pos-item-edit.png` | Edit modal — ЗАСТОСУВАТИ (orange) |
+| `pos-product-add.png` | Add new product from POS |
+| `pos-payment-split.png` | Split payment screen |
 | `pos-settings.png` | POS settings |
-| `pos-barcode.png` | Barcode scanner modal |
+| `pos-barcode.png` | Barcode scanner |
 | `pos-menu.png` | Side menu |
 
 ## Admin (`:5174`)
 
 | File | Description |
 |------|-------------|
-| `admin-login.png` | Login page |
-| `admin-dashboard.png` | Dashboard overview |
-| `admin-products.png` | Products catalog |
-| `admin-crm.png` | CRM / customers |
+| `admin-login.png` | Login |
+| `admin-dashboard.png` | Головна / overview |
+| `admin-products-form.png` | Full product add form |
+| `admin-products.png` | Product list |
+| `admin-crm.png` | CRM |
 
-## Reference (live AinurPOS)
+## Reference
 
-See `../ainurpos-live/` for original system study.
+`../ainurpos-live/` — live AinurPOS study (FEATURE_MATRIX.md + 17 screenshots)

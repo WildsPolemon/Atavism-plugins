@@ -37,6 +37,8 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
         $routes->post('pos/shift/close', 'Api\PosController::closeShiftAction');
         $routes->get('pos/products', 'Api\PosController::products');
         $routes->get('pos/search', 'Api\PosController::search');
+        $routes->get('pos/recommendations', 'Api\PosController::recommendations');
+        $routes->post('pos/products', 'Api\ProductController::create');
         $routes->get('pos/sales', 'Api\PosController::sales');
         $routes->get('pos/sales/held', 'Api\PosController::heldSales');
         $routes->post('pos/sale', 'Api\PosController::sale');

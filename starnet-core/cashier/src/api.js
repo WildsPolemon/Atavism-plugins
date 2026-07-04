@@ -31,6 +31,9 @@ export const api = {
   xzReport: (type = 'X') => req(`/api/pos/xz-report?type=${type}`),
   receiptSettings: () => req('/api/pos/receipt-settings'),
   searchCustomers: (q) => req(`/api/crm/customers?search=${encodeURIComponent(q)}`),
+  createCustomer: (d) => req('/api/crm/customers', { method: 'POST', body: JSON.stringify(d) }),
+  createProduct: (d) => req('/api/pos/products', { method: 'POST', body: JSON.stringify(d) }),
+  recommendations: (cartIds) => req(`/api/pos/recommendations?cart_ids=${cartIds}`),
   updateSettings: (data) => req('/api/settings', { method: 'PUT', body: JSON.stringify(data) }),
 };
 

@@ -22,6 +22,7 @@ export const api = {
   settings: () => req('/api/settings'),
   saveSettings: (d) => req('/api/settings', { method: 'PUT', body: JSON.stringify(d) }),
   categories: () => req('/api/products/categories'),
+  createCategory: (d) => req('/api/products/categories', { method: 'POST', body: JSON.stringify(d) }),
   products: (page, search) => req(`/api/products?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ''}`),
   createProduct: (d) => req('/api/products', { method: 'POST', body: JSON.stringify(d) }),
   updateProduct: (id, d) => req(`/api/products/${id}`, { method: 'PATCH', body: JSON.stringify(d) }),

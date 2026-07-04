@@ -8,6 +8,7 @@ export default function SideMenu({ user, onClose, onAction }) {
     { id: 'journal', label: 'Журнал чеків', icon: FileText },
     { id: 'shifts', label: 'Зміни', icon: Clock },
     { id: 'settings', label: 'Налаштування', icon: Settings },
+    { id: 'add-product', label: 'Додати товар', icon: FileText },
     { id: 'hold', label: 'Відкласти чек', icon: FileText },
     { id: 'held', label: 'Відкладені чеки', icon: FileText },
     { id: 'xz', label: 'X-звіт', icon: FileText },

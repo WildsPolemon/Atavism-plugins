@@ -1,46 +1,49 @@
-import { Folder, Package } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { fmt } from '../utils';
 
 const priceOf = (p) => Number(p.sale_price || p.retail_price || 0);
 
-export default function ProductGrid({ categories, categoryId, setCategoryId, products, cart, onAdd, onQty }) {
-  const folders = [{ id: '', name: 'Головна', count: products.length }, ...categories.map((c) => ({ id: String(c.id), name: c.name, count: '—' }))];
-
+export default function ProductGrid({ products, cart, onAdd, onQty }) {
   return (
-    <div className="flex-1 overflow-auto p-3">
-      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-        {folders.map((f) => (
-          <button key={f.id || 'home'} onClick={() => setCategoryId(f.id)} className={`flex h-28 flex-col items-center justify-center rounded-lg border-2 bg-white p-3 transition ${categoryId === f.id ? 'border-ainur-orange' : 'border-ainur-border hover:border-ainur-blue'}`}>
-            <Folder className={`h-10 w-10 mb-2 ${categoryId === f.id ? 'text-ainur-orange' : 'text-ainur-blue'}`} />
-            <span className="text-sm font-medium text-center leading-tight">{f.name}</span>
-            <span className="text-xs text-ainur-muted">{f.count} items</span>
-          </button>
-        ))}
+    <div className="flex-1 overflow-auto bg-ainur-bg p-3">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
         {products.map((p) => {
           const inCart = cart.find((x) => x.product_id === p.id);
           return (
-            <div key={p.id} className="relative flex h-44 flex-col rounded-lg border border-ainur-border bg-white p-2 shadow-sm hover:shadow-md transition">
-              <span className="text-[10px] text-ainur-muted">{p.stock_qty ?? 0} {p.unit || 'шт'}</span>
-              <div className="flex flex-1 items-center justify-center my-1">
-                {p.image_url ? <img src={p.image_url} alt="" className="max-h-16 max-w-full object-contain" /> : <Package className="h-12 w-12 text-gray-300" />}
+            <div
+              key={p.id}
+              className="relative flex h-product-card w-product-card flex-col rounded-lg border border-ainur-border bg-white p-3 shadow-sm transition hover:shadow-md"
+            >
+              <span className="absolute left-2 top-2 rounded bg-ainur-bg px-1.5 py-0.5 text-[10px] text-ainur-muted">
+                {p.stock_qty ?? 0} {p.unit || 'шт'}
+              </span>
+              <div className="mx-auto mt-4 flex h-[120px] w-[120px] items-center justify-center">
+                {p.image_url ? (
+                  <img src={p.image_url} alt="" className="max-h-full max-w-full object-contain" />
+                ) : (
+                  <Package className="h-16 w-16 text-gray-300" />
+                )}
               </div>
-              <p className="line-clamp-2 text-xs font-medium leading-tight min-h-[2rem]">{p.name}</p>
-              <p className="text-[10px] text-ainur-muted truncate">{p.barcode || p.sku || ''}</p>
-              <p className="mt-auto text-sm font-bold">{fmt(priceOf(p))}</p>
+              <p className="mt-1 line-clamp-2 text-sm font-medium leading-tight text-ainur-text">{p.name}</p>
+              <p className="truncate text-xs text-ainur-muted">{p.barcode || p.sku || ''}</p>
+              <p className="mt-auto text-price-lg font-bold text-ainur-text">{fmt(priceOf(p))}</p>
+
               {inCart ? (
-                <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded bg-ainur-blue text-white text-xs">
-                  <button onClick={() => onQty(p.id, inCart.qty - 1)} className="px-2 py-1">−</button>
-                  <span className="min-w-[1rem] text-center">{inCart.qty}</span>
-                  <button onClick={() => onQty(p.id, inCart.qty + 1)} className="px-2 py-1">+</button>
+                <div className="absolute bottom-3 right-3 flex items-center rounded-md bg-ainur-blue text-white">
+                  <button type="button" onClick={() => onQty(p.id, inCart.qty - 1)} className="flex h-7 w-7 items-center justify-center text-lg leading-none">−</button>
+                  <span className="min-w-[40px] text-center text-sm font-semibold">{inCart.qty}</span>
+                  <button type="button" onClick={() => onQty(p.id, inCart.qty + 1)} className="flex h-7 w-7 items-center justify-center text-lg leading-none">+</button>
                 </div>
               ) : (
-                <button onClick={() => onAdd(p)} className="absolute inset-0 rounded-lg opacity-0 hover:opacity-100 bg-ainur-blue/10" aria-label="add" />
+                <button type="button" onClick={() => onAdd(p)} className="absolute inset-0 rounded-lg" aria-label={`Додати ${p.name}`} />
               )}
-              {!inCart && <button onClick={() => onAdd(p)} className="absolute inset-0" aria-label="add" />}
             </div>
           );
         })}
       </div>
+      {!products.length && (
+        <p className="py-16 text-center text-sm text-ainur-muted">Товарів не знайдено</p>
+      )}
     </div>
   );
 }
