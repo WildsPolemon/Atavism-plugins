@@ -19,7 +19,7 @@ import Settings from './pages/Settings';
 function Guard({ children }) {
   const [ok, setOk] = useState(null);
   useEffect(() => { api.me().then(() => setOk(true)).catch(() => setOk(false)); }, []);
-  if (ok === null) return <div className="flex h-screen items-center justify-center bg-[#0a0d14]"><div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" /></div>;
+  if (ok === null) return <div className="flex h-screen items-center justify-center bg-ainur-bg"><div className="h-8 w-8 animate-spin rounded-full border-2 border-ainur-blue border-t-transparent" /></div>;
   return ok ? children : <Navigate to="/login" />;
 }
 

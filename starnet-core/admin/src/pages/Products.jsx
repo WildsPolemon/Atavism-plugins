@@ -56,7 +56,7 @@ export default function Products() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <input placeholder="Пошук..." value={search} onChange={(e) => setSearch(e.target.value)} className="rounded-xl border border-surface-border bg-surface-elevated py-2 pl-10 pr-4 text-sm" />
           </div>
-          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium">
+          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 rounded-xl bg-ainur-blue px-4 py-2 text-sm font-medium text-white">
             <Plus className="h-4 w-4" /> Додати
           </button>
         </div>

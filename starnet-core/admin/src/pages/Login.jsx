@@ -9,7 +9,7 @@ export default function Login() {
   const nav = useNavigate();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0a0d14] p-4">
+    <div className="flex min-h-screen items-center justify-center bg-ainur-bg p-4">
       <form onSubmit={async (e) => {
         e.preventDefault();
         try {
@@ -17,13 +17,14 @@ export default function Login() {
           setToken(token);
           nav('/');
         } catch (ex) { setErr(ex.message); }
-      }} className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0d111c] p-10 shadow-2xl">
-        <h1 className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-3xl font-bold text-transparent">StarNet Core</h1>
-        <p className="mt-2 text-sm text-slate-400">Панель адміністратора · аналог AinurPOS</p>
-        {err && <p className="mt-4 rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-400">{err}</p>}
-        <input className="mt-6 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input type="password" className="mt-3 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <button className="mt-6 w-full rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 py-3 text-sm font-semibold text-white">Увійти</button>
+      }} className="w-full max-w-md rounded-xl border border-ainur-border bg-white p-10 shadow-card">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-ainur-blue text-2xl font-bold text-white">S</div>
+        <h1 className="text-center text-2xl font-bold text-ainur-text">StarNet Core</h1>
+        <p className="mt-2 text-center text-sm text-ainur-muted">Панель адміністратора · аналог AinurPOS</p>
+        {err && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{err}</p>}
+        <input className="mt-6 w-full rounded-lg border border-ainur-border px-4 py-3 text-sm" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
+        <input type="password" className="mt-3 w-full rounded-lg border border-ainur-border px-4 py-3 text-sm" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Пароль" />
+        <button className="mt-6 w-full rounded-lg bg-ainur-blue py-3 text-sm font-semibold text-white hover:bg-ainur-blue-dark">Увійти</button>
       </form>
     </div>
   );

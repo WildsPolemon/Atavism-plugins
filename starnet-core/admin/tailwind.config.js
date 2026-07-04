@@ -4,11 +4,20 @@ export default {
   theme: {
     extend: {
       colors: {
-        surface: { DEFAULT: '#0f1117', card: '#161922', elevated: '#1c2030', border: '#2a2f42' },
-        accent: { DEFAULT: '#7c5cff', soft: '#9b82ff' },
-        success: '#22c55e', warning: '#f59e0b', danger: '#ef4444', muted: '#8b93a7',
+        ainur: {
+          blue: '#2E7BD6',
+          'blue-dark': '#1E5BA6',
+          orange: '#FF8C00',
+          bg: '#F5F5F5',
+          border: '#E0E0E0',
+          text: '#333333',
+          muted: '#666666',
+        },
+        surface: { DEFAULT: '#FFFFFF', card: '#FFFFFF', elevated: '#F5F5F5', border: '#E0E0E0' },
+        accent: { DEFAULT: '#2E7BD6', soft: '#5A9AE8' },
+        success: '#28A745', warning: '#FF8C00', danger: '#DC3545', muted: '#666666',
       },
-      boxShadow: { glow: '0 0 40px rgba(124,92,255,0.15)', card: '0 8px 32px rgba(0,0,0,0.35)' },
+      boxShadow: { card: '0 2px 8px rgba(0,0,0,0.08)' },
     },
   },
   plugins: [],

@@ -68,7 +68,17 @@ class StarnetSeeder extends Seeder
             'company_name' => 'StarNet Core',
             'receipt_logo' => '',
             'receipt_footer' => 'Дякуємо за покупку!',
+            'receipt_address' => 'м. Київ, вул. Прикладна 1',
             'site_url' => 'https://starnetcore.local',
+            'pos_theme' => 'light',
+            'pos_sound' => 'on',
+            'pos_language' => 'uk',
+            'pos_print_default' => '1',
+            'pos_printer_type' => 'receipt',
+            'pos_receipt_width' => '80',
+            'pos_show_zero_stock' => '1',
+            'pos_sort_by' => 'name',
+            'pos_sort_dir' => 'asc',
         ];
         foreach ($defaults as $k => $v) {
             if (!$this->db->table('settings')->where('key', $k)->countAllResults()) {

@@ -119,7 +119,15 @@ class PosController extends BaseApiController
         $total = max(0, $subtotal - $discount);
         $cash = (float) ($body['payment_cash'] ?? 0);
         $card = (float) ($body['payment_card'] ?? 0);
+        $deferred = (float) ($body['payment_deferred'] ?? 0);
         $status = ($body['status'] ?? '') === 'held' ? 'held' : 'completed';
+
+        if ($status === 'completed' && $deferred > 0 && empty($body['customer_id'])) {
+            return $this->err('Для відстрочення потрібен клієнт');
+        }
+        if ($status === 'completed' && ($cash + $card + $deferred) < $total - 0.01) {
+            return $this->err('Недостатньо коштів для оплати');
+        }
 
         $saleId = model(SaleModel::class)->insert([
             'shift_id' => $shift['id'] ?? null,
@@ -131,6 +139,7 @@ class PosController extends BaseApiController
             'total' => $total,
             'payment_cash' => $cash,
             'payment_card' => $card,
+            'payment_deferred' => $deferred,
             'notes' => $body['notes'] ?? null,
             'receipt_email' => $body['receipt_email'] ?? null,
             'created_at' => date('Y-m-d H:i:s'),
@@ -155,6 +164,9 @@ class PosController extends BaseApiController
 
         if ($status === 'completed' && !empty($body['customer_id'])) {
             $db->query('UPDATE customers SET loyalty_points = loyalty_points + ? WHERE id = ?', [floor($total / 10), $body['customer_id']]);
+            if ($deferred > 0) {
+                $db->query('UPDATE customers SET debt = debt + ? WHERE id = ?', [$deferred, $body['customer_id']]);
+            }
         }
 
         if ($shift && $status === 'completed') {
@@ -229,6 +241,15 @@ class PosController extends BaseApiController
             ]);
         }
 
+        if (!empty($sale['customer_id']) && (float) ($sale['payment_deferred'] ?? 0) > 0) {
+            $cust = $db->table('customers')->where('id', $sale['customer_id'])->get()->getRowArray();
+            if ($cust) {
+                $db->table('customers')->where('id', $sale['customer_id'])->update([
+                    'debt' => max(0, (float) $cust['debt'] - (float) $sale['payment_deferred']),
+                ]);
+            }
+        }
+
         model(SaleModel::class)->update($id, ['status' => 'returned']);
         return $this->ok(['ok' => true]);
     }
@@ -250,7 +271,8 @@ class PosController extends BaseApiController
         if (!$shift) return $this->err('Немає відкритої зміни');
         $sales = db_connect()->query("
             SELECT COUNT(*) as count, COALESCE(SUM(total),0) as total,
-              COALESCE(SUM(payment_cash),0) as cash, COALESCE(SUM(payment_card),0) as card
+              COALESCE(SUM(payment_cash),0) as cash, COALESCE(SUM(payment_card),0) as card,
+              COALESCE(SUM(payment_deferred),0) as deferred
             FROM sales WHERE shift_id=? AND status='completed'
         ", [$shift['id']])->getRowArray();
         return $this->ok(['shift' => $shift, 'sales' => $sales, 'type' => $this->request->getGet('type') ?? 'X']);

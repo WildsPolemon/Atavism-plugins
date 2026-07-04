@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Package, Warehouse, Users, BarChart3, Store, Truck, Building2, Settings, ShoppingCart, ClipboardList, ScanBarcode, ShoppingBag, Globe } from 'lucide-react';
+import { LayoutDashboard, Package, Warehouse, Users, BarChart3, Store, Truck, Building2, Settings, ShoppingCart, ClipboardList, ScanBarcode, Globe } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api, fmtUah } from './api';
 
@@ -23,33 +23,31 @@ export default function Layout() {
   useEffect(() => { api.overview().then(setS).catch(() => {}); }, []);
 
   return (
-    <div className="flex min-h-screen bg-[#0a0d14]">
-      <aside className="fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-white/5 bg-[#0d111c]/95 backdrop-blur-xl">
-        <div className="flex items-center gap-3 border-b border-white/5 px-6 py-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-lg shadow-indigo-500/30">
-            <Store className="h-5 w-5 text-white" />
-          </div>
+    <div className="flex min-h-screen bg-ainur-bg">
+      <aside className="fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-ainur-border bg-white">
+        <div className="flex items-center gap-3 border-b border-ainur-border px-6 py-5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ainur-blue text-lg font-bold text-white">S</div>
           <div>
-            <p className="text-sm font-bold tracking-tight text-white">StarNet Core</p>
-            <p className="text-xs text-slate-400">Адмін-панель</p>
+            <p className="text-sm font-bold text-ainur-text">StarNet Core</p>
+            <p className="text-xs text-ainur-muted">Адмін-панель</p>
           </div>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto p-4">
           {NAV.map(({ to, label, icon: I, end }) => (
             <NavLink key={to} to={to} end={end}
-              className={({ isActive }) => `flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition ${isActive ? 'bg-indigo-500/15 text-indigo-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
+              className={({ isActive }) => `flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm transition ${isActive ? 'bg-blue-50 text-ainur-blue font-medium' : 'text-ainur-muted hover:bg-gray-50 hover:text-ainur-text'}`}>
               <I className="h-4 w-4" />{label}
             </NavLink>
           ))}
           <a href="http://localhost:5175" target="_blank" rel="noreferrer"
-            className="mt-4 flex items-center gap-3 rounded-xl border border-dashed border-indigo-500/40 px-4 py-2.5 text-sm text-indigo-300 hover:bg-indigo-500/10">
+            className="mt-4 flex items-center gap-3 rounded-lg border border-dashed border-ainur-blue/40 px-4 py-2.5 text-sm text-ainur-blue hover:bg-blue-50">
             <ShoppingCart className="h-4 w-4" /> Відкрити касу →
           </a>
         </nav>
-        <div className="border-t border-white/5 p-4">
-          <div className="rounded-xl bg-white/5 p-4">
-            <p className="text-xs text-slate-400">Продажі сьогодні</p>
-            <p className="text-xl font-bold text-emerald-400">{fmtUah(s?.salesToday)}</p>
+        <div className="border-t border-ainur-border p-4">
+          <div className="rounded-lg bg-blue-50 p-4">
+            <p className="text-xs text-ainur-muted">Продажі сьогодні</p>
+            <p className="text-xl font-bold text-ainur-blue">{fmtUah(s?.salesToday)}</p>
           </div>
         </div>
       </aside>

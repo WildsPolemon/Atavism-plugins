@@ -31,6 +31,7 @@ export const api = {
   xzReport: (type = 'X') => req(`/api/pos/xz-report?type=${type}`),
   receiptSettings: () => req('/api/pos/receipt-settings'),
   searchCustomers: (q) => req(`/api/crm/customers?search=${encodeURIComponent(q)}`),
+  updateSettings: (data) => req('/api/settings', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 export const fmt = (n) => `${new Intl.NumberFormat('uk-UA', { minimumFractionDigits: 2 }).format(n ?? 0)} ₴`;
