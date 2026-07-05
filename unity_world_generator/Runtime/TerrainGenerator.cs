@@ -127,7 +127,9 @@ namespace AaaWorldGen
             data.SetHeights(0, 0, heights);
 
             Vector3 position = new Vector3(originX, 0f, originZ);
-            Terrain terrain = Terrain.CreateTerrain(data, position);
+            GameObject terrainObject = Terrain.CreateTerrainGameObject(data);
+            terrainObject.transform.position = position;
+            Terrain terrain = terrainObject.GetComponent<Terrain>();
             terrain.name = $"Terrain_{tileX}_{tileZ}";
             terrain.drawInstanced = settings.drawInstanced;
 
