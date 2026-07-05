@@ -68,17 +68,16 @@ This is intended for Atavism-style AOI/interest management where server and clie
 
 ## Editor UX
 
-`WorldGeneratorDashboardWindow` provides a centralized control panel:
+`WorldGeneratorDashboardWindow` (WorldGen Studio) provides a pro control panel:
 
-- tabbed workflow (Overview, Biome Lab, World Layout, Spawns + Performance, Diagnostics, Tools)
-- preset system (Balanced MMO / Cinematic / Performance / Mega World)
-- WoW-like Adventure preset for highland silhouettes + wide quest-friendly plains
-- one-click generation, Generate+Export, and quick temp export
-- biome automation helpers (normalize blend weights, rebalance height bands, biome template)
-- city inland safety profile toggles and runtime profile shortcuts
-- inline configuration validation warnings with filtering
-- generation diagnostics: biome distribution + sector load hotspots
-- operations toolkit: config snapshot copy, root pinging, and folder shortcuts
+- **Map Size presets** — Prototype (512m), Arena, Zone, Region, Continent, Mega World
+- **Heightmap Style gallery** — Smooth Hills, Rolling MMO, Alpine Peaks, Island Coast, Canyonlands, Flat Quest Hubs, Heroic WoW
+- **Resolution quick picks** — Fast 129 / Std 257 / HQ 513 / Ultra 1025
+- **Bake ETA** metric — estimated terrain bake time from tile count
+- tabbed workflow (Setup, Terrain, World Layout, Biomes, Spawns, Results)
+- production profiles (Balanced MMO, Cinematic, Performance, Mega World, WoW-like)
+- incremental terrain/world generation with progress bar (editor)
+- biome automation helpers and generation diagnostics
 
 `WorldGeneratorConfigEditor` provides a polished inspector with grouped foldouts, quick presets, expand/collapse-all controls, filter search, and snapshot/random-seed actions.
 

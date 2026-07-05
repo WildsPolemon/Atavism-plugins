@@ -169,14 +169,29 @@ namespace AaaWorldGen.Editor
 
         internal static bool DrawPresetCard(string title, string description, bool compact = false)
         {
+            return DrawPresetCard(title, description, Accent, compact);
+        }
+
+        internal static bool DrawPresetCard(string title, string description, Color accent, bool compact = false)
+        {
             EnsureStyles();
             float h = compact ? 54f : 64f;
             Rect rect = EditorGUILayout.GetControlRect(false, h);
             EditorGUI.DrawRect(rect, BgCard);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, 4f, rect.height), accent);
             EditorGUI.DrawRect(new Rect(rect.xMax - 1f, rect.y, 1f, rect.height), Border);
             GUI.Label(new Rect(rect.x + 10f, rect.y + 8f, rect.width - 20f, 18f), title, sectionTitleStyle);
             GUI.Label(new Rect(rect.x + 10f, rect.y + 28f, rect.width - 20f, 28f), description, subtitleStyle);
             return GUI.Button(rect, GUIContent.none, GUIStyle.none);
+        }
+
+        internal static bool DrawMiniButton(string label, bool active = false)
+        {
+            Color old = GUI.backgroundColor;
+            GUI.backgroundColor = active ? Accent : BgCard;
+            bool clicked = GUILayout.Button(label, GUILayout.Height(24f));
+            GUI.backgroundColor = old;
+            return clicked;
         }
 
         internal static void DrawStatusChip(string text, Color color)

@@ -40,6 +40,8 @@ namespace AaaWorldGen.Editor
         private string searchQuery = string.Empty;
         private List<string> validationMessages = new List<string>();
         private float sidebarWidth = 188f;
+        private WorldGenStudioPresets.MapSizeId selectedMapSize = WorldGenStudioPresets.MapSizeId.Zone;
+        private WorldGenStudioPresets.HeightmapProfileId selectedHeightmap = WorldGenStudioPresets.HeightmapProfileId.RollingMmo;
 
         [MenuItem("Window/World Generation/AAA Generator Dashboard")]
         public static void Open()
@@ -71,7 +73,7 @@ namespace AaaWorldGen.Editor
             WorldGenEditorUi.EnsureStyles();
             WorldGenEditorUi.DrawTopBanner(
                 "WorldGen Studio",
-                "Procedural MMO worlds — terrain, biomes, cities, caves, spawns, sectors.");
+                "Pro studio — map sizes, heightmap styles, terrain bake, biomes, cities, MMO spawns.");
 
             DrawCommandRail();
 
@@ -205,13 +207,14 @@ namespace AaaWorldGen.Editor
             float worldSize = config.worldSizeInChunks * config.chunkSizeMeters;
             float areaKm2 = (worldSize * worldSize) / 1_000_000f;
             int terrainTiles = EstimateTerrainTiles();
-            Color validationColor = validationMessages.Count == 0 ? WorldGenEditorUi.Success : WorldGenEditorUi.Warning;
+            string bakeHint = terrainTiles > 0 ? WorldGenStudioPresets.GetBakeTimeHint(config) : "n/a";
+            Color bakeColor = terrainTiles > 64 ? WorldGenEditorUi.Warning : WorldGenEditorUi.Success;
 
             EditorGUILayout.BeginHorizontal();
-            WorldGenEditorUi.DrawMetricCard("World Area", $"{areaKm2:0.0} km²", $"{worldSize:0}m square", WorldGenEditorUi.Accent);
+            WorldGenEditorUi.DrawMetricCard("World Area", $"{areaKm2:0.0} km²", WorldGenStudioPresets.GetMapSizeLabel(config), WorldGenEditorUi.Accent);
             WorldGenEditorUi.DrawMetricCard("Cities", config.citySettings.maxCities.ToString(), "target placements", WorldGenEditorUi.Success);
             WorldGenEditorUi.DrawMetricCard("Terrain Tiles", terrainTiles.ToString(), $"res {config.terrainGeneration.heightmapResolution}", WorldGenEditorUi.Accent);
-            WorldGenEditorUi.DrawMetricCard("Validation", validationMessages.Count == 0 ? "OK" : $"{validationMessages.Count} warn", "config health", validationColor);
+            WorldGenEditorUi.DrawMetricCard("Bake ETA", bakeHint, $"{terrainTiles} tiles", bakeColor);
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(6f);
         }
@@ -232,7 +235,46 @@ namespace AaaWorldGen.Editor
 
         private void DrawSetupSection()
         {
-            WorldGenEditorUi.BeginPanel("Quick Start", "Pick a production profile, then generate.");
+            WorldGenEditorUi.BeginPanel("Map Size — Small & Fast", "Start here for prototypes and zone-scale worlds. Fewer tiles = faster iteration.");
+            EditorGUILayout.BeginHorizontal();
+            if (WorldGenEditorUi.DrawPresetCard("Prototype", WorldGenStudioPresets.MapSizeHints[0], WorldGenEditorUi.Success))
+            {
+                ApplyMapSize(WorldGenStudioPresets.MapSizeId.Prototype);
+            }
+            if (WorldGenEditorUi.DrawPresetCard("Arena", WorldGenStudioPresets.MapSizeHints[1], WorldGenEditorUi.Success))
+            {
+                ApplyMapSize(WorldGenStudioPresets.MapSizeId.Arena);
+            }
+            if (WorldGenEditorUi.DrawPresetCard("Zone", WorldGenStudioPresets.MapSizeHints[2], WorldGenEditorUi.Accent))
+            {
+                ApplyMapSize(WorldGenStudioPresets.MapSizeId.Zone);
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            if (WorldGenEditorUi.DrawPresetCard("Region", WorldGenStudioPresets.MapSizeHints[3], WorldGenEditorUi.Accent, true))
+            {
+                ApplyMapSize(WorldGenStudioPresets.MapSizeId.Region);
+            }
+            if (WorldGenEditorUi.DrawPresetCard("Continent", WorldGenStudioPresets.MapSizeHints[4], WorldGenEditorUi.Warning, true))
+            {
+                ApplyMapSize(WorldGenStudioPresets.MapSizeId.Continent);
+            }
+            if (WorldGenEditorUi.DrawPresetCard("Mega World", WorldGenStudioPresets.MapSizeHints[5], WorldGenEditorUi.Danger, true))
+            {
+                ApplyMapSize(WorldGenStudioPresets.MapSizeId.MegaWorld);
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            WorldGenEditorUi.DrawStatusChip($"Selected: {WorldGenStudioPresets.MapSizeNames[(int)selectedMapSize]}", WorldGenEditorUi.AccentSoft);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Open Terrain Tab", GUILayout.Height(22f), GUILayout.Width(120f)))
+            {
+                activeSection = Section.Terrain;
+            }
+            EditorGUILayout.EndHorizontal();
+            WorldGenEditorUi.EndPanel();
+
+            WorldGenEditorUi.BeginPanel("Production Profiles", "Full game-ready presets — layout density + streaming tuned.");
             EditorGUILayout.BeginHorizontal();
             if (WorldGenEditorUi.DrawPresetCard("Balanced MMO", "48 chunks, 18 cities, streaming tuned"))
             {
@@ -281,6 +323,45 @@ namespace AaaWorldGen.Editor
 
         private void DrawTerrainSection()
         {
+            WorldGenEditorUi.BeginPanel("Heightmap Style", "One-click terrain personality — noise, shaping, erosion. Preview updates on Refresh.");
+            EditorGUILayout.BeginHorizontal();
+            for (int i = 0; i < 4; i++)
+            {
+                if (WorldGenEditorUi.DrawPresetCard(
+                        WorldGenStudioPresets.HeightmapNames[i],
+                        WorldGenStudioPresets.HeightmapHints[i],
+                        WorldGenStudioPresets.HeightmapAccentColors[i]))
+                {
+                    ApplyHeightmapProfile((WorldGenStudioPresets.HeightmapProfileId)i);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            for (int i = 4; i < 7; i++)
+            {
+                if (WorldGenEditorUi.DrawPresetCard(
+                        WorldGenStudioPresets.HeightmapNames[i],
+                        WorldGenStudioPresets.HeightmapHints[i],
+                        WorldGenStudioPresets.HeightmapAccentColors[i],
+                        i >= 5))
+                {
+                    ApplyHeightmapProfile((WorldGenStudioPresets.HeightmapProfileId)i);
+                }
+            }
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            WorldGenEditorUi.DrawStatusChip($"Style: {WorldGenStudioPresets.HeightmapNames[(int)selectedHeightmap]}", WorldGenStudioPresets.HeightmapAccentColors[(int)selectedHeightmap]);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.LabelField("Resolution", GUILayout.Width(64f));
+            int res = config.terrainGeneration.heightmapResolution;
+            if (WorldGenEditorUi.DrawMiniButton("Fast 129", res == 129)) { ApplyHeightmapResolution(129); }
+            if (WorldGenEditorUi.DrawMiniButton("Std 257", res == 257)) { ApplyHeightmapResolution(257); }
+            if (WorldGenEditorUi.DrawMiniButton("HQ 513", res == 513)) { ApplyHeightmapResolution(513); }
+            if (WorldGenEditorUi.DrawMiniButton("Ultra 1025", res == 1025)) { ApplyHeightmapResolution(1025); }
+            EditorGUILayout.EndHorizontal();
+            WorldGenEditorUi.EndPanel();
+
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.BeginVertical(GUILayout.Width(300f));
             WorldGenEditorUi.BeginPanel("Height Preview", "Live 2D map — tweak seed/shape then Refresh.");
@@ -460,6 +541,38 @@ namespace AaaWorldGen.Editor
             if (config == null) return;
             WorldGenPresetLibrary.Apply(config, preset);
             statusLine = $"Preset applied: {WorldGenPresetLibrary.Names[(int)preset]}";
+            RefreshValidation();
+            Repaint();
+        }
+
+        private void ApplyMapSize(WorldGenStudioPresets.MapSizeId size)
+        {
+            if (config == null) return;
+            WorldGenStudioPresets.ApplyMapSize(config, size);
+            selectedMapSize = size;
+            statusLine = $"Map size: {WorldGenStudioPresets.MapSizeNames[(int)size]} — {WorldGenStudioPresets.GetBakeTimeHint(config)} bake";
+            activeSection = Section.Terrain;
+            WorldGenTerrainPreview.Invalidate();
+            RefreshValidation();
+            Repaint();
+        }
+
+        private void ApplyHeightmapProfile(WorldGenStudioPresets.HeightmapProfileId profile)
+        {
+            if (config == null) return;
+            WorldGenStudioPresets.ApplyHeightmapProfile(config, profile);
+            selectedHeightmap = profile;
+            statusLine = $"Heightmap style: {WorldGenStudioPresets.HeightmapNames[(int)profile]}";
+            WorldGenTerrainPreview.Invalidate();
+            RefreshValidation();
+            Repaint();
+        }
+
+        private void ApplyHeightmapResolution(int resolution)
+        {
+            if (config == null) return;
+            WorldGenStudioPresets.ApplyHeightmapResolution(config, resolution);
+            statusLine = $"Heightmap resolution: {resolution}";
             RefreshValidation();
             Repaint();
         }
