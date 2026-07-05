@@ -32,7 +32,7 @@
 | Звіти (продажі, прибуток, працівники) | reports | ✅ |
 | eStore | `estore/` + admin orders | ✅ |
 | Налаштування компанії/чеків | settings API | ✅ |
-| Мобільні додатки (Android/iOS) | Web-first (PWA-ready) | ⚠️ Web |
+| Мобільні додатки (Android/iOS) | Android каса (API 24+) + Web | ✅ Android beta |
 | Фіскалізація / PRRO | Checkbox.ua | ✅ |
 | Конструктор звітів (drag-drop) | базові звіти | ⚠️ частково |
 
