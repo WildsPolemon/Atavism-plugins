@@ -925,11 +925,5 @@ namespace AaaWorldGen.Editor
             UpdateStatus();
         }
     }
-
-    /// <summary>Backward-compatible entry point.</summary>
-    public sealed class WorldGeneratorDashboardWindow : EditorWindow
-    {
-        public static void Open() => WorldGenStudioWindow.Open();
-    }
 }
 #endif
