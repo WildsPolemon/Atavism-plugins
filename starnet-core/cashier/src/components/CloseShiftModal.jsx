@@ -51,7 +51,6 @@ export default function CloseShiftModal({ shift, settings, cashier, onClose, onP
 
   const submit = async (e) => {
     e.preventDefault();
-    if (cart.length) { setErr('Спочатку завершіть або скасуйте чек'); return; }
     setBusy(true);
     setErr('');
     try {
