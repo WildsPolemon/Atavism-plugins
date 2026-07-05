@@ -42,6 +42,7 @@ namespace AaaWorldGen.Editor
         private float sidebarWidth = 188f;
         private WorldGenStudioPresets.MapSizeId selectedMapSize = WorldGenStudioPresets.MapSizeId.Zone;
         private WorldGenStudioPresets.HeightmapProfileId selectedHeightmap = WorldGenStudioPresets.HeightmapProfileId.RollingMmo;
+        private DefaultAsset pendingPrefabFolder;
 
         [MenuItem("Window/World Generation/AAA Generator Dashboard")]
         public static void Open()
@@ -196,6 +197,7 @@ namespace AaaWorldGen.Editor
             if (configSerializedObject.ApplyModifiedProperties())
             {
                 EditorUtility.SetDirty(config);
+                WorldGenLivePreview.NotifyConfigChanged(config);
             }
 
             EditorGUILayout.EndVertical();
@@ -323,7 +325,7 @@ namespace AaaWorldGen.Editor
 
         private void DrawTerrainSection()
         {
-            WorldGenEditorUi.BeginPanel("Heightmap Style", "One-click terrain personality — noise, shaping, erosion. Preview updates on Refresh.");
+            WorldGenEditorUi.BeginPanel("Heightmap Style", "One-click terrain personality — live preview updates as you edit.");
             EditorGUILayout.BeginHorizontal();
             for (int i = 0; i < 4; i++)
             {
@@ -362,14 +364,12 @@ namespace AaaWorldGen.Editor
             EditorGUILayout.EndHorizontal();
             WorldGenEditorUi.EndPanel();
 
+            WorldGenEditorUi.BeginPanel("Height Preview", "Live map — toggles Biomes / Height / Hybrid. Updates as you edit.");
+            WorldGenTerrainPreview.DrawPreview(config, 360);
+            WorldGenEditorUi.EndPanel();
+
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.BeginVertical(GUILayout.Width(300f));
-            WorldGenEditorUi.BeginPanel("Height Preview", "Live 2D map — tweak seed/shape then Refresh.");
-            WorldGenTerrainPreview.DrawPreview(config, 280);
-            WorldGenEditorUi.EndPanel();
-            EditorGUILayout.EndVertical();
-
-            EditorGUILayout.BeginVertical();
             WorldGenEditorUi.BeginPanel("World Dimensions");
             DrawProperty("worldSeed");
             DrawProperty("worldSizeInChunks");
@@ -377,8 +377,10 @@ namespace AaaWorldGen.Editor
             DrawProperty("maxHeightMeters");
             DrawProperty("seaLevel01");
             WorldGenEditorUi.EndPanel();
+            EditorGUILayout.EndVertical();
 
-            WorldGenEditorUi.BeginPanel("Unity Terrain", "Smoothing + erosion polish baked into heightmaps.");
+            EditorGUILayout.BeginVertical();
+            WorldGenEditorUi.BeginPanel("Unity Terrain", "Splat maps from biome textures. Assign default + per-biome diffuse in Biomes tab.");
             DrawProperty("terrainGeneration");
             WorldGenEditorUi.EndPanel();
             EditorGUILayout.EndVertical();
@@ -428,18 +430,110 @@ namespace AaaWorldGen.Editor
 
         private void DrawBiomesSection()
         {
-            WorldGenEditorUi.BeginPanel("Biome Tools");
+            WorldGenEditorUi.BeginPanel("Biome Studio", "Templates, textures, and Synty prefab folders — all from the editor.");
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Normalize Weights", GUILayout.Height(24f))) { NormalizeBiomeBlendWeights(); }
-            if (GUILayout.Button("Rebalance Heights", GUILayout.Height(24f))) { RebalanceBiomeHeightBands(); }
-            if (GUILayout.Button("4-Biome Template", GUILayout.Height(24f))) { ApplyBiomeTemplate(); }
-            if (GUILayout.Button("Sort by Height", GUILayout.Height(24f))) { SortBiomesByHeight(); }
+            if (GUILayout.Button("10-Biome Rich World", GUILayout.Height(28f)))
+            {
+                ApplyRichBiomeTemplate();
+            }
+            if (GUILayout.Button("Normalize Weights", GUILayout.Height(28f)))
+            {
+                NormalizeBiomeBlendWeights();
+            }
+            if (GUILayout.Button("Sort by Height", GUILayout.Height(28f)))
+            {
+                SortBiomesByHeight();
+            }
             EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("Default terrain ground texture (all biomes fallback)", EditorStyles.miniLabel);
+            WorldGenPresetLibrary.EnsureConfigSections(config);
+            EditorGUI.BeginChangeCheck();
+            config.terrainGeneration.defaultTerrainDiffuse = (Texture2D)EditorGUILayout.ObjectField(
+                "Default Diffuse",
+                config.terrainGeneration.defaultTerrainDiffuse,
+                typeof(Texture2D),
+                false);
+            config.terrainGeneration.defaultTerrainNormal = (Texture2D)EditorGUILayout.ObjectField(
+                "Default Normal",
+                config.terrainGeneration.defaultTerrainNormal,
+                typeof(Texture2D),
+                false);
+            config.terrainGeneration.paintBiomeTerrainLayers = EditorGUILayout.Toggle(
+                "Paint Biome Splat On Bake",
+                config.terrainGeneration.paintBiomeTerrainLayers);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorUtility.SetDirty(config);
+                WorldGenLivePreview.NotifyConfigChanged(config);
+            }
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("Drop a folder of Synty prefabs to fill resourcePrefabs for all biomes", EditorStyles.miniLabel);
+            pendingPrefabFolder = (DefaultAsset)EditorGUILayout.ObjectField(
+                "Prefab Folder",
+                pendingPrefabFolder,
+                typeof(DefaultAsset),
+                false);
+            if (pendingPrefabFolder != null)
+            {
+                WorldGenBiomeTemplates.AssignPrefabFolder(config, pendingPrefabFolder);
+                pendingPrefabFolder = null;
+            }
+
+            EditorGUILayout.Space(4f);
+            DrawBiomeTextureGrid();
             WorldGenEditorUi.EndPanel();
 
-            WorldGenEditorUi.BeginPanel("Biome Definitions", "Assign Synty prefab pools per biome.");
+            WorldGenEditorUi.BeginPanel("Biome Definitions", "Per-biome climate, preview color, terrain texture, Synty prefabs.");
             DrawProperty("biomes");
+            DrawProperty("resourceSettings");
             WorldGenEditorUi.EndPanel();
+        }
+
+        private void DrawBiomeTextureGrid()
+        {
+            if (config?.biomes == null || config.biomes.Count == 0)
+            {
+                return;
+            }
+
+            EditorGUILayout.LabelField("Per-biome terrain textures", EditorStyles.boldLabel);
+            int columns = 5;
+            int index = 0;
+            EditorGUILayout.BeginHorizontal();
+            for (int i = 0; i < config.biomes.Count; i++)
+            {
+                if (index > 0 && index % columns == 0)
+                {
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.BeginHorizontal();
+                }
+
+                BiomeDefinition biome = config.biomes[i];
+                EditorGUILayout.BeginVertical(GUILayout.Width(108f));
+                Color accent = BiomePalette.ResolvePreviewColor(biome);
+                Rect swatch = GUILayoutUtility.GetRect(100f, 14f);
+                EditorGUI.DrawRect(swatch, accent);
+                EditorGUI.BeginChangeCheck();
+                biome.terrainDiffuse = (Texture2D)EditorGUILayout.ObjectField(
+                    biome.terrainDiffuse,
+                    typeof(Texture2D),
+                    false,
+                    GUILayout.Width(100f),
+                    GUILayout.Height(56f));
+                biome.previewColor = EditorGUILayout.ColorField(biome.previewColor, GUILayout.Width(100f));
+                EditorGUILayout.LabelField(biome.biomeId, EditorStyles.centeredGreyMiniLabel, GUILayout.Width(100f));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorUtility.SetDirty(config);
+                    WorldGenLivePreview.NotifyConfigChanged(config);
+                }
+                EditorGUILayout.EndVertical();
+                index++;
+            }
+            EditorGUILayout.EndHorizontal();
         }
 
         private void DrawSpawnsSection()
@@ -552,6 +646,7 @@ namespace AaaWorldGen.Editor
             selectedMapSize = size;
             statusLine = $"Map size: {WorldGenStudioPresets.MapSizeNames[(int)size]} — {WorldGenStudioPresets.GetBakeTimeHint(config)} bake";
             activeSection = Section.Terrain;
+            WorldGenLivePreview.NotifyConfigChanged(config);
             WorldGenTerrainPreview.Invalidate();
             RefreshValidation();
             Repaint();
@@ -761,6 +856,16 @@ namespace AaaWorldGen.Editor
             config.biomes.Sort((a, b) => a.minHeight01.CompareTo(b.minHeight01));
             EditorUtility.SetDirty(config);
             statusLine = "Biomes sorted.";
+        }
+
+        private void ApplyRichBiomeTemplate()
+        {
+            if (config == null) return;
+            WorldGenBiomeTemplates.ApplyRichWorldTemplate(config);
+            statusLine = "10-biome rich world template applied.";
+            WorldGenTerrainPreview.Invalidate();
+            RefreshValidation();
+            Repaint();
         }
 
         private void ApplyBiomeTemplate()

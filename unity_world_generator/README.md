@@ -76,8 +76,8 @@ This is intended for Atavism-style AOI/interest management where server and clie
 - **Bake ETA** metric — estimated terrain bake time from tile count
 - tabbed workflow (Setup, Terrain, World Layout, Biomes, Spawns, Results)
 - production profiles (Balanced MMO, Cinematic, Performance, Mega World, WoW-like)
-- incremental terrain/world generation with progress bar (editor)
-- biome automation helpers and generation diagnostics
+- **Biome Studio** — 10-biome template, per-biome terrain textures, prefab folder drop, live biome map
+- **Live preview** — Biomes / Height / Hybrid modes, auto-refresh on config edits
 
 `WorldGeneratorConfigEditor` provides a polished inspector with grouped foldouts, quick presets, expand/collapse-all controls, filter search, and snapshot/random-seed actions.
 

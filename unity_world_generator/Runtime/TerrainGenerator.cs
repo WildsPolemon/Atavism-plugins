@@ -6,7 +6,7 @@ namespace AaaWorldGen
 {
     public static class TerrainGenerator
     {
-        public const string BakeEngineVersion = "incremental-v3";
+        public const string BakeEngineVersion = "studio-v4";
 
         public enum TerrainBakePhase
         {
@@ -43,6 +43,7 @@ namespace AaaWorldGen
         {
             internal WorldGeneratorConfig config;
             internal Func<float, float, float> sampleHeight01;
+            internal Func<float, float, BiomeDefinition> sampleBiome;
             internal Transform terrainRoot;
             internal TerrainGenerationSettings settings;
             internal float worldSizeMeters;
@@ -86,7 +87,8 @@ namespace AaaWorldGen
         public static TerrainBakeSession BeginBake(
             WorldGeneratorConfig config,
             Func<float, float, float> sampleHeight01,
-            Transform terrainRoot)
+            Transform terrainRoot,
+            Func<float, float, BiomeDefinition> sampleBiome = null)
         {
             if (config == null)
             {
@@ -123,6 +125,7 @@ namespace AaaWorldGen
             {
                 config = config,
                 sampleHeight01 = sampleHeight01,
+                sampleBiome = sampleBiome ?? BiomeClimateSampler.BuildSampler(config),
                 terrainRoot = terrainRoot,
                 settings = settings,
                 worldSizeMeters = worldSizeMeters,
@@ -436,6 +439,19 @@ namespace AaaWorldGen
                 size = new Vector3(tile.tileWidth, config.maxHeightMeters, tile.tileLength)
             };
             data.SetHeights(0, 0, tile.heights);
+
+            TerrainGenerationSettings paintSettings = session.config.terrainGeneration ?? new TerrainGenerationSettings();
+            if (paintSettings.paintBiomeTerrainLayers && TerrainSplatPainter.HasPaintableLayers(session.config))
+            {
+                TerrainSplatPainter.ApplyBiomeAlphamap(
+                    data,
+                    session.config,
+                    tile.originX,
+                    tile.originZ,
+                    tile.tileWidth,
+                    tile.tileLength,
+                    session.sampleBiome);
+            }
 
             Vector3 position = new Vector3(tile.originX, 0f, tile.originZ);
             GameObject terrainObject = Terrain.CreateTerrainGameObject(data);

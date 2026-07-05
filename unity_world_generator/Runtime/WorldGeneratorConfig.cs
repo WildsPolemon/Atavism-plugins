@@ -323,6 +323,12 @@ namespace AaaWorldGen
         public bool clearTerrainBeforeGenerate = true;
         public bool drawInstanced = true;
         public Material terrainMaterial;
+        [Tooltip("Fallback ground texture when biome has no terrainDiffuse.")]
+        public Texture2D defaultTerrainDiffuse;
+        public Texture2D defaultTerrainNormal;
+        public float defaultTerrainTileSize = 15f;
+        [Tooltip("Paint terrain splat maps from biome climate during bake.")]
+        public bool paintBiomeTerrainLayers = true;
         [Tooltip("Softens heightmap before baking to reduce harsh noise.")]
         public bool applyHeightmapSmoothing = true;
         [Range(0, 3)] public int postProcessSmoothIterations = 1;
@@ -374,6 +380,12 @@ namespace AaaWorldGen
         public GameObject[] cityPrefabs;
         public GameObject[] caveEntrancePrefabs;
         public GameObject[] resourcePrefabs;
+
+        [Header("Editor Preview & Terrain Paint")]
+        public Color previewColor = new Color(0f, 0f, 0f, 0f);
+        public Texture2D terrainDiffuse;
+        public Texture2D terrainNormal;
+        public float terrainTileSize = 15f;
     }
 
     [Serializable]
