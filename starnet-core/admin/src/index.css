@@ -10,8 +10,26 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+@layer base {
+  input, textarea, select {
+    @apply text-ainur-text bg-white;
+  }
+  input::placeholder, textarea::placeholder {
+    @apply text-ainur-muted;
+  }
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #333333;
+    box-shadow: 0 0 0 1000px #ffffff inset;
+    caret-color: #333333;
+  }
+}
+
 .glass {
   @apply rounded-xl border border-ainur-border bg-white shadow-card;
 }
 
-.inp { @apply w-full rounded-lg border border-ainur-border px-3 py-2 text-sm focus:border-ainur-blue focus:outline-none; }
+.inp {
+  @apply w-full rounded-lg border border-ainur-border bg-white px-3 py-2 text-sm text-ainur-text placeholder:text-ainur-muted focus:border-ainur-blue focus:outline-none;
+}

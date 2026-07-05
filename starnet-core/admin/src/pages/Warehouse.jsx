@@ -7,7 +7,7 @@ const TABS = [
   { id: 'action', label: 'Нова операція' },
 ];
 
-export default function Warehouse() {
+export default function Warehouse({ embedded }) {
   const [tab, setTab] = useState('stock');
   const [stock, setStock] = useState([]);
   const [ops, setOps] = useState([]);
@@ -33,8 +33,12 @@ export default function Warehouse() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold">Склад</h1>
-      <p className="mb-4 text-sm text-muted">Закупівлі, списання, переміщення, коригування — як AinurPOS</p>
+      {!embedded && (
+        <>
+          <h1 className="text-2xl font-bold text-ainur-text">Склад</h1>
+          <p className="mb-4 text-sm text-ainur-muted">Закупівлі, списання, переміщення, коригування</p>
+        </>
+      )}
       <div className="mb-6 flex gap-2">
         {TABS.map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} className={`rounded-xl px-4 py-2 text-sm ${tab === t.id ? 'bg-accent text-white' : 'bg-surface-elevated text-muted'}`}>{t.label}</button>

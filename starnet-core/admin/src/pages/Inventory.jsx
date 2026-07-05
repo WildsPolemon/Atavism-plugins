@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 
-export default function Inventory() {
+export default function Inventory({ embedded }) {
   const [counts, setCounts] = useState([]);
   const [detail, setDetail] = useState(null);
   const [warehouses, setWarehouses] = useState([]);
@@ -35,8 +35,12 @@ export default function Inventory() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold">Інвентаризація</h1>
-      <p className="mb-6 text-sm text-muted">Перевірка залишків на складі (як AinurPOS)</p>
+      {!embedded && (
+        <>
+          <h1 className="text-2xl font-bold text-ainur-text">Інвентаризація</h1>
+          <p className="mb-6 text-sm text-ainur-muted">Перевірка залишків на складі</p>
+        </>
+      )}
 
       {!detail ? (
         <>

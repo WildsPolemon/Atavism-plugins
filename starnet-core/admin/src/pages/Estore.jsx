@@ -14,7 +14,7 @@ export default function Estore() {
     <div>
       <h1 className="text-2xl font-bold">eStore</h1>
       <p className="mb-4 text-sm text-muted">Онлайн-замовлення · інтеграція з POS (як AinurPOS eStore)</p>
-      <a href="http://localhost:5176" target="_blank" rel="noreferrer" className="mb-6 inline-block rounded-xl border border-accent px-4 py-2 text-sm text-accent">Відкрити вітрину →</a>
+      <a href={`${window.location.origin}/`} target="_blank" rel="noreferrer" className="mb-6 inline-block rounded-lg border border-ainur-blue px-4 py-2 text-sm text-ainur-blue hover:bg-blue-50">Відкрити вітрину →</a>
       <div className="space-y-3">
         {orders.map((o) => (
           <div key={o.id} className="glass flex flex-wrap items-center justify-between gap-3 p-4">

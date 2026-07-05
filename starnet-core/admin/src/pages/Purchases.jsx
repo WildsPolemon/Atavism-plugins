@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, fmtUah } from '../api';
 
-export default function Purchases() {
+export default function Purchases({ embedded }) {
   const [orders, setOrders] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
@@ -31,13 +31,19 @@ export default function Purchases() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Закупівлі</h1>
-          <p className="text-sm text-muted">Замовлення постачальникам (як AinurPOS)</p>
+      {!embedded ? (
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-ainur-text">Закупівлі</h1>
+            <p className="text-sm text-ainur-muted">Замовлення постачальникам</p>
+          </div>
+          <button onClick={() => setShow(true)} className="rounded-lg bg-ainur-blue px-4 py-2 text-sm font-medium text-white">Нове замовлення</button>
         </div>
-        <button onClick={() => setShow(true)} className="rounded-xl bg-accent px-4 py-2 text-sm font-medium">Нове замовлення</button>
-      </div>
+      ) : (
+        <div className="mb-4 flex justify-end">
+          <button onClick={() => setShow(true)} className="rounded-lg bg-ainur-blue px-4 py-2 text-sm font-medium text-white">Нове замовлення</button>
+        </div>
+      )}
       <div className="space-y-3">
         {orders.map((o) => (
           <div key={o.id} className="glass flex items-center justify-between p-4">

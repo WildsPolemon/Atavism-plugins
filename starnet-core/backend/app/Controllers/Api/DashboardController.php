@@ -20,6 +20,14 @@ class DashboardController extends BaseApiController
             WHERE s.status='completed' AND date(s.created_at)=?
         ", [$today])->getRow('v');
 
+        $stockVal = $db->query("
+            SELECT
+              COALESCE(SUM(st.quantity * COALESCE(NULLIF(p.sale_price,0), p.retail_price, 0)), 0) as retail_value,
+              COALESCE(SUM(st.quantity * COALESCE(p.cost_price, 0)), 0) as cost_value,
+              COALESCE(SUM(st.quantity), 0) as total_qty
+            FROM stock st JOIN products p ON p.id = st.product_id WHERE p.active = 1
+        ")->getRowArray();
+
         return $this->ok([
             'salesToday' => (float) $salesToday['v'],
             'salesCountToday' => (int) $salesToday['c'],
@@ -29,6 +37,9 @@ class DashboardController extends BaseApiController
             'lowStockCount' => (int) $db->query("SELECT COUNT(*) as c FROM stock st JOIN products p ON p.id=st.product_id WHERE st.quantity <= 5 AND p.active=1")->getRow('c'),
             'openShift' => $db->table('shifts')->where('status', 'open')->get()->getRowArray(),
             'totalDebt' => (float) $db->table('customers')->selectSum('debt')->get()->getRow('debt'),
+            'retail_value' => (float) ($stockVal['retail_value'] ?? 0),
+            'cost_value' => (float) ($stockVal['cost_value'] ?? 0),
+            'total_qty' => (float) ($stockVal['total_qty'] ?? 0),
         ]);
     }
 

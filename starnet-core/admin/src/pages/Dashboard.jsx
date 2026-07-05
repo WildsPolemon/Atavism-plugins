@@ -26,8 +26,8 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-ainur-text">Огляд</h1>
-      <p className="text-sm text-ainur-muted">StarNet Core — огляд бізнесу</p>
+      <h1 className="text-2xl font-bold text-ainur-text">Головна</h1>
+      <p className="text-sm text-ainur-muted">Показники бізнесу — як AinurPOS</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((k) => (
           <div key={k.l} className="glass p-5">
@@ -62,6 +62,22 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      {o && (
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          <div className="glass p-5">
+            <p className="text-xs text-ainur-muted">Оцінка складу (роздріб)</p>
+            <p className="mt-1 text-xl font-bold text-ainur-blue">{fmtUah(o.retail_value)}</p>
+          </div>
+          <div className="glass p-5">
+            <p className="text-xs text-ainur-muted">По собівартості</p>
+            <p className="mt-1 text-xl font-bold text-ainur-text">{fmtUah(o.cost_value)}</p>
+          </div>
+          <div className="glass p-5">
+            <p className="text-xs text-ainur-muted">Одиниць на складі</p>
+            <p className="mt-1 text-xl font-bold text-ainur-text">{fmt(o.total_qty)}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

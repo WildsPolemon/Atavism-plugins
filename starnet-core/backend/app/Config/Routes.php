@@ -86,5 +86,12 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
 
         $routes->get('estore/orders', 'Api\EstoreController::orders');
         $routes->patch('estore/orders/(:num)', 'Api\EstoreController::updateOrderStatus/$1');
+
+        $routes->get('admin/shifts', 'Api\AdminController::shifts');
+        $routes->get('admin/shifts/(:num)', 'Api\AdminController::shiftDetail/$1');
+        $routes->get('admin/registers', 'Api\AdminController::registers');
+        $routes->post('admin/registers', 'Api\AdminController::createRegister');
+        $routes->get('admin/money-flow', 'Api\AdminController::moneyFlow');
+        $routes->get('admin/users', 'Api\AdminController::users');
     });
 });

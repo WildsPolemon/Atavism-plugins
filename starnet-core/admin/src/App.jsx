@@ -5,16 +5,15 @@ import Login from './pages/Login';
 import Layout from './Layout';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
-import Warehouse from './pages/Warehouse';
-import CRM from './pages/CRM';
+import StockHub from './pages/StockHub';
+import CashShifts from './pages/CashShifts';
+import MoneyFlow from './pages/MoneyFlow';
+import Counterparties from './pages/Counterparties';
 import Reports from './pages/Reports';
-import Suppliers from './pages/Suppliers';
-import Stores from './pages/Stores';
-import Purchases from './pages/Purchases';
-import Inventory from './pages/Inventory';
-import PriceTags from './pages/PriceTags';
 import Estore from './pages/Estore';
 import Settings from './pages/Settings';
+import Integrations from './pages/Integrations';
+import Plans from './pages/Plans';
 
 function Guard({ children }) {
   const [ok, setOk] = useState(null);
@@ -30,16 +29,23 @@ export default function App() {
       <Route element={<Guard><Layout /></Guard>}>
         <Route index element={<Dashboard />} />
         <Route path="products" element={<Products />} />
-        <Route path="warehouse" element={<Warehouse />} />
-        <Route path="purchases" element={<Purchases />} />
-        <Route path="inventory" element={<Inventory />} />
-        <Route path="price-tags" element={<PriceTags />} />
-        <Route path="estore" element={<Estore />} />
-        <Route path="suppliers" element={<Suppliers />} />
-        <Route path="stores" element={<Stores />} />
-        <Route path="crm" element={<CRM />} />
+        <Route path="cash" element={<CashShifts />} />
+        <Route path="stock" element={<StockHub />} />
+        <Route path="money" element={<MoneyFlow />} />
+        <Route path="partners" element={<Counterparties />} />
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="estore" element={<Estore />} />
+        <Route path="integrations" element={<Integrations />} />
+        <Route path="plans" element={<Plans />} />
+        {/* legacy redirects */}
+        <Route path="warehouse" element={<Navigate to="/stock?tab=stock" replace />} />
+        <Route path="purchases" element={<Navigate to="/stock?tab=purchases" replace />} />
+        <Route path="inventory" element={<Navigate to="/stock?tab=inventory" replace />} />
+        <Route path="price-tags" element={<Navigate to="/stock?tab=tags" replace />} />
+        <Route path="suppliers" element={<Navigate to="/partners?tab=suppliers" replace />} />
+        <Route path="crm" element={<Navigate to="/partners?tab=customers" replace />} />
+        <Route path="stores" element={<Navigate to="/partners?tab=stores" replace />} />
       </Route>
     </Routes>
   );
