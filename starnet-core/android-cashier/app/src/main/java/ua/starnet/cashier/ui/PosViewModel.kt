@@ -31,6 +31,7 @@ data class PosUiState(
     val showPayment: Boolean = false,
     val showOpenShift: Boolean = false,
     val showSettings: Boolean = false,
+    val showCloseShift: Boolean = false,
     val lastSaleId: Int? = null,
     val lastFiscalCode: String? = null,
 )
@@ -128,7 +129,7 @@ class PosViewModel(private val hw: HardwareManager) : ViewModel() {
         _state.value = _state.value.copy(loading = true, error = null)
         try {
             ApiClient.get().closeShift(CloseShiftRequest(cash))
-            _state.value = _state.value.copy(loading = false, shift = null, checkboxShift = null, showOpenShift = true, cart = emptyList())
+            _state.value = _state.value.copy(loading = false, shift = null, checkboxShift = null, showOpenShift = true, showCloseShift = false, cart = emptyList())
             loadRegisters()
         } catch (e: Exception) {
             _state.value = _state.value.copy(loading = false, error = err(e))
@@ -261,6 +262,9 @@ class PosViewModel(private val hw: HardwareManager) : ViewModel() {
         lines.add(s["receipt_footer"] ?: "Дякуємо за покупку!")
         return lines
     }
+
+    fun openCloseShift() { _state.value = _state.value.copy(showCloseShift = true) }
+    fun dismissCloseShift() { _state.value = _state.value.copy(showCloseShift = false) }
 
     fun closePayment() { _state.value = _state.value.copy(showPayment = false) }
 
