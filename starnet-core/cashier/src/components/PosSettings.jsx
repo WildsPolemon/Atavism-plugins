@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ArrowLeft, SlidersHorizontal, Plug, ScanBarcode, Scale, Printer, CreditCard, Wifi, Search } from 'lucide-react';
+import { ArrowLeft, SlidersHorizontal, Plug, ScanBarcode, Scale, Printer, CreditCard, Wifi, Search, Receipt } from 'lucide-react';
+import { api } from '../api';
 import {
   testScale, testPrinter, testTerminal, serialSupported,
   autoConnectScale, autoConnectPrinter, discoverWifiPrinters,
@@ -40,6 +41,11 @@ export default function PosSettings({ settings, onClose, onSave }) {
     pos_terminal_enabled: settings.pos_terminal_enabled === '1',
     pos_terminal_ip: settings.pos_terminal_ip || '',
     pos_barcode_test: '',
+    prro_enabled: settings.prro_enabled === '1',
+    checkbox_license_key: settings.checkbox_license_key || '',
+    checkbox_login: settings.checkbox_login || '',
+    checkbox_password: settings.checkbox_password || '',
+    pos_fiscal_default: settings.pos_fiscal_default === '1',
   });
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -62,6 +68,11 @@ export default function PosSettings({ settings, onClose, onSave }) {
     pos_scale_enabled: form.pos_scale_enabled ? '1' : '0',
     pos_terminal_enabled: form.pos_terminal_enabled ? '1' : '0',
     pos_terminal_ip: form.pos_terminal_ip,
+    prro_enabled: form.prro_enabled ? '1' : '0',
+    checkbox_license_key: form.checkbox_license_key,
+    checkbox_login: form.checkbox_login,
+    checkbox_password: form.checkbox_password,
+    pos_fiscal_default: form.pos_fiscal_default ? '1' : '0',
   });
 
   const s = () => ({ ...settings, ...toPayload() });
@@ -75,6 +86,11 @@ export default function PosSettings({ settings, onClose, onSave }) {
         setMsg(result);
       } else if (kind === 'printer') setMsg(await testPrinter(s()));
       else if (kind === 'terminal') setMsg(await testTerminal(s()));
+      else if (kind === 'checkbox') {
+        await api.updateSettings(toPayload());
+        const r = await api.prroTest();
+        setMsg(r.message || 'Підключено до Checkbox');
+      }
     } catch (e) { setErr(e.message); }
     finally { setTesting(''); }
   };
@@ -246,6 +262,24 @@ export default function PosSettings({ settings, onClose, onSave }) {
 
               <Card title="Сканер штрих-кодів" icon={ScanBarcode}>
                 <Field label="Відскануйте код для перевірки" value={form.pos_barcode_test} onChange={(v) => set('pos_barcode_test', v)} placeholder="Штрих-код..." />
+              </Card>
+
+              <Card title="CheckBox v1 (ПРРО)" icon={Receipt} status={form.prro_enabled && form.checkbox_login ? 'ok' : form.prro_enabled ? 'warn' : null}>
+                <label className="mb-3 flex items-center gap-2 text-sm font-medium">
+                  <input type="checkbox" checked={form.prro_enabled} onChange={(e) => set('prro_enabled', e.target.checked)} />
+                  Увімкнути фіскалізацію через Checkbox.ua
+                </label>
+                <p className="mb-3 text-xs text-ainur-muted">Ліцензійний ключ, логін і пароль касира з особистого кабінету Checkbox.</p>
+                <div className="mb-3 space-y-3">
+                  <Field label="License key" value={form.checkbox_license_key} onChange={(v) => set('checkbox_license_key', v)} placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX" />
+                  <Field label="Логін касира Checkbox" value={form.checkbox_login} onChange={(v) => set('checkbox_login', v)} />
+                  <Field label="Пароль касира Checkbox" value={form.checkbox_password} onChange={(v) => set('checkbox_password', v)} />
+                </div>
+                <label className="mb-3 flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={form.pos_fiscal_default} onChange={(e) => set('pos_fiscal_default', e.target.checked)} />
+                  Фіскалізувати чек за замовчуванням
+                </label>
+                <TestBtn label="Перевірити підключення Checkbox" loading={testing === 'checkbox'} onClick={() => runTest('checkbox')} />
               </Card>
             </>
           )}

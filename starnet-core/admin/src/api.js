@@ -85,6 +85,8 @@ export const api = {
     return req(`/api/money-movements${q.toString() ? `?${q}` : ''}`);
   },
   createMoneyMovement: (d) => req('/api/money-movements', { method: 'POST', body: JSON.stringify(d) }),
+  prroStatus: () => req('/api/prro/status'),
+  prroTest: () => req('/api/prro/test', { method: 'POST' }),
 };
 
 export const fmtUah = (n) => `${new Intl.NumberFormat('uk-UA').format(n ?? 0)} ₴`;

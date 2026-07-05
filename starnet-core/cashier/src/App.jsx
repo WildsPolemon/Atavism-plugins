@@ -63,6 +63,7 @@ export default function App() {
   const [openShiftModal, setOpenShiftModal] = useState(null);
   const [myRegisters, setMyRegisters] = useState([]);
   const [err, setErr] = useState('');
+  const [prroEnabled, setPrroEnabled] = useState(false);
   const searchRef = useRef(null);
   const searchTimer = useRef(null);
 
@@ -94,6 +95,7 @@ export default function App() {
     api.me().then(setUser).catch(() => setToken(null));
     api.shift().then((r) => setShift(r.shift)).catch(() => {});
     api.receiptSettings().then((r) => setSettings(r.settings || {}));
+    api.prroStatus().then((r) => setPrroEnabled(!!r.enabled)).catch(() => setPrroEnabled(false));
     api.categories().then((r) => setCategories(r.categories || []));
   }, []);
 
@@ -207,14 +209,25 @@ export default function App() {
     setPayOpen(true);
   };
 
-  const completePay = async ({ payment_cash, payment_card, payment_deferred, notes, print_receipt }) => {
+  const completePay = async ({ payment_cash, payment_card, payment_deferred, notes, print_receipt, fiscalize }) => {
     const soldItems = [...cart];
     const sale = await api.sale({
       items: soldItems.map((i) => ({ product_id: i.product_id, quantity: i.qty, price: i.price, discount: i.disc || 0 })),
       payment_cash: payment_cash || 0, payment_card: payment_card || 0, payment_deferred: payment_deferred || 0,
       customer_id: customer?.id, notes: notes || saleComment,
     });
-    setLastSale({ sale: { ...sale, payment_cash, payment_card, payment_deferred, total, created_at: new Date().toLocaleString('uk-UA') }, items: soldItems });
+    let fiscalCode = sale.fiscal_code || null;
+    if (fiscalize && prroEnabled) {
+      try {
+        const f = await api.fiscalize(sale.id);
+        fiscalCode = f.fiscal_code || fiscalCode;
+        sale.is_fiscal = 1;
+        sale.fiscal_code = fiscalCode;
+      } catch (e) {
+        setErr(`Продаж збережено, але фіскалізація не вдалась: ${e.message}`);
+      }
+    }
+    setLastSale({ sale: { ...sale, payment_cash, payment_card, payment_deferred, total, created_at: new Date().toLocaleString('uk-UA'), fiscal_code: fiscalCode, is_fiscal: fiscalCode ? 1 : sale.is_fiscal }, items: soldItems });
     setCart([]); setSaleComment('');
     if (payment_deferred > 0 && customer) setCustomer({ ...customer, debt: Number(customer.debt || 0) + payment_deferred });
     else setCustomer(null);
@@ -227,8 +240,9 @@ export default function App() {
           `Чек · ${new Date().toLocaleString('uk-UA')}`,
           ...soldItems.map((i) => `${i.name} x${i.qty} = ${fmt(i.price * i.qty)}`),
           `РАЗОМ: ${fmt(total)}`,
+          fiscalCode ? `Фіскальний код: ${fiscalCode}` : '',
           settings.receipt_footer || '',
-        ];
+        ].filter(Boolean);
         printReceipt(settings, lines).catch(() => window.print());
       } else {
         setTimeout(() => window.print(), 100);
@@ -254,8 +268,9 @@ export default function App() {
       `Чек #${sale.id} · ${sale.created_at}`,
       ...(sale.items || []).map((i) => `${i.name} x${i.quantity} = ${fmt(i.price * i.quantity)}`),
       `РАЗОМ: ${fmt(sale.total)}`,
+      sale.fiscal_code ? `Фіскальний код: ${sale.fiscal_code}` : '',
       settings.receipt_footer || '',
-    ];
+    ].filter(Boolean);
     printReceipt(settings, lines).catch(() => window.print());
   };
 
@@ -372,6 +387,7 @@ export default function App() {
 
       {menuOpen && <SideMenu user={user} onClose={() => setMenuOpen(false)} onAction={menuAction} />}
       {payOpen && <PaymentScreen total={total} customer={customer} settings={settings} printDefault={settings.pos_print_default !== '0'}
+        fiscalDefault={settings.pos_fiscal_default === '1'} prroEnabled={prroEnabled}
         onClose={() => setPayOpen(false)} onPay={completePay} onChangeCustomer={() => setCustomerOpen(true)} />}
       {editItem && <ItemEditModal item={editItem} onClose={() => setEditItem(null)} onSave={(u) => { setCart((c) => c.map((x) => x.product_id === u.product_id ? u : x)); setEditItem(null); }} />}
       {customerOpen && <CustomerModal query={customerQ} setQuery={setCustomerQ} customers={customers} startNew={newCustomerOpen}
@@ -381,7 +397,13 @@ export default function App() {
         onClose={() => { setCustomerOpen(false); setNewCustomerOpen(false); }} />}
       {journalOpen && <ReceiptJournal sales={sales} onClose={() => setJournalOpen(false)}
         onFilter={loadSales} onPrint={printSaleReceipt} onReturn={handleReturn} returnMode={journalReturnMode} />}
-      {settingsOpen && <PosSettings settings={settings} onClose={() => setSettingsOpen(false)} onSave={async (s) => { const r = await api.updateSettings(s); setSettings(r.settings || s); setSettingsOpen(false); loadCatalog(); }} />}
+      {settingsOpen && <PosSettings settings={settings} onClose={() => setSettingsOpen(false)} onSave={async (s) => {
+        const r = await api.updateSettings(s);
+        setSettings(r.settings || s);
+        setPrroEnabled(s.prro_enabled === '1' && !!s.checkbox_login && !!s.checkbox_license_key);
+        setSettingsOpen(false);
+        loadCatalog();
+      }} />}
       {barcodeOpen && <BarcodeModal onScan={scanBarcode} onClose={() => setBarcodeOpen(false)} />}
       {productAddOpen !== null && <ProductAddModal barcode={productAddOpen} categories={categories} onClose={() => setProductAddOpen(null)} onSave={createProduct} />}
       {lastSale && <ReceiptPrint sale={lastSale.sale} items={lastSale.items} settings={settings} customer={customer} cashier={user?.name} />}

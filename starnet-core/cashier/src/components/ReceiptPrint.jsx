@@ -32,6 +32,13 @@ export default function ReceiptPrint({ sale, items, settings, customer, cashier 
         {card > 0 && <p className="flex justify-between"><span>Картка</span><span>{fmt(card)}</span></p>}
         {deferred > 0 && <p className="flex justify-between"><span>Відстрочення</span><span>{fmt(deferred)}</span></p>}
         {change > 0 && cash > Number(sale.total) && <p className="flex justify-between"><span>Решта</span><span>{fmt(change)}</span></p>}
+        {sale.fiscal_code && (
+          <>
+            <hr className="my-2 border-dashed border-gray-400" />
+            <p className="text-center text-[10px] font-medium">ФІСКАЛЬНИЙ ЧЕК</p>
+            <p className="text-center text-[10px] break-all">{sale.fiscal_code}</p>
+          </>
+        )}
         <hr className="my-2 border-dashed border-gray-400" />
         <p className="text-center text-[10px]">{settings.receipt_footer || 'Дякуємо за покупку!'}</p>
       </div>

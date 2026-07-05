@@ -103,5 +103,10 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
 
         $routes->get('estore/orders', 'Api\EstoreController::orders');
         $routes->patch('estore/orders/(:num)', 'Api\EstoreController::updateOrderStatus/$1');
+
+        $routes->get('prro/status', 'Api\PrroController::status');
+        $routes->post('prro/test', 'Api\PrroController::test');
+        $routes->post('prro/fiscalize/(:num)', 'Api\PrroController::fiscalize/$1');
+        $routes->get('prro/receipt/(:num)/png', 'Api\PrroController::receiptPng/$1');
     });
 });

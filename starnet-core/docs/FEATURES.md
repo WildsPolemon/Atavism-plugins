@@ -33,7 +33,7 @@
 | eStore | `estore/` + admin orders | ✅ |
 | Налаштування компанії/чеків | settings API | ✅ |
 | Мобільні додатки (Android/iOS) | Web-first (PWA-ready) | ⚠️ Web |
-| Фіскалізація / PRRO | — | ❌ майбутнє |
+| Фіскалізація / PRRO | Checkbox.ua | ✅ |
 | Конструктор звітів (drag-drop) | базові звіти | ⚠️ частково |
 
 ## Запуск

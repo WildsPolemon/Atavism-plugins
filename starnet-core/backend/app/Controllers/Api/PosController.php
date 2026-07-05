@@ -2,6 +2,7 @@
 
 namespace App\Controllers\Api;
 
+use App\Libraries\CheckboxService;
 use App\Libraries\FinanceService;
 use App\Libraries\StockService;
 use App\Models\ProductModel;
@@ -63,6 +64,9 @@ class PosController extends BaseApiController
             'opening_cash' => $cash,
             'status' => 'open',
         ]);
+        try {
+            CheckboxService::fromSettings()->ensureShift();
+        } catch (\Throwable) { /* Checkbox shift optional */ }
         return $this->ok($db->table('shifts')->where('id', $id)->get()->getRowArray(), 201);
     }
 
@@ -83,6 +87,9 @@ class PosController extends BaseApiController
             'expected_cash' => $expected,
             'variance' => $variance,
         ]);
+        try {
+            CheckboxService::fromSettings()->closeShift();
+        } catch (\Throwable) { /* Checkbox shift optional */ }
         return $this->ok(db_connect()->table('shifts')->where('id', $shift['id'])->get()->getRowArray());
     }
 
@@ -400,6 +407,35 @@ class PosController extends BaseApiController
                 $db->table('customers')->where('id', $sale['customer_id'])->update([
                     'debt' => max(0, (float) $cust['debt'] - $deferredBack),
                 ]);
+            }
+        }
+
+        if (!empty($sale['is_fiscal'])) {
+            $returnItems = [];
+            foreach ($items as $it) {
+                $qty = (float) $it['quantity'];
+                if ($returnMap) {
+                    if (empty($returnMap[$it['product_id']])) {
+                        continue;
+                    }
+                    $qty = min($qty, $returnMap[$it['product_id']]);
+                }
+                $p = $db->table('products')->where('id', $it['product_id'])->get()->getRowArray();
+                $lineRatio = $qty / max(0.001, (float) $it['quantity']);
+                $returnItems[] = [
+                    'product_id' => $it['product_id'],
+                    'name' => $p['name'] ?? 'Товар',
+                    'price' => $it['price'],
+                    'quantity' => $qty,
+                    'total' => (float) $it['total'] * $lineRatio,
+                ];
+            }
+            if ($returnItems) {
+                try {
+                    CheckboxService::fromSettings()->fiscalReturn($sale, $returnItems);
+                } catch (\Throwable $e) {
+                    return $this->err('Checkbox повернення: ' . $e->getMessage());
+                }
             }
         }
 

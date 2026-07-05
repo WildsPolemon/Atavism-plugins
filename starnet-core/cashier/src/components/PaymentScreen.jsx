@@ -3,13 +3,17 @@ import { Banknote, CreditCard, HandCoins, Loader2 } from 'lucide-react';
 import { fmt } from '../utils';
 import { privat24Pay } from '../utils/hardware';
 
-export default function PaymentScreen({ total, customer, settings = {}, printDefault = true, onClose, onPay, onChangeCustomer }) {
+export default function PaymentScreen({
+  total, customer, settings = {}, printDefault = true, fiscalDefault = false, prroEnabled = false,
+  onClose, onPay, onChangeCustomer,
+}) {
   const [tab, setTab] = useState('cash');
   const [cash, setCash] = useState(0);
   const [card, setCard] = useState(0);
   const [deferred, setDeferred] = useState(0);
   const [comment, setComment] = useState('');
   const [print, setPrint] = useState(printDefault);
+  const [fiscalize, setFiscalize] = useState(fiscalDefault && prroEnabled);
   const [err, setErr] = useState('');
   const [terminalLoading, setTerminalLoading] = useState(false);
   const terminalOn = settings.pos_terminal_enabled === '1';
@@ -32,7 +36,15 @@ export default function PaymentScreen({ total, customer, settings = {}, printDef
     setCard(0);
     setDeferred(0);
     setTab('cash');
-  }, [total]);
+    setFiscalize(fiscalDefault && prroEnabled);
+  }, [total, fiscalDefault, prroEnabled]);
+
+  useEffect(() => {
+    if (fiscalize && deferred > 0) {
+      setDeferred(0);
+      if (tab === 'deferred') setTab('cash');
+    }
+  }, [fiscalize, deferred, tab]);
 
   const payViaTerminal = async () => {
     setErr('');
@@ -49,6 +61,7 @@ export default function PaymentScreen({ total, customer, settings = {}, printDef
         payment_deferred: 0,
         notes: comment + (res.rrn ? ` | RRN: ${res.rrn}` : ''),
         print_receipt: print,
+        fiscalize,
         terminal_auth: res.auth_code,
       });
     } catch (e) { setErr(e.message); }
@@ -57,9 +70,10 @@ export default function PaymentScreen({ total, customer, settings = {}, printDef
 
   const confirm = () => {
     setErr('');
+    if (fiscalize && deferred > 0) { setErr('Checkbox не підтримує продаж у борг'); return; }
     if (deferred > 0 && !customer?.id) { setErr('Для відстрочення оберіть клієнта'); return; }
     if (accepted < total - 0.01) { setErr(`Недостатньо коштів: не вистачає ${fmt(total - accepted)}`); return; }
-    onPay({ payment_cash: cash, payment_card: card, payment_deferred: deferred, notes: comment, print_receipt: print });
+    onPay({ payment_cash: cash, payment_card: card, payment_deferred: deferred, notes: comment, print_receipt: print, fiscalize });
   };
 
   useEffect(() => {
@@ -71,7 +85,7 @@ export default function PaymentScreen({ total, customer, settings = {}, printDef
   const methods = [
     { id: 'cash', label: 'Готівка', Icon: Banknote },
     { id: 'card', label: tab === 'card' ? 'КАРТА' : 'Безготівковий', Icon: CreditCard },
-    { id: 'deferred', label: 'Відстрочення', Icon: HandCoins },
+    { id: 'deferred', label: 'Відстрочення', Icon: HandCoins, disabled: fiscalize },
   ];
 
   return (
@@ -95,6 +109,15 @@ export default function PaymentScreen({ total, customer, settings = {}, printDef
             <input type="checkbox" checked={print} onChange={(e) => setPrint(e.target.checked)} className="h-4 w-4 rounded" />
             Друкувати чек
           </label>
+          {prroEnabled && (
+            <label className="mt-3 flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={fiscalize} onChange={(e) => setFiscalize(e.target.checked)} className="h-4 w-4 rounded" />
+              Фіскалізувати чек
+            </label>
+          )}
+          {fiscalize && (
+            <p className="mt-2 text-xs text-ainur-muted">Чек буде передано в Checkbox (ПРРО)</p>
+          )}
         </div>
 
         <div className="flex flex-1 flex-col overflow-auto p-8">
@@ -111,10 +134,11 @@ export default function PaymentScreen({ total, customer, settings = {}, printDef
           </div>
 
           <div className="mb-6 grid max-w-lg grid-cols-3 gap-3">
-            {methods.map(({ id, label, Icon }) => (
-              <button key={id} type="button" onClick={() => setTab(id)}
+            {methods.map(({ id, label, Icon, disabled }) => (
+              <button key={id} type="button" onClick={() => !disabled && setTab(id)} disabled={disabled}
                 className={`flex flex-col items-center rounded-lg border-2 py-5 transition ${
-                  tab === id ? 'border-ainur-blue bg-ainur-blue text-white' : 'border-ainur-border text-ainur-blue'
+                  disabled ? 'cursor-not-allowed opacity-40 border-ainur-border text-gray-400'
+                    : tab === id ? 'border-ainur-blue bg-ainur-blue text-white' : 'border-ainur-border text-ainur-blue'
                 }`}>
                 <Icon className="mb-2 h-8 w-8" />
                 <span className="text-xs font-medium">{label}</span>

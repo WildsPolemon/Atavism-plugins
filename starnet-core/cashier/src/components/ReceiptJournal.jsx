@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Printer, Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, Printer, Search, Receipt } from 'lucide-react';
 import { fmt } from '../utils';
+import { api } from '../api';
 
 export default function ReceiptJournal({ sales, onClose, onReturn, onPrint, onFilter, returnMode: returnModeProp }) {
   const [expanded, setExpanded] = useState(null);
@@ -29,6 +30,16 @@ export default function ReceiptJournal({ sales, onClose, onReturn, onPrint, onFi
     await onReturn(sale.id, items.length ? items : null);
     setReturnMode(false);
     setPartial({});
+  };
+
+  const openFiscalReceipt = async (saleId) => {
+    const token = localStorage.getItem('cashier_token');
+    const r = await fetch(api.fiscalReceiptUrl(saleId), {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!r.ok) return;
+    const url = URL.createObjectURL(await r.blob());
+    window.open(url, '_blank');
   };
 
   const statusLabel = (s) => ({
@@ -74,13 +85,22 @@ export default function ReceiptJournal({ sales, onClose, onReturn, onPrint, onFi
                   <span className={`rounded px-2 py-0.5 text-xs ${s.status === 'completed' ? 'bg-green-100 text-green-700' : s.status === 'returned' ? 'bg-red-100 text-red-600' : 'bg-gray-100'}`}>
                     {statusLabel(s.status)}
                   </span>
+                  {s.is_fiscal ? (
+                    <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">ПРРО</span>
+                  ) : null}
                   {expanded === s.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </div>
                 <p className="text-sm text-ainur-muted">{s.created_at} · {s.cashier} · {s.store_name || 'Магазин'}</p>
                 <p className="text-sm">{s.customer_name ? `Клієнт: ${s.customer_name}` : 'Без клієнта'} · {s.items_count ?? s.items?.length ?? 0} поз.</p>
+                {s.fiscal_code && <p className="text-xs text-blue-600">Фіскальний код: {s.fiscal_code}</p>}
               </div>
               <p className="text-lg font-bold">{fmt(s.total)}</p>
               <div className="flex gap-2">
+                {s.is_fiscal && (
+                  <button type="button" onClick={() => openFiscalReceipt(s.id)} className="flex items-center gap-1 rounded border border-blue-200 px-3 py-1.5 text-xs text-blue-700 hover:bg-blue-50">
+                    <Receipt className="h-3 w-3" /> ПРРО
+                  </button>
+                )}
                 <button type="button" onClick={() => onPrint?.(s)} className="flex items-center gap-1 rounded border border-ainur-border px-3 py-1.5 text-xs hover:bg-gray-50">
                   <Printer className="h-3 w-3" /> ДРУК
                 </button>

@@ -105,6 +105,13 @@ class StarnetSeeder extends Seeder
             'pos_scale_protocol' => 'auto',
             'pos_terminal_enabled' => '0',
             'pos_terminal_ip' => '',
+            'country' => 'UA',
+            'prro_enabled' => '0',
+            'checkbox_license_key' => '',
+            'checkbox_login' => '',
+            'checkbox_password' => '',
+            'checkbox_api_url' => 'https://api.checkbox.ua/api/v1',
+            'pos_fiscal_default' => '0',
         ];
         foreach ($defaults as $k => $v) {
             if (!$this->db->table('settings')->where('key', $k)->countAllResults()) {
