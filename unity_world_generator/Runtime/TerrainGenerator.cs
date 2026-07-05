@@ -6,7 +6,7 @@ namespace AaaWorldGen
 {
     public static class TerrainGenerator
     {
-        public const string BakeEngineVersion = "studio-v5";
+        public const string BakeEngineVersion = "studio-v5.1";
 
         public enum TerrainBakePhase
         {
@@ -432,7 +432,8 @@ namespace AaaWorldGen
             WorldGeneratorConfig config,
             TerrainGenerationSettings settings,
             Transform terrainRoot,
-            TerrainTileBuildState tile)
+            TerrainTileBuildState tile,
+            Func<float, float, BiomeDefinition> sampleBiome)
         {
             TerrainData data = new TerrainData
             {
@@ -441,17 +442,16 @@ namespace AaaWorldGen
             };
             data.SetHeights(0, 0, tile.heights);
 
-            TerrainGenerationSettings paintSettings = session.config.terrainGeneration ?? new TerrainGenerationSettings();
-            if (paintSettings.paintBiomeTerrainLayers && TerrainSplatPainter.HasPaintableLayers(session.config))
+            if (settings.paintBiomeTerrainLayers && TerrainSplatPainter.HasPaintableLayers(config) && sampleBiome != null)
             {
                 TerrainSplatPainter.ApplyBiomeAlphamap(
                     data,
-                    session.config,
+                    config,
                     tile.originX,
                     tile.originZ,
                     tile.tileWidth,
                     tile.tileLength,
-                    session.sampleBiome);
+                    sampleBiome);
             }
 
             Vector3 position = new Vector3(tile.originX, 0f, tile.originZ);
