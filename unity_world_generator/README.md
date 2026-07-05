@@ -7,6 +7,7 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 - Deterministic world seed generation.
 - Biome synthesis from height/moisture/temperature noise fields.
 - Advanced terrain shaping (continent mask + ridges + lowland flattening + mountain boost).
+- **Unity Terrain generation** (tiled heightmaps from the same noise pipeline).
 - Climate-aware biome shaping (latitude cooling, elevation cooling, coastal humidity, micro-variation).
 - City placement with spacing constraints and district lot generation.
 - Intercity road network generation (MST backbone + extra links).
@@ -37,6 +38,10 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 5. Add `WorldGenerator` component to an empty scene object and assign config.
 6. Open **Tools > World Generation > Open Generator Dashboard**.
 7. Click **Generate World** in dashboard (or call `GenerateNow()` at runtime).
+8. Terrain tiles appear under `TerrainRoot` (auto-created on the generator). Tune `terrainGeneration` in config:
+   - `enableTerrainGeneration` — on by default
+   - `terrainTileSizeMeters` — tile size (512 recommended for large worlds)
+   - `heightmapResolution` — per-tile resolution (257 default)
 
 ## Runtime FPS optimization
 

@@ -18,7 +18,14 @@
     "lowland_flatten_strength": 0.42,
     "lowland_threshold01": 0.53,
     "mountain_boost_start01": 0.72,
-    "mountain_boost_strength": 0.29
+    "mountain_boost_strength": 0.29,
+    "mountain_peak_power": 1.42,
+    "valley_carve_strength": 0.14,
+    "valley_noise": { "frequency": 0.0018, "octaves": 3, "lacunarity": 2.05, "persistence": 0.48, "offset_x": 88.0, "offset_z": -41.0 },
+    "detail_strength": 0.05,
+    "detail_noise": { "frequency": 0.0065, "octaves": 2, "lacunarity": 2.2, "persistence": 0.42, "offset_x": -33.0, "offset_z": 67.0 },
+    "coastal_falloff_strength": 0.32,
+    "coastal_falloff_width01": 0.16
   },
   "biome_climate": {
     "latitude_temperature_influence": 0.32,
