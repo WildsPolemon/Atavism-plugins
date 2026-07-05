@@ -11,12 +11,15 @@ namespace AaaWorldGen.Editor
     public static class TerrainBakeEditorRunner
     {
         private const int WarnTileCount = 64;
-        private const int TilesPerEditorTick = 1;
+        private const double FrameBudgetSeconds = 0.02d;
 
         private enum RunMode
         {
+            Idle,
+            Layout,
+            Terrain,
             TerrainOnly,
-            FullWorld
+            Finalize
         }
 
         private static WorldGenerator activeGenerator;
@@ -26,8 +29,10 @@ namespace AaaWorldGen.Editor
         private static Action<WorldGenerationResult> onWorldComplete;
         private static Action<string> onStatus;
         private static bool subscribed;
+        private static bool pendingStart;
+        private static bool layoutStarted;
 
-        public static bool IsRunning => activeSession != null && !activeSession.IsComplete;
+        public static bool IsRunning => pendingStart || subscribed || (activeSession != null && !activeSession.IsComplete);
 
         public static void RunTerrainOnly(
             WorldGenerator generator,
@@ -40,7 +45,7 @@ namespace AaaWorldGen.Editor
             }
 
             onComplete = completeCallback;
-            StartTerrainBake(generator);
+            ScheduleStart(StartTerrainOnlyDeferred);
         }
 
         public static void RunFullWorld(
@@ -48,37 +53,48 @@ namespace AaaWorldGen.Editor
             Action<WorldGenerationResult> completeCallback = null,
             Action<string> statusCallback = null)
         {
-            if (!TryBeginRun(generator, RunMode.FullWorld, statusCallback))
+            if (!TryBeginRun(generator, RunMode.Layout, statusCallback))
             {
                 return;
             }
 
             onWorldComplete = completeCallback;
+            ScheduleStart(StartFullWorldDeferred);
+        }
 
-            try
+        private static void ScheduleStart(Action startAction)
+        {
+            pendingStart = true;
+            EditorApplication.delayCall += () =>
             {
-                onStatus?.Invoke("Generating world layout...");
-                WorldGenerationResult layout = generator.GenerateLayout();
-                onStatus?.Invoke(
-                    $"Layout ready — {layout.cities.Count} cities, {layout.resources.Count} resources. Baking terrain...");
-
-                TerrainGenerationSettings terrainSettings =
-                    generator.Config.terrainGeneration ?? new TerrainGenerationSettings();
-                if (!terrainSettings.enableTerrainGeneration)
+                pendingStart = false;
+                try
                 {
-                    CompleteFullWorld(generator, includeTerrain: false);
-                    Cleanup();
-                    return;
+                    startAction();
                 }
+                catch (Exception ex)
+                {
+                    Cleanup();
+                    Debug.LogException(ex);
+                    EditorUtility.DisplayDialog("World Generation", "Generation failed. See console.", "OK");
+                }
+            };
+        }
 
-                StartTerrainBake(generator);
-            }
-            catch (Exception ex)
-            {
-                Cleanup();
-                Debug.LogException(ex);
-                EditorUtility.DisplayDialog("Generate World", "World generation failed. See console.", "OK");
-            }
+        private static void StartTerrainOnlyDeferred()
+        {
+            Debug.Log($"[WorldGen] Terrain bake engine {TerrainGenerator.BakeEngineVersion}");
+            onStatus?.Invoke("Preparing terrain bake...");
+            StartTerrainBake();
+        }
+
+        private static void StartFullWorldDeferred()
+        {
+            Debug.Log($"[WorldGen] World generation engine {TerrainGenerator.BakeEngineVersion}");
+            activeMode = RunMode.Layout;
+            layoutStarted = false;
+            onStatus?.Invoke("Generating world layout...");
+            Subscribe();
         }
 
         private static bool TryBeginRun(
@@ -124,7 +140,7 @@ namespace AaaWorldGen.Editor
                 float worldMeters = config.worldSizeInChunks * config.chunkSizeMeters;
                 float tileSize = Mathf.Max(32f, config.terrainGeneration.terrainTileSizeMeters);
                 int perAxis = Mathf.CeilToInt(worldMeters / tileSize);
-                string actionLabel = mode == RunMode.FullWorld ? "Generate" : "Bake";
+                string actionLabel = mode == RunMode.Layout ? "Generate" : "Bake";
                 bool continueRun = EditorUtility.DisplayDialog(
                     "Large terrain bake",
                     $"This world will create about {tileCount} terrain tiles ({perAxis}x{perAxis}).\n\n" +
@@ -145,21 +161,12 @@ namespace AaaWorldGen.Editor
             return true;
         }
 
-        private static void StartTerrainBake(WorldGenerator generator)
+        private static void StartTerrainBake()
         {
-            try
-            {
-                activeSession = generator.BeginTerrainOnlyBake();
-                Subscribe();
-                onStatus?.Invoke($"Baking terrain — 0 / {activeSession.TotalTileSlots} tiles");
-            }
-            catch (Exception ex)
-            {
-                Cleanup();
-                Debug.LogException(ex);
-                string title = activeMode == RunMode.FullWorld ? "Generate World" : "Terrain Only";
-                EditorUtility.DisplayDialog(title, "Terrain generation failed. See console.", "OK");
-            }
+            activeSession = activeGenerator.BeginTerrainOnlyBake();
+            activeMode = RunMode.Terrain;
+            Subscribe();
+            onStatus?.Invoke($"Baking terrain — 0 / {activeSession.TotalTileSlots} tiles");
         }
 
         private static void Subscribe()
@@ -186,7 +193,21 @@ namespace AaaWorldGen.Editor
 
         private static void Tick()
         {
-            if (activeSession == null || activeGenerator == null)
+            if (activeGenerator == null)
+            {
+                Cleanup();
+                return;
+            }
+
+            double deadline = EditorApplication.timeSinceStartup + FrameBudgetSeconds;
+
+            if (activeMode == RunMode.Layout)
+            {
+                TickLayout(deadline);
+                return;
+            }
+
+            if (activeSession == null)
             {
                 Cleanup();
                 return;
@@ -194,24 +215,32 @@ namespace AaaWorldGen.Editor
 
             if (activeSession.CancelRequested)
             {
-                CancelRun(activeMode == RunMode.FullWorld ? "World generation cancelled." : "Terrain bake cancelled.");
+                CancelRun(activeMode == RunMode.TerrainOnly ? "Terrain bake cancelled." : "World generation cancelled.");
                 return;
             }
 
-            float progress = activeSession.TotalTileSlots > 0
-                ? activeSession.nextTileIndex / (float)activeSession.TotalTileSlots
-                : 1f;
-            string title = activeMode == RunMode.FullWorld ? "Generating world" : "Baking terrain";
-            string label = $"Terrain tile {Mathf.Min(activeSession.nextTileIndex + 1, activeSession.TotalTileSlots)} / {activeSession.TotalTileSlots}";
-            if (EditorUtility.DisplayCancelableProgressBar(title, label, progress))
+            string title = activeMode == RunMode.TerrainOnly ? "Baking terrain" : "Generating world";
+            string phaseLabel = activeSession.phase == TerrainGenerator.TerrainBakePhase.Clearing
+                ? "Clearing old terrain tiles..."
+                : $"Terrain tile {Mathf.Min(activeSession.CompletedTiles + 1, activeSession.TotalTileSlots)} / {activeSession.TotalTileSlots}";
+            float progress = TerrainGenerator.GetProgress01(activeSession);
+            if (EditorUtility.DisplayCancelableProgressBar(title, phaseLabel, progress))
             {
                 activeSession.CancelRequested = true;
-                CancelRun(activeMode == RunMode.FullWorld ? "World generation cancelled." : "Terrain bake cancelled.");
+                CancelRun(activeMode == RunMode.TerrainOnly ? "Terrain bake cancelled." : "World generation cancelled.");
                 return;
             }
 
-            activeSession = TerrainGenerator.StepBake(activeSession, TilesPerEditorTick);
-            onStatus?.Invoke($"Baking terrain — {activeSession.CompletedTiles} / {activeSession.TotalTileSlots} tiles");
+            TerrainGenerator.StepBakeBudget(activeSession, () => EditorApplication.timeSinceStartup < deadline);
+
+            if (activeSession.phase == TerrainGenerator.TerrainBakePhase.Clearing)
+            {
+                onStatus?.Invoke("Clearing old terrain tiles...");
+            }
+            else
+            {
+                onStatus?.Invoke($"Baking terrain — {activeSession.CompletedTiles} / {activeSession.TotalTileSlots} tiles");
+            }
 
             if (!activeSession.IsComplete)
             {
@@ -221,27 +250,76 @@ namespace AaaWorldGen.Editor
             EditorUtility.ClearProgressBar();
             try
             {
-                if (activeMode == RunMode.FullWorld)
-                {
-                    CompleteFullWorld(activeGenerator, includeTerrain: true);
-                }
-                else
+                if (activeMode == RunMode.TerrainOnly)
                 {
                     TerrainGenerator.TerrainGenerationResult result = activeGenerator.CompleteTerrainOnlyBake(activeSession);
                     onStatus?.Invoke($"Terrain baked — {result.terrains.Count} tiles");
                     onComplete?.Invoke();
                 }
+                else
+                {
+                    activeMode = RunMode.Finalize;
+                    CompleteFullWorld(activeGenerator, includeTerrain: true);
+                }
             }
             catch (Exception ex)
             {
                 Debug.LogException(ex);
-                onStatus?.Invoke(activeMode == RunMode.FullWorld ? "World generation failed." : "Terrain bake failed.");
-                string title = activeMode == RunMode.FullWorld ? "Generate World" : "Terrain Only";
-                EditorUtility.DisplayDialog(title, "Generation failed. See console.", "OK");
+                onStatus?.Invoke(activeMode == RunMode.TerrainOnly ? "Terrain bake failed." : "World generation failed.");
+                string dialogTitle = activeMode == RunMode.TerrainOnly ? "Terrain Only" : "Generate World";
+                EditorUtility.DisplayDialog(dialogTitle, "Generation failed. See console.", "OK");
             }
             finally
             {
                 Cleanup();
+            }
+        }
+
+        private static void TickLayout(double deadline)
+        {
+            if (EditorUtility.DisplayCancelableProgressBar(
+                    "Generating world",
+                    "Building cities, roads, resources...",
+                    0.08f))
+            {
+                CancelRun("World generation cancelled.");
+                return;
+            }
+
+            if (layoutStarted)
+            {
+                return;
+            }
+
+            layoutStarted = true;
+            try
+            {
+                WorldGenerationResult layout = activeGenerator.GenerateLayout();
+                onStatus?.Invoke(
+                    $"Layout ready — {layout.cities.Count} cities, {layout.resources.Count} resources. Baking terrain...");
+
+                TerrainGenerationSettings terrainSettings =
+                    activeGenerator.Config.terrainGeneration ?? new TerrainGenerationSettings();
+                if (!terrainSettings.enableTerrainGeneration)
+                {
+                    EditorUtility.ClearProgressBar();
+                    CompleteFullWorld(activeGenerator, includeTerrain: false);
+                    Cleanup();
+                    return;
+                }
+
+                StartTerrainBake();
+            }
+            catch (Exception ex)
+            {
+                EditorUtility.ClearProgressBar();
+                Cleanup();
+                Debug.LogException(ex);
+                EditorUtility.DisplayDialog("Generate World", "World generation failed. See console.", "OK");
+            }
+            finally
+            {
+                layoutStarted = false;
             }
         }
 
@@ -281,6 +359,9 @@ namespace AaaWorldGen.Editor
             onComplete = null;
             onWorldComplete = null;
             onStatus = null;
+            pendingStart = false;
+            layoutStarted = false;
+            activeMode = RunMode.Idle;
         }
     }
 }

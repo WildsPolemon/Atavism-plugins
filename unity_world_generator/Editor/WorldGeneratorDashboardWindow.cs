@@ -438,7 +438,8 @@ namespace AaaWorldGen.Editor
         {
             Rect rect = EditorGUILayout.GetControlRect(false, 24f);
             EditorGUI.DrawRect(rect, WorldGenEditorUi.BgSidebar);
-            GUI.Label(new Rect(rect.x + 12f, rect.y + 4f, rect.width - 24f, 18f), statusLine, EditorStyles.miniLabel);
+            string footer = $"{statusLine}  |  bake {TerrainGenerator.BakeEngineVersion}";
+            GUI.Label(new Rect(rect.x + 12f, rect.y + 4f, rect.width - 24f, 18f), footer, EditorStyles.miniLabel);
         }
 
         private int EstimateTerrainTiles()

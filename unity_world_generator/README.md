@@ -38,7 +38,7 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 5. Add `WorldGenerator` component to an empty scene object and assign config.
 6. Open **Tools > World Generation > Open Generator Dashboard**.
 7. Click **Generate World** in dashboard — layout runs first, then terrain bakes incrementally in the editor (progress bar, cancellable).
-8. **Terrain Only** uses the same incremental terrain bake path.
+8. **Terrain Only** and **Generate World** use incremental-v2 baking in the editor (footer shows `bake incremental-v2`).
 9. Terrain tiles appear under `TerrainRoot` (auto-created on the generator). Tune `terrainGeneration` in config:
    - `enableTerrainGeneration` — on by default
    - `terrainTileSizeMeters` — tile size (512 recommended for large worlds)

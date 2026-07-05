@@ -26,6 +26,13 @@ namespace AaaWorldGen
             }
 
             float spacing = Mathf.Max(5f, config.resourceSettings.baseNodeSpacing);
+            const int maxCandidates = 18000;
+            float minSpacingForWorld = Mathf.Sqrt((worldSize * worldSize) / maxCandidates);
+            if (minSpacingForWorld > spacing)
+            {
+                spacing = minSpacingForWorld;
+            }
+
             List<Vector2> points = PoissonDiskSampler.Sample(new Rect(0, 0, worldSize, worldSize), spacing, config.worldSeed + 8201, 20);
 
             for (int i = 0; i < points.Count; i++)

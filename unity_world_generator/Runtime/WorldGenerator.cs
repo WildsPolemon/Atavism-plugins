@@ -246,7 +246,7 @@ namespace AaaWorldGen
                 TerrainGenerator.TerrainBakeSession session = BeginTerrainOnlyBake();
                 while (!session.IsComplete)
                 {
-                    session = TerrainGenerator.StepBake(session, int.MaxValue);
+                    TerrainGenerator.StepBakeBudget(session, () => true);
                 }
 
                 CompleteTerrainOnlyBake(session);
@@ -265,7 +265,7 @@ namespace AaaWorldGen
             TerrainGenerator.TerrainBakeSession session = BeginTerrainOnlyBake();
             while (!session.IsComplete)
             {
-                session = TerrainGenerator.StepBake(session, int.MaxValue);
+                TerrainGenerator.StepBakeBudget(session, () => true);
             }
 
             return CompleteTerrainOnlyBake(session);

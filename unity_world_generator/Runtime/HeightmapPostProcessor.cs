@@ -29,7 +29,7 @@ namespace AaaWorldGen
             }
         }
 
-        private static void SmoothPass(float[,] heights)
+        public static void SmoothPass(float[,] heights)
         {
             int resZ = heights.GetLength(0);
             int resX = heights.GetLength(1);
@@ -48,7 +48,7 @@ namespace AaaWorldGen
             }
         }
 
-        private static void ErosionPass(float[,] heights, float strength)
+        public static void ErosionPass(float[,] heights, float strength)
         {
             int resZ = heights.GetLength(0);
             int resX = heights.GetLength(1);
