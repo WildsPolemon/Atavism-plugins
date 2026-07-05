@@ -10,14 +10,70 @@ class PosController extends BaseApiController
 {
     protected function openShift(int $userId): ?array
     {
-        return db_connect()->table('shifts')->where('status', 'open')->where('user_id', $userId)->get()->getRowArray()
-            ?: db_connect()->table('shifts')->where('status', 'open')->get()->getRowArray();
+        $row = db_connect()->table('shifts')->where('status', 'open')->where('user_id', $userId)->get()->getRowArray();
+        return $row ? $this->enrichShift($row) : null;
+    }
+
+    protected function enrichShift(array $shift): array
+    {
+        $db = db_connect();
+        $in = (float) ($db->table('shift_cash_movements')->selectSum('amount')->where('shift_id', $shift['id'])->where('type', 'in')->get()->getRow('amount') ?? 0);
+        $out = (float) ($db->table('shift_cash_movements')->selectSum('amount')->where('shift_id', $shift['id'])->where('type', 'out')->get()->getRow('amount') ?? 0);
+        $shift['cash_in_total'] = $in;
+        $shift['cash_out_total'] = $out;
+        $shift['expected_cash'] = (float) $shift['opening_cash'] + (float) $shift['cash_sales'] + $in - $out;
+        return $shift;
+    }
+
+    protected function shiftSalesStats(int $shiftId): array
+    {
+        return db_connect()->query("
+            SELECT COUNT(*) as count, COALESCE(SUM(total),0) as total,
+              COALESCE(SUM(payment_cash),0) as cash, COALESCE(SUM(payment_card),0) as card,
+              COALESCE(SUM(payment_deferred),0) as deferred
+            FROM sales WHERE shift_id=? AND status='completed'
+        ", [$shiftId])->getRowArray() ?: ['count' => 0, 'total' => 0, 'cash' => 0, 'card' => 0, 'deferred' => 0];
+    }
+
+    protected function shiftReportPayload(array $shift, string $type = 'X'): array
+    {
+        $shift = $this->enrichShift($shift);
+        $movements = db_connect()->table('shift_cash_movements')->where('shift_id', $shift['id'])->orderBy('created_at', 'ASC')->get()->getResultArray();
+        return [
+            'shift' => $shift,
+            'sales' => $this->shiftSalesStats((int) $shift['id']),
+            'movements' => $movements,
+            'type' => $type,
+        ];
     }
 
     public function shift()
     {
         $jwt = service('jwtauth')->userFromRequest();
-        return $this->ok(['shift' => $this->openShift((int) $jwt['sub'])]);
+        $shift = $this->openShift((int) $jwt['sub']);
+        return $this->ok(['shift' => $shift]);
+    }
+
+    public function shiftsList()
+    {
+        $jwt = service('jwtauth')->userFromRequest();
+        $rows = db_connect()->table('shifts')->where('user_id', $jwt['sub'])
+            ->orderBy('opened_at', 'DESC')->limit(30)->get()->getResultArray();
+        foreach ($rows as &$row) {
+            $row = $this->enrichShift($row);
+        }
+        return $this->ok(['shifts' => $rows]);
+    }
+
+    public function shiftDetail(int $id)
+    {
+        $jwt = service('jwtauth')->userFromRequest();
+        $shift = db_connect()->table('shifts')->where('id', $id)->where('user_id', $jwt['sub'])->get()->getRowArray();
+        if (!$shift) {
+            return $this->err('Зміну не знайдено', 404);
+        }
+        $type = $this->request->getGet('type') ?? 'X';
+        return $this->ok($this->shiftReportPayload($shift, $type));
     }
 
     public function openShiftAction()
@@ -33,7 +89,39 @@ class PosController extends BaseApiController
             'opening_cash' => $cash,
             'status' => 'open',
         ]);
-        return $this->ok(db_connect()->table('shifts')->where('id', $id)->get()->getRowArray(), 201);
+        $shift = db_connect()->table('shifts')->where('id', $id)->get()->getRowArray();
+        return $this->ok($this->enrichShift($shift), 201);
+    }
+
+    public function cashMovement()
+    {
+        $jwt = service('jwtauth')->userFromRequest();
+        $shift = $this->openShift((int) $jwt['sub']);
+        if (!$shift) {
+            return $this->err('Немає відкритої зміни');
+        }
+        $body = $this->request->getJSON(true) ?? [];
+        $type = ($body['type'] ?? '') === 'in' ? 'in' : 'out';
+        $amount = (float) ($body['amount'] ?? 0);
+        if ($amount <= 0) {
+            return $this->err('Сума має бути більше 0');
+        }
+        if ($type === 'out') {
+            $shift = $this->enrichShift($shift);
+            if ($amount > (float) $shift['expected_cash'] + 0.01) {
+                return $this->err('Недостатньо готівки в касі');
+            }
+        }
+        db_connect()->table('shift_cash_movements')->insert([
+            'shift_id' => $shift['id'],
+            'user_id' => $jwt['sub'],
+            'type' => $type,
+            'amount' => $amount,
+            'note' => $body['note'] ?? null,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        $fresh = db_connect()->table('shifts')->where('id', $shift['id'])->get()->getRowArray();
+        return $this->ok(['shift' => $this->enrichShift($fresh)]);
     }
 
     public function closeShiftAction()
@@ -43,13 +131,43 @@ class PosController extends BaseApiController
         if (!$shift) {
             return $this->err('Немає відкритої зміни');
         }
-        $cash = (float) (($this->request->getJSON(true) ?? [])['closing_cash'] ?? 0);
+        $body = $this->request->getJSON(true) ?? [];
+        $closingCash = (float) ($body['closing_cash'] ?? 0);
+        $withdrawal = (float) ($body['cash_withdrawal'] ?? 0);
+        $note = trim($body['note'] ?? '');
+
+        $shift = $this->enrichShift($shift);
+        $expected = (float) $shift['expected_cash'];
+
+        if ($withdrawal > 0) {
+            if ($withdrawal > $expected + 0.01) {
+                return $this->err('Сума вилучення більша за готівку в касі');
+            }
+            db_connect()->table('shift_cash_movements')->insert([
+                'shift_id' => $shift['id'],
+                'user_id' => $jwt['sub'],
+                'type' => 'out',
+                'amount' => $withdrawal,
+                'note' => $note !== '' ? 'Закриття: ' . $note : 'Вилучення при закритті зміни',
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+            $shift = $this->enrichShift(db_connect()->table('shifts')->where('id', $shift['id'])->get()->getRowArray());
+            $expected = (float) $shift['expected_cash'];
+        }
+
+        $variance = $closingCash - $expected;
         db_connect()->table('shifts')->where('id', $shift['id'])->update([
             'status' => 'closed',
             'closed_at' => date('Y-m-d H:i:s'),
-            'closing_cash' => $cash,
+            'closing_cash' => $closingCash,
+            'expected_cash' => $expected,
+            'variance' => $variance,
+            'cash_in_total' => $shift['cash_in_total'],
+            'cash_out_total' => $shift['cash_out_total'],
         ]);
-        return $this->ok(db_connect()->table('shifts')->where('id', $shift['id'])->get()->getRowArray());
+
+        $closed = db_connect()->table('shifts')->where('id', $shift['id'])->get()->getRowArray();
+        return $this->ok($this->shiftReportPayload($closed, 'Z'));
     }
 
     public function products()
@@ -196,9 +314,10 @@ class PosController extends BaseApiController
         }
 
         if ($shift && $status === 'completed') {
+            $fresh = db_connect()->table('shifts')->where('id', $shift['id'])->get()->getRowArray();
             $db->table('shifts')->where('id', $shift['id'])->update([
-                'cash_sales' => (float) $shift['cash_sales'] + $cash,
-                'card_sales' => (float) $shift['card_sales'] + $card,
+                'cash_sales' => (float) $fresh['cash_sales'] + $cash,
+                'card_sales' => (float) $fresh['card_sales'] + $card,
             ]);
         }
 
@@ -294,13 +413,10 @@ class PosController extends BaseApiController
     {
         $jwt = service('jwtauth')->userFromRequest();
         $shift = $this->openShift((int) $jwt['sub']);
-        if (!$shift) return $this->err('Немає відкритої зміни');
-        $sales = db_connect()->query("
-            SELECT COUNT(*) as count, COALESCE(SUM(total),0) as total,
-              COALESCE(SUM(payment_cash),0) as cash, COALESCE(SUM(payment_card),0) as card,
-              COALESCE(SUM(payment_deferred),0) as deferred
-            FROM sales WHERE shift_id=? AND status='completed'
-        ", [$shift['id']])->getRowArray();
-        return $this->ok(['shift' => $shift, 'sales' => $sales, 'type' => $this->request->getGet('type') ?? 'X']);
+        if (!$shift) {
+            return $this->err('Немає відкритої зміни');
+        }
+        $type = $this->request->getGet('type') ?? 'X';
+        return $this->ok($this->shiftReportPayload($shift, $type));
     }
 }

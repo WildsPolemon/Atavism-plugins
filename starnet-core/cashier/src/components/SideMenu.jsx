@@ -1,9 +1,11 @@
-import { LogOut, RotateCcw, X, FileText, Clock, Settings, RefreshCw, Wallet } from 'lucide-react';
+import { LogOut, RotateCcw, X, FileText, Clock, Settings, RefreshCw, Wallet, ArrowDownCircle, ArrowUpCircle, Printer } from 'lucide-react';
 
 export default function SideMenu({ user, onClose, onAction }) {
   const items = [
     { id: 'logout', label: 'Вийти', icon: LogOut },
-    { id: 'old-version', label: 'Повернутися до старої версії', icon: RefreshCw },
+    { id: 'x-report', label: 'X-звіт', icon: Printer },
+    { id: 'cash-in', label: 'Внесення готівки', icon: ArrowDownCircle },
+    { id: 'cash-out', label: 'Вилучення готівки', icon: ArrowUpCircle },
     { id: 'return', label: 'Створити повернення', icon: RotateCcw },
     { id: 'close-shift', label: 'Закрити зміну', icon: X, danger: true },
     { id: 'debt-return', label: 'Повернення боргу', icon: Wallet },

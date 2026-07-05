@@ -10,6 +10,9 @@ export default function FooterBar({ storeName, shift, onMenu }) {
 
       <span className="hidden text-ainur-muted md:block">
         {storeName} / {shift ? `Зміна #${shift.id}` : 'Зміна не відкрита'}
+        {shift?.expected_cash != null && (
+          <span className="ml-2 text-ainur-text">· {new Intl.NumberFormat('uk-UA', { minimumFractionDigits: 2 }).format(shift.expected_cash)} ₴</span>
+        )}
       </span>
 
       <div className="flex items-center gap-3 text-ainur-muted">

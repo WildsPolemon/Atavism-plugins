@@ -15,6 +15,11 @@ import ReceiptPrint from './components/ReceiptPrint';
 import PosSettings from './components/PosSettings';
 import BarcodeModal from './components/BarcodeModal';
 import ProductAddModal from './components/ProductAddModal';
+import OpenShiftModal from './components/OpenShiftModal';
+import CloseShiftModal from './components/CloseShiftModal';
+import CashMovementModal from './components/CashMovementModal';
+import ShiftsHistoryModal from './components/ShiftsHistoryModal';
+import ShiftReportPrint from './components/ShiftReportPrint';
 
 const priceOf = (p) => Number(p.sale_price || p.retail_price || 0);
 
@@ -45,6 +50,11 @@ export default function App() {
   const [lastSale, setLastSale] = useState(null);
   const [commentOpen, setCommentOpen] = useState(false);
   const [saleComment, setSaleComment] = useState('');
+  const [openShiftOpen, setOpenShiftOpen] = useState(false);
+  const [closeShiftOpen, setCloseShiftOpen] = useState(false);
+  const [cashMoveType, setCashMoveType] = useState(null);
+  const [shiftsOpen, setShiftsOpen] = useState(false);
+  const [shiftReport, setShiftReport] = useState(null);
   const [err, setErr] = useState('');
   const searchRef = useRef(null);
   const searchTimer = useRef(null);
@@ -75,10 +85,17 @@ export default function App() {
   useEffect(() => {
     if (!getToken()) return;
     api.me().then(setUser).catch(() => setToken(null));
-    api.shift().then((r) => setShift(r.shift)).catch(() => {});
     api.receiptSettings().then((r) => setSettings(r.settings || {}));
     api.categories().then((r) => setCategories(r.categories || []));
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    api.shift().then((r) => {
+      setShift(r.shift);
+      if (!r.shift) setOpenShiftOpen(true);
+    }).catch(() => {});
+  }, [user]);
 
   useEffect(() => { if (user) loadCatalog(); }, [categoryId, user, loadCatalog]);
   useEffect(() => { if (user) loadSuggestions(); }, [cart, user, loadSuggestions]);
@@ -104,6 +121,8 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [payOpen, customerOpen, settingsOpen]);
 
+  const refreshShift = () => api.shift().then((r) => setShift(r.shift)).catch(() => {});
+
   const login = async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -113,7 +132,7 @@ export default function App() {
       setUser(r.user);
       const s = await api.shift();
       setShift(s.shift);
-      if (!s.shift) await api.openShift(0).then((r) => setShift(r.shift || r));
+      if (!s.shift) setOpenShiftOpen(true);
     } catch (ex) { setErr(ex.message); }
   };
 
@@ -175,6 +194,7 @@ export default function App() {
     if (payment_deferred > 0 && customer) setCustomer({ ...customer, debt: Number(customer.debt || 0) + payment_deferred });
     else setCustomer(null);
     setPayOpen(false);
+    refreshShift();
     if (print_receipt) {
       if (settings.pos_printer_enabled === '1') {
         const lines = [
@@ -199,15 +219,27 @@ export default function App() {
   };
 
   const menuAction = async (id) => {
-    if (id === 'logout') { setToken(null); setUser(null); }
-    if (id === 'close-shift') { await api.closeShift(0); setShift(null); }
+    if (id === 'logout') { setToken(null); setUser(null); setShift(null); }
+    if (id === 'close-shift') {
+      if (cart.length) { setErr('Спочатку завершіть або скасуйте чек'); return; }
+      setCloseShiftOpen(true);
+    }
+    if (id === 'x-report') {
+      try {
+        const r = await api.xzReport('X');
+        setShiftReport(r);
+        setTimeout(() => window.print(), 200);
+      } catch (ex) { setErr(ex.message); }
+    }
+    if (id === 'cash-in') setCashMoveType('in');
+    if (id === 'cash-out') setCashMoveType('out');
+    if (id === 'shifts') setShiftsOpen(true);
     if (id === 'journal') { setSales((await api.sales()).sales || []); setJournalOpen(true); }
     if (id === 'return') { setSales((await api.sales('completed')).sales || []); setJournalOpen(true); }
     if (id === 'hold' && cart.length) { await api.holdSale({ items: cart.map((i) => ({ product_id: i.product_id, quantity: i.qty, price: i.price })) }); setCart([]); }
     if (id === 'held') { setHeld((await api.heldSales()).sales || []); }
     if (id === 'settings') setSettingsOpen(true);
     if (id === 'add-product') setProductAddOpen('');
-    if (id === 'old-version') alert('Стара версія недоступна в StarNet Core');
     if (id === 'debt-return') alert('Повернення боргу — оберіть клієнта в CRM');
     if (id === 'cancel' && cart.length) setCart([]);
   };
@@ -317,6 +349,49 @@ export default function App() {
         </div>
       )}
       {err && <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 cursor-pointer rounded-lg bg-red-600 px-4 py-2 text-sm text-white" onClick={() => setErr('')}>{err}</div>}
+      {openShiftOpen && (
+        <OpenShiftModal
+          onClose={() => setOpenShiftOpen(false)}
+          onSubmit={async (cash) => {
+            const r = await api.openShift(cash);
+            setShift(r.shift || r);
+          }}
+        />
+      )}
+      {closeShiftOpen && shift && (
+        <CloseShiftModal
+          shift={shift}
+          settings={settings}
+          cashier={user?.name}
+          onClose={() => setCloseShiftOpen(false)}
+          onPreview={(type) => api.xzReport(type)}
+          onCloseShift={async (data) => {
+            const result = await api.closeShift(data);
+            setShift(null);
+            setShiftReport(result);
+            return result;
+          }}
+        />
+      )}
+      {cashMoveType && shift && (
+        <CashMovementModal
+          type={cashMoveType}
+          shift={shift}
+          onClose={() => setCashMoveType(null)}
+          onSubmit={async ({ amount, note }) => {
+            const r = await api.cashMovement(cashMoveType, amount, note);
+            setShift(r.shift);
+          }}
+        />
+      )}
+      {shiftsOpen && (
+        <ShiftsHistoryModal
+          onClose={() => setShiftsOpen(false)}
+          onLoad={() => api.shifts()}
+          onReport={(id, type) => api.shiftDetail(id, type)}
+        />
+      )}
+      {shiftReport && <ShiftReportPrint report={shiftReport} settings={settings} cashier={user?.name} type={shiftReport.type || 'Z'} />}
     </div>
   );
 }
