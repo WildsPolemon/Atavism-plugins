@@ -83,7 +83,6 @@ $guessUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 
       <strong>Посилання:</strong>
       <a href="<?= h($result['links']['admin']) ?>" target="_blank">Адмін-панель →</a>
       <a href="<?= h($result['links']['cashier']) ?>" target="_blank">Каса (POS) →</a>
-      <a href="<?= h($result['links']['api']) ?>" target="_blank">API →</a>
     </div>
     <p style="margin-top:20px;font-size:.8rem;color:#888">Видаліть або захистіть папку <code>install/</code> після встановлення.</p>
 <?php elseif ($step === '2'): ?>
@@ -118,7 +117,7 @@ $guessUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 
 <?php endif; ?>
   </div>
   <p style="text-align:center;margin-top:16px;font-size:.75rem;color:#999">StarNet Core · клон AinurPOS</p>
-  <p style="text-align:center;margin-top:8px;font-size:.7rem;color:#aaa">myhosting: папка <code>mystfall.miy.link/public/</code> (не public_html). Див. <code>DEPLOY.txt</code></p>
+  <p style="text-align:center;margin-top:8px;font-size:.7rem;color:#aaa">Розпакуйте ZIP у <code>mystfall.miy.link/public/</code> → <code>install.php</code></p>
 </div>
 </body>
 </html>
