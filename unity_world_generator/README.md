@@ -28,15 +28,17 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 
 ## WorldGen Studio (Editor)
 
-![WorldGen Studio — Build Location tab](releases/editor_media_2026-07-05/worldgen_studio_v6_location.png)
+![WorldGen Studio v7](releases/editor_media_2026-07-05/worldgen_studio_v7.png)
 
 Open **Window → World Generation → AAA Generator Dashboard**.
 
-- **Home** — workflow cards and map-size presets
-- **Build Location** — zone → boss pipeline with live map preview, step rail, Synty kits, POI markers
-- **Terrain Studio** — live heightmap sculpt with sliders
-- **Biomes** — texture slots, 10-biome template, prefab folders
-- Footer shows bake engine version (e.g. `bake studio-v6.0`)
+Clean **UI Toolkit** editor (Unity-native dark theme):
+
+- **Build Location** — split view: live map preview + foldout settings + Build button
+- **Terrain** — presets + preview + sculpt sliders
+- **Biomes / World / Spawns / Results** — standard inspector fields
+- Scene bindings (Generator + Config) in sidebar
+- Footer: `bake studio-v7.0`
 
 ## Unity integration
 
@@ -56,7 +58,7 @@ Open **Window → World Generation → AAA Generator Dashboard**.
    - Synty kit folders: Forest, Ruins, Road to Boss
    - **BUILD ZONE LOCATION** — generates world + spawns POI markers (`POI_SpawnHub`, `POI_Ruins`, `POI_BossArena`) and road hints for hand polish
 8. Click **GENERATE WORLD** for manual pipeline — layout runs first, then terrain bakes incrementally (progress bar, cancellable).
-9. Footer shows bake engine version (e.g. `bake studio-v6.0`).
+9. Footer shows bake engine version (e.g. `bake studio-v7.0`).
 9. Terrain tiles appear under `TerrainRoot` (auto-created on the generator). Tune `terrainGeneration` in config:
    - `enableTerrainGeneration` — on by default
    - `terrainTileSizeMeters` — tile size (512 recommended for large worlds)
