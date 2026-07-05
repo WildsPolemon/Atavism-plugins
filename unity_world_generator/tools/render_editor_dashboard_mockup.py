@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render clean Unity-style WorldGen Studio v7 mockup."""
+"""WorldGen Studio classic IMGUI mockup."""
 
 from __future__ import annotations
 
@@ -12,154 +12,127 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT.parent))
-
 from unity_world_generator.tools.worldgen_preview import build_terrain_shape_cfg, sample_height01
 
-# Unity dark theme
-BG = (43, 43, 43)
-BG_NAV = (56, 56, 56)
-BG_PANEL = (60, 60, 60)
-BG_PREVIEW = (50, 50, 50)
-BORDER = (26, 26, 26)
-BTN = (48, 48, 48)
-BTN_PRIMARY = (42, 95, 158)
-BTN_ACTIVE = (42, 95, 158)
-TEXT = (224, 224, 224)
-TEXT_DIM = (154, 154, 154)
-ACCENT = (76, 142, 217)
+BG = (30, 30, 30)
+SIDEBAR = (25, 25, 25)
+CARD = (45, 45, 45)
+PANEL = (37, 37, 37)
+BORDER = (28, 28, 28)
+ACCENT = (61, 158, 255)
+TEXT = (235, 235, 235)
+MUTED = (158, 163, 173)
 
 
-def font(size: int, bold: bool = False):
+def f(sz, bold=False):
     p = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-    return ImageFont.truetype(p, size) if Path(p).exists() else ImageFont.load_default()
+    return ImageFont.truetype(p, sz) if Path(p).exists() else ImageFont.load_default()
 
 
-def height_color(h: float, sea: float):
-    if h < sea - 0.02:
-        return (31, 71, 133)
-    if h < sea + 0.04:
-        t = (h - (sea - 0.02)) / 0.06
-        return tuple(int(a + (b - a) * t) for a, b in zip((46, 107, 158), (56, 122, 71)))
-    if h < 0.55:
-        t = (h - sea) / 0.35
-        return tuple(int(a + (b - a) * t) for a, b in zip((51, 128, 61), (92, 133, 56)))
-    if h < 0.72:
-        t = (h - 0.55) / 0.17
-        return tuple(int(a + (b - a) * t) for a, b in zip((107, 112, 77), (133, 117, 87)))
-    t = (h - 0.72) / 0.28
-    return tuple(int(a + (b - a) * t) for a, b in zip((148, 138, 122), (235, 235, 242)))
+def height_color(h, sea):
+    if h < sea: return (46, 107, 158)
+    if h < 0.55: return (56, 122, 71)
+    if h < 0.72: return (133, 117, 87)
+    return (220, 220, 230)
 
 
-def preview(config: dict, size: int = 380) -> Image.Image:
-    img = Image.new("RGB", (size, size), BG_PREVIEW)
-    world = config.get("world_size_in_chunks", 12) * config["chunk_size_meters"]
-    sea = config.get("sea_level01", 0.32)
-    shape = build_terrain_shape_cfg(config)
+def preview(cfg, n=360):
+    img = Image.new("RGB", (n, n), CARD)
+    w = cfg.get("world_size_in_chunks", 12) * cfg["chunk_size_meters"]
+    sea = cfg.get("sea_level01", 0.32)
+    shape = build_terrain_shape_cfg(cfg)
     px = []
-    for py in range(size):
-        z = (py / (size - 1)) * world
-        for px_ in range(size):
-            x = (px_ / (size - 1)) * world
-            px.append(height_color(sample_height01(config, x, z, shape), sea))
+    for py in range(n):
+        z = py / (n - 1) * w
+        for px_ in range(n):
+            x = px_ / (n - 1) * w
+            px.append(height_color(sample_height01(cfg, x, z, shape), sea))
     img.putdata(px)
     return img
 
 
-def render(width=1600, height=900, config=None) -> Image.Image:
-    img = Image.new("RGB", (width, height), BG)
-    d = ImageDraw.Draw(img)
+def render(cfg, W=1600, H=900):
+    im = Image.new("RGB", (W, H), BG)
+    d = ImageDraw.Draw(im)
 
-    # Toolbar
-    d.rectangle((0, 0, width, 38), fill=BG_NAV)
-    d.rectangle((0, 37, width, 38), fill=BORDER)
-    d.rounded_rectangle((10, 6, 130, 32), radius=3, fill=BTN_PRIMARY)
-    d.text((22, 11), "Generate World", font=font(11, True), fill=TEXT)
-    for lbl, x, w in [("Terrain Only", 138, 96), ("Validate", 240, 72), ("Random Seed", 318, 92)]:
-        d.rounded_rectangle((x, 6, x + w, 32), radius=3, fill=BTN, outline=BORDER)
-        d.text((x + 10, 11), lbl, font=font(10), fill=TEXT)
-    d.text((width - 200, 12), "Ready", font=font(10), fill=TEXT_DIM)
-    d.text((width - 88, 12), "studio-v7.0", font=font(9), fill=TEXT_DIM)
+    # Banner
+    d.rectangle((0, 0, W, 72), fill=SIDEBAR)
+    d.rectangle((0, 69, W, 72), fill=ACCENT)
+    d.text((18, 14), "WorldGen Studio", font=f(20, True), fill=TEXT)
+    d.text((18, 40), "Zone builder · Terrain sculpt · Biomes · Generate World", font=f(11), fill=MUTED)
 
-    nav_w = 196
-    top = 38
-    d.rectangle((0, top, nav_w, height - 22), fill=BG_NAV)
-    d.rectangle((nav_w, top, nav_w + 1, height - 22), fill=BORDER)
+    # Command rail
+    y0 = 82
+    d.rounded_rectangle((16, y0, 200, y0 + 42), 4, fill=(48, 120, 200))
+    d.text((34, y0 + 12), "GENERATE WORLD", font=f(11, True), fill=TEXT)
+    for lbl, x, w in [("Terrain Only", 210, 96), ("Validate", 312, 72), ("Random Seed", 392, 96)]:
+        d.rounded_rectangle((x, y0, x + w, y0 + 42), 4, fill=CARD, outline=BORDER)
+        d.text((x + 12, y0 + 13), lbl, font=f(10), fill=TEXT)
 
-    pages = ["Build Location", "Terrain", "Biomes", "World Layout", "Spawns", "Results"]
-    y = top + 10
-    for i, p in enumerate(pages):
-        if i == 0:
-            d.rectangle((0, y + 2, 3, y + 30), fill=ACCENT)
-            d.rectangle((0, y, nav_w, y + 32), fill=(69, 69, 69))
-            d.text((16, y + 8), p, font=font(11, True), fill=TEXT)
+    top = y0 + 54
+    sw = 188
+    d.rectangle((0, top, sw, H - 24), fill=SIDEBAR)
+    tabs = ["  Setup", "  Location Wizard", "  Terrain Studio", "  World Layout", "  Biomes", "  Spawns & Perf", "  Results"]
+    ty = top + 10
+    for i, t in enumerate(tabs):
+        if i == 1:
+            d.rectangle((8, ty + 4, 11, ty + 30), fill=ACCENT)
+            d.text((26, ty + 9), t, font=f(11, True), fill=TEXT)
         else:
-            d.text((16, y + 8), p, font=font(11), fill=TEXT_DIM)
-        y += 34
+            d.text((26, ty + 9), t, font=f(11), fill=MUTED)
+        ty += 34
 
-    d.rectangle((0, height - 120, nav_w, height - 22), fill=BG_NAV)
-    d.rectangle((0, height - 121, nav_w, height - 120), fill=BORDER)
-    d.text((12, height - 108), "Scene", font=font(9, True), fill=TEXT_DIM)
-    d.rectangle((12, height - 92, nav_w - 12, height - 68), fill=BTN, outline=BORDER)
-    d.text((18, height - 86), "WorldGenerator", font=font(9), fill=TEXT_DIM)
-    d.rectangle((12, height - 62, nav_w - 12, height - 38), fill=BTN, outline=BORDER)
-    d.text((18, height - 56), "WorldGeneratorConfig", font=font(9), fill=TEXT_DIM)
+    mx = sw + 16
+    my = top + 8
+    for i, (val, lbl) in enumerate([("3.1 km²", "World Area"), ("1", "Cities"), ("16", "Tiles"), ("~2 min", "Bake")]):
+        x = mx + i * 155
+        d.rectangle((x, my, x + 145, my + 68), fill=CARD, outline=BORDER)
+        d.rectangle((x, my, x + 4, my + 68), fill=ACCENT)
+        d.text((x + 12, my + 10), val, font=f(17, True), fill=TEXT)
+        d.text((x + 12, my + 36), lbl, font=f(9), fill=MUTED)
 
-    mx = nav_w + 16
-    my = top + 12
-    for i, (val, lbl) in enumerate([("3.1 km²", "World Area"), ("1", "Cities"), ("16", "Terrain Tiles"), ("~1–2 min", "Bake ETA")]):
-        x = mx + i * 148
-        d.rectangle((x, my, x + 136, my + 52), fill=BG_PANEL, outline=BORDER)
-        d.text((x + 10, my + 8), val, font=font(15, True), fill=TEXT)
-        d.text((x + 10, my + 30), lbl, font=font(9), fill=TEXT_DIM)
+    my += 80
+    # Location split
+    d.rectangle((mx, my, mx + 380, my + 420), fill=PANEL, outline=BORDER)
+    d.text((mx + 12, my + 8), "Map Preview", font=f(12, True), fill=TEXT)
+    im.paste(preview(cfg), (mx + 12, my + 32))
 
-    my += 64
-    d.text((mx, my), "Build Location", font=font(14, True), fill=TEXT)
-    d.text((mx, my + 20), "Zone map, terrain, biomes, Synty kits, POI markers — one workflow.", font=font(10), fill=TEXT_DIM)
-    my += 44
-
-    # Split: preview | form
-    split_x = mx + 420
-    d.rectangle((mx, my, split_x - 8, height - 34), fill=BG_PREVIEW, outline=BORDER)
-    pv = preview(config or {}, 380)
-    img.paste(pv, (mx + 12, my + 12))
-
-    d.rectangle((split_x, my, width - 16, height - 34), fill=BG)
-    fy = my + 8
-    folds = [
-        ("General", ["Location Name    Boss Zone"]),
-        ("1. Zone (3 km)", ["12 chunks × 256 m, 16 terrain tiles", "[ Apply Zone Size ]"]),
-        ("2. Terrain Style", ["[ Alpine ]  [ Heroic WoW ]", "Mountain Boost  ———○———"]),
-        ("3. Biomes & Textures", ["[ Apply 10-Biome Template ]", "Grass  [    ]  Stone  [    ]"]),
-        ("4. Synty Kits", ["Forest  [ POLYGON/... ]", "Ruins   [ POLYGON/... ]"]),
+    rx = mx + 396
+    d.rectangle((rx, my, W - 16, my + 420), fill=PANEL, outline=BORDER)
+    d.text((rx + 12, my + 8), "Location Wizard", font=f(12, True), fill=TEXT)
+    lines = [
+        "Location Name:  Boss Zone",
+        "",
+        "1. Setup — Zone (3 km, 16 tiles)",
+        "2. Terrain — [Alpine] [Heroic WoW]",
+        "3. Biomes — Grass / Stone textures",
+        "4. Synty — Forest / Ruins / Road folders",
+        "5. POI — Spawn, Ruins, Boss markers",
+        "",
+        "[ Apply Setup Only ]   [ BUILD ZONE LOCATION ]",
     ]
-    for title, lines in folds:
-        d.text((split_x + 12, fy), f"▼ {title}", font=font(11, True), fill=TEXT)
-        fy += 18
-        for line in lines:
-            d.text((split_x + 20, fy), line, font=font(9), fill=TEXT_DIM)
-            fy += 16
-        fy += 6
+    ly = my + 32
+    for line in lines:
+        d.text((rx + 12, ly), line, font=f(10), fill=MUTED if line else TEXT)
+        ly += 18
 
-    d.rounded_rectangle((split_x + 12, height - 78, split_x + 220, height - 46), radius=3, fill=BTN_PRIMARY)
-    d.text((split_x + 36, height - 68), "Build Zone Location", font=font(11, True), fill=TEXT)
-
-    d.rectangle((0, height - 22, width, height), fill=BG_NAV)
-    d.text((12, height - 17), "Ready  |  bake studio-v7.0", font=font(9), fill=TEXT_DIM)
-    return img
+    d.rectangle((0, H - 24, W, H), fill=SIDEBAR)
+    d.text((12, H - 17), "Ready  |  bake studio-v7.2", font=f(9), fill=MUTED)
+    return im
 
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("-o", type=Path, default=Path("releases/editor_media_2026-07-05/worldgen_studio_v7.png"))
+    p.add_argument("-o", default="releases/editor_media_2026-07-05/worldgen_studio_classic.png")
     p.add_argument("--config", type=Path, default=ROOT / "Samples~/Configs/wow_like_world_config.json")
-    args = p.parse_args()
-    cfg = json.loads(args.config.read_text(encoding="utf-8"))
+    a = p.parse_args()
+    cfg = json.loads(a.config.read_text())
     cfg["world_size_in_chunks"] = 12
     cfg["chunk_size_meters"] = 256
-    img = render(config=cfg)
-    args.o.parent.mkdir(parents=True, exist_ok=True)
-    img.save(args.o, optimize=True)
-    print(f"Saved {args.o}")
+    out = Path(a.o)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    render(cfg).save(out, optimize=True)
+    print(f"Saved {out}")
 
 
 if __name__ == "__main__":

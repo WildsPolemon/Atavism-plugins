@@ -9,7 +9,7 @@ namespace AaaWorldGen.Editor
         [MenuItem("Tools/World Generation/Open WorldGen Studio")]
         private static void OpenDashboard()
         {
-            WorldGenStudioWindow.Open();
+            WorldGeneratorDashboardWindow.Open();
         }
 
         [MenuItem("Tools/World Generation/Create Default Config")]

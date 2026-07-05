@@ -20,9 +20,6 @@ namespace AaaWorldGen.Editor
         internal static HeightStyle SelectedHeightStyle = HeightStyle.HeroicWow;
         internal static float MountainTweak;
 
-        internal static int ActiveWizardStep;
-        private static Vector2 wizardScroll;
-
         internal static void Draw(
             WorldGeneratorConfig config,
             WorldGenerator generator,
@@ -31,94 +28,92 @@ namespace AaaWorldGen.Editor
         {
             if (config == null)
             {
-                WorldGenEditorUi.DrawEmptyState(
-                    "No config assigned",
-                    "Create or assign a WorldGeneratorConfig asset in Scene Bindings.",
-                    "Open Setup",
-                    null);
+                EditorGUILayout.HelpBox("Assign a WorldGeneratorConfig to use Location Wizard.", MessageType.Info);
                 return;
             }
 
             WorldGenPresetLibrary.EnsureConfigSections(config);
             LocationKitSettings kit = config.locationKit;
 
-            string[] steps = { "Zone", "Terrain", "Biomes", "Synty", "POI", "Build" };
-            WorldGenEditorUi.DrawStepRail(steps, ActiveWizardStep);
+            WorldGenEditorUi.BeginPanel(
+                "Location Wizard",
+                "One flow: Zone map → Alpine/Heroic terrain → 10 biomes → Synty kits → POI markers → Generate World.");
+
+            kit.locationName = EditorGUILayout.TextField("Location Name", kit.locationName);
+
+            EditorGUILayout.LabelField("1. Setup — Map Size", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Zone (~3 km, 16 terrain tiles, ~1–2 min bake)", EditorStyles.miniLabel);
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("2. Terrain Studio — Height Style", EditorStyles.boldLabel);
+            EditorGUILayout.BeginHorizontal();
+            if (WorldGenEditorUi.DrawPresetCard(
+                    "Alpine Peaks",
+                    "Sharp ridges, tall peaks",
+                    WorldGenStudioPresets.HeightmapAccentColors[2],
+                    true,
+                    SelectedHeightStyle == HeightStyle.Alpine))
+            {
+                SelectedHeightStyle = HeightStyle.Alpine;
+            }
+
+            if (WorldGenEditorUi.DrawPresetCard(
+                    "Heroic WoW",
+                    "Classic adventure MMO shaping",
+                    WorldGenStudioPresets.HeightmapAccentColors[6],
+                    true,
+                    SelectedHeightStyle == HeightStyle.HeroicWow))
+            {
+                SelectedHeightStyle = HeightStyle.HeroicWow;
+            }
+            EditorGUILayout.EndHorizontal();
+
+            MountainTweak = EditorGUILayout.Slider(
+                new GUIContent("Mountain Boost", "Extra peak drama on top of the height preset."),
+                MountainTweak,
+                -0.15f,
+                0.25f);
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("3. Biomes — 10-Biome + Ground Textures", EditorStyles.boldLabel);
+            kit.grassDiffuse = (Texture2D)EditorGUILayout.ObjectField(
+                "Grass Diffuse",
+                kit.grassDiffuse,
+                typeof(Texture2D),
+                false);
+            kit.grassNormal = (Texture2D)EditorGUILayout.ObjectField(
+                "Grass Normal",
+                kit.grassNormal,
+                typeof(Texture2D),
+                false);
+            kit.stoneDiffuse = (Texture2D)EditorGUILayout.ObjectField(
+                "Stone Diffuse",
+                kit.stoneDiffuse,
+                typeof(Texture2D),
+                false);
+            kit.stoneNormal = (Texture2D)EditorGUILayout.ObjectField(
+                "Stone Normal",
+                kit.stoneNormal,
+                typeof(Texture2D),
+                false);
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("4. Synty Kits — drag project folders", EditorStyles.boldLabel);
+            DrawKitFolderField(config, ref kit.forestKitFolder, "Forest Kit", "meadow, forest, jungle props");
+            DrawKitFolderField(config, ref kit.ruinsKitFolder, "Ruins Kit", "volcanic/alpine caves + ruins POI");
+            DrawKitFolderField(config, ref kit.roadKitFolder, "Road to Boss Kit", "road pieces for manual polish");
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("5. POI Markers (hand-polish anchors)", EditorStyles.boldLabel);
+            kit.spawnPoiMarkers = EditorGUILayout.Toggle("Spawn POI empties after bake", kit.spawnPoiMarkers);
+            kit.roadHintSteps = EditorGUILayout.IntSlider("Road hint steps", kit.roadHintSteps, 3, 12);
+            kit.spawnHub01 = EditorGUILayout.Vector2Field("Spawn hub (0–1)", kit.spawnHub01);
+            kit.ruins01 = EditorGUILayout.Vector2Field("Ruins (0–1)", kit.ruins01);
+            kit.bossArena01 = EditorGUILayout.Vector2Field("Boss arena (0–1)", kit.bossArena01);
 
             EditorGUILayout.Space(8f);
             EditorGUILayout.BeginHorizontal();
-
-            EditorGUILayout.BeginVertical(GUILayout.Width(420f));
-            WorldGenEditorUi.BeginPanel("Live Map Preview", "Height + biome colors update as you change settings.");
-            WorldGenLivePreview.PreviewResolution = 392;
-            WorldGenTerrainPreview.DrawPreview(config, 392);
-            EditorGUILayout.Space(4f);
-            EditorGUILayout.BeginHorizontal();
-            WorldGenEditorUi.DrawStatusChip($"Seed {config.worldSeed}", WorldGenEditorUi.AccentSoft);
-            WorldGenEditorUi.DrawStatusChip(WorldGenStudioPresets.GetMapSizeLabel(config), WorldGenEditorUi.Success);
-            WorldGenEditorUi.DrawStatusChip(WorldGenStudioPresets.GetBakeTimeHint(config), WorldGenEditorUi.Warning);
-            EditorGUILayout.EndHorizontal();
-            WorldGenEditorUi.EndPanel();
-
-            WorldGenEditorUi.BeginPanel("Workflow", "Your zone → boss pipeline in one place.");
-            DrawWorkflowRow("1", "Setup → Zone", "~3 km, 16 tiles, ~1–2 min");
-            DrawWorkflowRow("2", "Alpine / Heroic WoW", SelectedHeightStyle == HeightStyle.Alpine ? "Alpine Peaks" : "Heroic WoW");
-            DrawWorkflowRow("3", "10-Biome + textures", "Grass/stone splat on bake");
-            DrawWorkflowRow("4", "Synty kits", "Forest, ruins, road folders");
-            DrawWorkflowRow("5", "POI markers", "Spawn, ruins, boss + road hints");
-            DrawWorkflowRow("6", "Generate World", "Full layout + terrain bake");
-            WorldGenEditorUi.EndPanel();
-            EditorGUILayout.EndVertical();
-
-            EditorGUILayout.BeginVertical();
-            wizardScroll = EditorGUILayout.BeginScrollView(wizardScroll);
-
-            WorldGenEditorUi.BeginPanel("Location", "Name your zone and walk through each step.");
-            kit.locationName = EditorGUILayout.TextField("Location Name", kit.locationName);
-            WorldGenEditorUi.EndPanel();
-
-            if (ActiveWizardStep == 0 || ActiveWizardStep == 5)
-            {
-                DrawStepZone(config, kit);
-            }
-
-            if (ActiveWizardStep == 1 || ActiveWizardStep == 5)
-            {
-                DrawStepTerrain();
-            }
-
-            if (ActiveWizardStep == 2 || ActiveWizardStep == 5)
-            {
-                DrawStepBiomes(config, kit);
-            }
-
-            if (ActiveWizardStep == 3 || ActiveWizardStep == 5)
-            {
-                DrawStepSynty(config, kit);
-            }
-
-            if (ActiveWizardStep == 4 || ActiveWizardStep == 5)
-            {
-                DrawStepPoi(kit);
-            }
-
-            EditorGUILayout.EndScrollView();
-
-            EditorGUILayout.Space(6f);
-            EditorGUILayout.BeginHorizontal();
-            if (WorldGenEditorUi.DrawSecondaryButton("◀ Prev", 72f, 36f) && ActiveWizardStep > 0)
-            {
-                ActiveWizardStep--;
-            }
-
-            if (WorldGenEditorUi.DrawSecondaryButton("Next ▶", 72f, 36f) && ActiveWizardStep < steps.Length - 1)
-            {
-                ActiveWizardStep++;
-            }
-
-            GUILayout.FlexibleSpace();
-
-            if (WorldGenEditorUi.DrawSecondaryButton("Apply Setup", 110f, 36f))
+            if (GUILayout.Button("Apply Setup Only", GUILayout.Height(32f)))
             {
                 ApplyZoneLocationPreset(config);
                 setStatusLine?.Invoke($"Location preset applied — {kit.locationName}");
@@ -140,112 +135,9 @@ namespace AaaWorldGen.Editor
 
             if (generator == null)
             {
-                EditorGUILayout.HelpBox("Assign a WorldGenerator in Scene Bindings (sidebar) to build.", MessageType.Warning);
+                EditorGUILayout.HelpBox("Assign a WorldGenerator in the scene to run BUILD ZONE LOCATION.", MessageType.Warning);
             }
 
-            EditorGUILayout.EndVertical();
-            EditorGUILayout.EndHorizontal();
-        }
-
-        private static void DrawWorkflowRow(string num, string title, string detail)
-        {
-            EditorGUILayout.BeginHorizontal();
-            WorldGenEditorUi.DrawStatusChip(num, WorldGenEditorUi.Accent);
-            EditorGUILayout.BeginVertical();
-            EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
-            EditorGUILayout.LabelField(detail, EditorStyles.miniLabel);
-            EditorGUILayout.EndVertical();
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.Space(2f);
-        }
-
-        private static void DrawStepZone(WorldGeneratorConfig config, LocationKitSettings kit)
-        {
-            WorldGenEditorUi.BeginPanel("Step 1 — Zone Map", "Single dungeon zone scale — fast iteration.");
-            EditorGUILayout.LabelField("Zone preset: 12×256m chunks, 512m terrain tiles, 16 tiles total.", EditorStyles.wordWrappedLabel);
-            if (GUILayout.Button("Apply Zone Size", GUILayout.Height(28f)))
-            {
-                WorldGenStudioPresets.ApplyMapSize(config, WorldGenStudioPresets.MapSizeId.Zone);
-                WorldGenLivePreview.NotifyConfigChanged(config);
-            }
-            WorldGenEditorUi.EndPanel();
-        }
-
-        private static void DrawStepTerrain()
-        {
-            WorldGenEditorUi.BeginPanel("Step 2 — Terrain Style", "Pick a height profile, then tweak peaks.");
-            EditorGUILayout.BeginHorizontal();
-            if (WorldGenEditorUi.DrawPresetCard(
-                    "Alpine Peaks",
-                    "Sharp ridges, tall peaks",
-                    WorldGenStudioPresets.HeightmapAccentColors[2],
-                    true,
-                    SelectedHeightStyle == HeightStyle.Alpine))
-            {
-                SelectedHeightStyle = HeightStyle.Alpine;
-            }
-
-            if (WorldGenEditorUi.DrawPresetCard(
-                    "Heroic WoW",
-                    "Classic adventure MMO",
-                    WorldGenStudioPresets.HeightmapAccentColors[6],
-                    true,
-                    SelectedHeightStyle == HeightStyle.HeroicWow))
-            {
-                SelectedHeightStyle = HeightStyle.HeroicWow;
-            }
-            EditorGUILayout.EndHorizontal();
-
-            MountainTweak = EditorGUILayout.Slider(
-                new GUIContent("Mountain Boost", "Extra peak drama on top of the preset."),
-                MountainTweak,
-                -0.15f,
-                0.25f);
-            WorldGenEditorUi.EndPanel();
-        }
-
-        private static void DrawStepBiomes(WorldGeneratorConfig config, LocationKitSettings kit)
-        {
-            WorldGenEditorUi.BeginPanel("Step 3 — Biomes & Ground", "10-biome climate + grass/stone terrain paint.");
-            if (GUILayout.Button("Apply 10-Biome Rich World", GUILayout.Height(28f)))
-            {
-                WorldGenBiomeTemplates.ApplyRichWorldTemplate(config);
-            }
-
-            EditorGUILayout.Space(6f);
-            EditorGUILayout.BeginHorizontal();
-            WorldGenEditorUi.DrawTextureSlot("Grass", ref kit.grassDiffuse);
-            WorldGenEditorUi.DrawTextureSlot("Grass N", ref kit.grassNormal);
-            WorldGenEditorUi.DrawTextureSlot("Stone", ref kit.stoneDiffuse);
-            WorldGenEditorUi.DrawTextureSlot("Stone N", ref kit.stoneNormal);
-            EditorGUILayout.EndHorizontal();
-            WorldGenEditorUi.EndPanel();
-        }
-
-        private static void DrawStepSynty(WorldGeneratorConfig config, LocationKitSettings kit)
-        {
-            WorldGenEditorUi.BeginPanel("Step 4 — Synty Kits", "Drag POLYGON prefab folders from the Project window.");
-            WorldGenEditorUi.DrawFolderSlot("Forest", "meadow, forest, jungle props", ref kit.forestKitFolder);
-            EditorGUILayout.Space(4f);
-            WorldGenEditorUi.DrawFolderSlot("Ruins", "volcanic/alpine caves + ruins", ref kit.ruinsKitFolder);
-            EditorGUILayout.Space(4f);
-            WorldGenEditorUi.DrawFolderSlot("Road", "road pieces toward boss arena", ref kit.roadKitFolder);
-            if (GUILayout.Button("Assign Kits to Biomes", GUILayout.Height(26f)))
-            {
-                ApplySyntyKits(config);
-                EditorUtility.SetDirty(config);
-            }
-            WorldGenEditorUi.EndPanel();
-        }
-
-        private static void DrawStepPoi(LocationKitSettings kit)
-        {
-            WorldGenEditorUi.BeginPanel("Step 5 — POI Markers", "Empty anchors for hand polish in Scene view.");
-            kit.spawnPoiMarkers = EditorGUILayout.Toggle("Spawn POI empties after bake", kit.spawnPoiMarkers);
-            kit.roadHintSteps = EditorGUILayout.IntSlider("Road hint steps", kit.roadHintSteps, 3, 12);
-            kit.spawnHub01 = EditorGUILayout.Vector2Field("Spawn hub (0–1)", kit.spawnHub01);
-            kit.ruins01 = EditorGUILayout.Vector2Field("Ruins (0–1)", kit.ruins01);
-            kit.bossArena01 = EditorGUILayout.Vector2Field("Boss arena (0–1)", kit.bossArena01);
             WorldGenEditorUi.EndPanel();
         }
 
@@ -425,6 +317,26 @@ namespace AaaWorldGen.Editor
                     0f,
                     0.45f);
             }
+        }
+
+        private static void DrawKitFolderField(
+            WorldGeneratorConfig config,
+            ref string folderPath,
+            string label,
+            string hint)
+        {
+            EditorGUILayout.BeginHorizontal();
+            DefaultAsset folder = string.IsNullOrEmpty(folderPath)
+                ? null
+                : AssetDatabase.LoadAssetAtPath<DefaultAsset>(folderPath);
+            DefaultAsset picked = (DefaultAsset)EditorGUILayout.ObjectField(label, folder, typeof(DefaultAsset), false);
+            if (picked != folder)
+            {
+                folderPath = picked != null ? AssetDatabase.GetAssetPath(picked) : string.Empty;
+                EditorUtility.SetDirty(config);
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.LabelField(hint, EditorStyles.miniLabel);
         }
 
         private static void EnsureSceneRoots(WorldGenerator generator, WorldGeneratorConfig config)
