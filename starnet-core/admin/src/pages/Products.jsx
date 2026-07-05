@@ -97,9 +97,11 @@ export default function Products() {
     finally { setLookupLoading(false); }
   }
 
-  const openCreate = (type = 'product') => {
+  const openCreate = async (type = 'product') => {
     setEditId(null);
-    setForm({ ...emptyForm(), type });
+    let code = '';
+    try { code = (await api.nextProductCode()).product_code; } catch { /* */ }
+    setForm({ ...emptyForm(), type, product_code: code });
     setFormTab('general');
     setShowForm(true);
   };
@@ -400,7 +402,9 @@ export default function Products() {
                       <input required value={form.name} onChange={(e) => set('name', e.target.value)} className="inp" placeholder="Назва товару" />
                     </Field>
                     <Field label="Код товару">
-                      <input value={form.product_code} onChange={(e) => set('product_code', e.target.value)} placeholder="Генерується автоматично" className="inp font-mono" />
+                      <input value={form.product_code} readOnly={!editId} onChange={(e) => set('product_code', e.target.value)}
+                        placeholder="Генерується автоматично" className="inp font-mono bg-ainur-bg" />
+                      {!editId && <p className="mt-1 text-xs text-ainur-muted">Код призначається автоматично при збереженні</p>}
                     </Field>
                     <Field label="Артикул">
                       <input value={form.sku} onChange={(e) => set('sku', e.target.value)} className="inp" placeholder="SKU" />

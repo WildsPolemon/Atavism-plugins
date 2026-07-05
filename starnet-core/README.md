@@ -46,6 +46,17 @@ cd starnet-core/landing && npm i && npm run dev
 
 Детально: `docs/HARDWARE.md`
 
+## Збірка архіву для хостингу
+
+```bash
+cd starnet-core/scripts && chmod +x build-release.sh && ./build-release.sh
+```
+
+Архів: `starnet-core/release/starnet-core-hosting.zip`  
+Встановлення: розпакувати → відкрити `/install/` → демо-база автоматично.
+
+Детально: `install/README.md`
+
 ## Скріншоти
 
 Див. `docs/screenshots/` — адмін-панель, каса, налаштування обладнання, лендінг.

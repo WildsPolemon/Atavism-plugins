@@ -45,6 +45,26 @@ class ProductController extends BaseApiController
         return $this->ok(['deleted' => true]);
     }
 
+    public function nextCode()
+    {
+        $db = db_connect();
+        $row = $db->query('SELECT MAX(id) as m FROM products')->getRowArray();
+        $next = ((int) ($row['m'] ?? 0)) + 1;
+        return $this->ok(['product_code' => $this->formatProductCode($next)]);
+    }
+
+    private function formatProductCode(int $id): string
+    {
+        return 'P' . str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+    }
+
+    private function generateNextProductCode(): string
+    {
+        $db = db_connect();
+        $row = $db->query('SELECT MAX(id) as m FROM products')->getRowArray();
+        return $this->formatProductCode(((int) ($row['m'] ?? 0)) + 1);
+    }
+
     public function index()
     {
         $db = db_connect();
@@ -116,7 +136,7 @@ class ProductController extends BaseApiController
             'name' => $body['name'],
             'sku' => $body['sku'] ?? null,
             'barcode' => $body['barcode'] ?? null,
-            'product_code' => $body['product_code'] ?? null,
+            'product_code' => null,
             'description' => $body['description'] ?? '',
             'category_id' => $body['category_id'] ?? null,
             'group_id' => $body['group_id'] ?? null,
@@ -148,9 +168,7 @@ class ProductController extends BaseApiController
             'updated_at' => $now,
         ]);
 
-        if (empty($body['product_code'])) {
-            model(ProductModel::class)->update($id, ['product_code' => 'P' . str_pad((string) $id, 6, '0', STR_PAD_LEFT)]);
-        }
+        model(ProductModel::class)->update($id, ['product_code' => $this->formatProductCode($id)]);
 
         $this->syncCategoryTags($id, $body['category_ids'] ?? []);
         $this->setInitialStock($id, $body);

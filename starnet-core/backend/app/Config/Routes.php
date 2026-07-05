@@ -27,6 +27,7 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
         $routes->patch('products/categories/(:num)', 'Api\ProductController::updateCategory/$1');
         $routes->delete('products/categories/(:num)', 'Api\ProductController::deleteCategory/$1');
         $routes->get('products', 'Api\ProductController::index');
+        $routes->get('products/next-code', 'Api\ProductController::nextCode');
         $routes->post('products', 'Api\ProductController::create');
         $routes->patch('products/(:num)', 'Api\ProductController::update/$1');
         $routes->post('products/(:num)/barcode', 'Api\ProductController::generateBarcode/$1');
