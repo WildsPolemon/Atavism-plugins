@@ -6,7 +6,7 @@ namespace AaaWorldGen
 {
     public static class TerrainGenerator
     {
-        public const string BakeEngineVersion = "incremental-v2";
+        public const string BakeEngineVersion = "incremental-v3";
 
         public enum TerrainBakePhase
         {
@@ -53,6 +53,9 @@ namespace AaaWorldGen
             internal TerrainTileBuildState activeTile;
 
             public TerrainBakePhase Phase { get; internal set; }
+
+            // Compatibility for older editor scripts that still read .phase.
+            public TerrainBakePhase phase => Phase;
 
             public TerrainGenerationResult Result { get; internal set; }
             public int TotalTileSlots { get; internal set; }
@@ -196,6 +199,26 @@ namespace AaaWorldGen
                 session.IsComplete = true;
                 session.Phase = TerrainBakePhase.Complete;
             }
+        }
+
+        public static bool IsClearingPhase(TerrainBakeSession session)
+        {
+            return session != null && session.Phase == TerrainBakePhase.Clearing;
+        }
+
+        public static string GetBakeProgressLabel(TerrainBakeSession session)
+        {
+            if (session == null)
+            {
+                return string.Empty;
+            }
+
+            if (IsClearingPhase(session))
+            {
+                return "Clearing old terrain tiles...";
+            }
+
+            return $"Terrain tile {Mathf.Min(session.CompletedTiles + 1, session.TotalTileSlots)} / {session.TotalTileSlots}";
         }
 
         public static float GetProgress01(TerrainBakeSession session)
