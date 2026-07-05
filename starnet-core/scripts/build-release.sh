@@ -69,7 +69,8 @@ cat > "$BUILD/INSTALL.txt" << 'EOF'
 StarNet Core — встановлення на хостинг
 =====================================
 
-1. Розпакуйте ВМІСТ цього ZIP у public_html (корінь сайту), не в підпапку.
+1. Розпакуйте ВМІСТ цього ZIP у папку домену: mystfall.miy.link/public/
+   (myhosting — НЕ public_html! Див. DEPLOY.txt)
 2. Відкрийте: https://ваш-домен/install.php
 3. Перевірка upload: https://ваш-домен/ok.txt — має показати текст, не 404
 3. URL сайту: https://ваш-домен/  (зі слешем)

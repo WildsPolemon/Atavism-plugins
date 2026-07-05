@@ -1,65 +1,68 @@
 # mystfall.miy.link — встановлення StarNet Core
 
-## Помилка 404 = файли НЕ в корені сайту
+## 404 = файли не в тій папці
 
-Якщо **будь-який** URL (навіть `/ok.txt`) дає 404 — архів ще не розпаковано в `public_html`.
+На **myhosting** (panel21.myhosting.name) корінь сайту — **НЕ** `public_html`!
+
+Правильний шлях:
+
+```
+/mystfall.miy.link/public/
+```
 
 ---
 
 ## Крок 1. Завантажте ZIP
 
-З GitHub (гілка `main`):
-
-```
 https://github.com/WildsPolemon/Atavism-plugins/raw/main/starnet-core/release/starnet-core-hosting.zip
-```
 
-Або з репозиторію: `starnet-core/release/starnet-core-hosting.zip`
+Або спочатку тестовий архів (2 КБ):
+
+https://github.com/WildsPolemon/Atavism-plugins/raw/main/starnet-core/release/upload-test.zip
 
 ---
 
 ## Крок 2. Панель хостингу
 
 1. Увійдіть: **panel21.myhosting.name**
-2. Файловий менеджер → **`public_html`** (корінь домену mystfall.miy.link)
-3. Завантажте `starnet-core-hosting.zip`
-4. **Розпакуйте (Extract) прямо в `public_html`**
+2. Знайдіть домен **mystfall.miy.link**
+3. Натисніть **«Файловий менеджер»** під цим доменом  
+   (або FTP → папка `/mystfall.miy.link/public/`)
+4. Завантажте ZIP у цю папку
+5. **Розпакуйте (Extract)** прямо тут
 
-### Як має виглядати public_html після розпакування:
+### Як має виглядати папка `public/`:
 
 ```
-public_html/
-├── ok.txt          ← перевірка
-├── install.php     ← інсталятор
-├── install/
+mystfall.miy.link/public/
+├── ok.txt
+├── install.php
 ├── backend/
 ├── admin/
-├── cashier/
-├── api/
+├── install/
 └── index.html
 ```
 
-### НЕПРАВИЛЬНО (дасть 404):
+### НЕПРАВИЛЬНО (404):
 
-```
-public_html/starnet-core-hosting/install.php   ❌
-public_html/starnet-core/install.php           ❌
-```
+| Куди завантажили | Результат |
+|------------------|-----------|
+| `public_html/` (корінь акаунту) | 404 |
+| `public_html/mystfall.miy.link/` | 404 |
+| `mystfall.miy.link/public/starnet-core-hosting/` | 404 |
 
-Файли `install.php` і `ok.txt` мають лежати **безпосередньо** в `public_html/`.
+Файл `ok.txt` має лежати **безпосередньо** в `mystfall.miy.link/public/ok.txt`
 
 ---
 
 ## Крок 3. Перевірка
 
-Відкрийте в браузері:
-
 ```
 https://mystfall.miy.link/ok.txt
 ```
 
-- **Бачите текст** «StarNet Core — файли завантажено правильно» → все ОК
-- **404** → файли не в тому каталозі, повторіть крок 2
+- **Текст** «StarNet Core — файли завантажено правильно» → ОК
+- **404 Page Not Found** → не та папка, повторіть крок 2
 
 ---
 
@@ -69,13 +72,7 @@ https://mystfall.miy.link/ok.txt
 https://mystfall.miy.link/install.php
 ```
 
-У формі URL сайту:
-
-```
-https://mystfall.miy.link/
-```
-
-Увімкніть «Завантажити демо-базу» → **Встановити**.
+URL сайту: `https://mystfall.miy.link/` → демо-база → **Встановити**
 
 ---
 
@@ -86,15 +83,16 @@ https://mystfall.miy.link/
 | Адмін | https://mystfall.miy.link/admin/ |
 | Каса | https://mystfall.miy.link/cashier/ |
 
-**Логіни:** admin@starnetcore.local / admin123
+Логін: `admin@starnetcore.local` / `admin123`
 
 ---
 
-## Якщо ok.txt працює, а install.php — ні
+## FTP (альтернатива)
 
-- Перевірте версію PHP у панелі (потрібно **8.1+**)
-- Права: `chmod -R 755 backend/writable`
+- Хост: `panel21.myhosting.name`
+- Порт: 21 (TLS)
+- Папка: `/mystfall.miy.link/public/`
 
-## Якщо API не працює після install
+## Якщо ok.txt працює, install.php — ні
 
-Додайте правила з `nginx.conf.example` у панелі хостингу.
+PHP 8.1+ у панелі, права `chmod 755 backend/writable`

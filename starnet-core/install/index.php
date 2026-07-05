@@ -118,7 +118,7 @@ $guessUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 
 <?php endif; ?>
   </div>
   <p style="text-align:center;margin-top:16px;font-size:.75rem;color:#999">StarNet Core · клон AinurPOS</p>
-  <p style="text-align:center;margin-top:8px;font-size:.7rem;color:#aaa">nginx (miy.link): розпакуйте ZIP у <code>public_html</code> → <code>/install/index.php</code>. Див. <code>DEPLOY.txt</code></p>
+  <p style="text-align:center;margin-top:8px;font-size:.7rem;color:#aaa">myhosting: папка <code>mystfall.miy.link/public/</code> (не public_html). Див. <code>DEPLOY.txt</code></p>
 </div>
 </body>
 </html>
