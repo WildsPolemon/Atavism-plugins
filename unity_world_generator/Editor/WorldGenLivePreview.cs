@@ -14,7 +14,7 @@ namespace AaaWorldGen.Editor
             Hybrid = 2
         }
 
-        private const double DebounceSeconds = 0.28d;
+        private const double DebounceSeconds = 0.12d;
 
         internal static bool LiveEnabled = true;
         internal static PreviewMode Mode = PreviewMode.Biomes;

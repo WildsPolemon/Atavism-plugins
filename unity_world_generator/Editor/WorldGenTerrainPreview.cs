@@ -103,6 +103,21 @@ namespace AaaWorldGen.Editor
                     h = h * 31 + config.heightNoise.octaves;
                 }
 
+                if (config.terrainShape != null)
+                {
+                    TerrainShapeSettings s = config.terrainShape;
+                    h = h * 31 + s.mountainBoostStrength.GetHashCode();
+                    h = h * 31 + s.mountainBoostStart01.GetHashCode();
+                    h = h * 31 + s.mountainPeakPower.GetHashCode();
+                    h = h * 31 + s.ridgeStrength.GetHashCode();
+                    h = h * 31 + s.lowlandFlattenStrength.GetHashCode();
+                    h = h * 31 + s.lowlandThreshold01.GetHashCode();
+                    h = h * 31 + s.valleyCarveStrength.GetHashCode();
+                    h = h * 31 + s.coastalFalloffStrength.GetHashCode();
+                    h = h * 31 + s.continentInfluence.GetHashCode();
+                    h = h * 31 + s.detailStrength.GetHashCode();
+                }
+
                 if (config.biomes != null)
                 {
                     for (int i = 0; i < config.biomes.Count; i++)

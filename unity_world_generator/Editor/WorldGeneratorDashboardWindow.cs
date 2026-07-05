@@ -23,7 +23,7 @@ namespace AaaWorldGen.Editor
         private static readonly string[] SectionLabels =
         {
             "  Setup",
-            "  Terrain",
+            "  Terrain Studio",
             "  World Layout",
             "  Biomes",
             "  Spawns & Perf",
@@ -49,7 +49,7 @@ namespace AaaWorldGen.Editor
         {
             WorldGeneratorDashboardWindow window = GetWindow<WorldGeneratorDashboardWindow>();
             window.titleContent = new GUIContent("WorldGen Studio");
-            window.minSize = new Vector2(1080f, 640f);
+            window.minSize = new Vector2(1180f, 700f);
             window.Show();
         }
 
@@ -74,7 +74,7 @@ namespace AaaWorldGen.Editor
             WorldGenEditorUi.EnsureStyles();
             WorldGenEditorUi.DrawTopBanner(
                 "WorldGen Studio",
-                "Pro studio — map sizes, heightmap styles, terrain bake, biomes, cities, MMO spawns.");
+                "Terrain sculpt studio — mountains, plains, coasts, biomes. Live preview as you drag sliders.");
 
             DrawCommandRail();
 
@@ -325,77 +325,78 @@ namespace AaaWorldGen.Editor
 
         private void DrawTerrainSection()
         {
-            WorldGenEditorUi.BeginPanel("Heightmap Style", "One-click terrain personality — live preview updates as you edit.");
+            WorldGenEditorUi.BeginPanel("Heightmap Presets", "Starting points — then sculpt with sliders on the right.");
             EditorGUILayout.BeginHorizontal();
             for (int i = 0; i < 4; i++)
             {
                 if (WorldGenEditorUi.DrawPresetCard(
                         WorldGenStudioPresets.HeightmapNames[i],
                         WorldGenStudioPresets.HeightmapHints[i],
-                        WorldGenStudioPresets.HeightmapAccentColors[i]))
+                        WorldGenStudioPresets.HeightmapAccentColors[i],
+                        true))
                 {
                     ApplyHeightmapProfile((WorldGenStudioPresets.HeightmapProfileId)i);
                 }
             }
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.BeginHorizontal();
             for (int i = 4; i < 7; i++)
             {
                 if (WorldGenEditorUi.DrawPresetCard(
                         WorldGenStudioPresets.HeightmapNames[i],
                         WorldGenStudioPresets.HeightmapHints[i],
                         WorldGenStudioPresets.HeightmapAccentColors[i],
-                        i >= 5))
+                        true))
                 {
                     ApplyHeightmapProfile((WorldGenStudioPresets.HeightmapProfileId)i);
                 }
             }
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.BeginHorizontal();
-            WorldGenEditorUi.DrawStatusChip($"Style: {WorldGenStudioPresets.HeightmapNames[(int)selectedHeightmap]}", WorldGenStudioPresets.HeightmapAccentColors[(int)selectedHeightmap]);
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.LabelField("Resolution", GUILayout.Width(64f));
-            int res = config.terrainGeneration.heightmapResolution;
-            if (WorldGenEditorUi.DrawMiniButton("Fast 129", res == 129)) { ApplyHeightmapResolution(129); }
-            if (WorldGenEditorUi.DrawMiniButton("Std 257", res == 257)) { ApplyHeightmapResolution(257); }
-            if (WorldGenEditorUi.DrawMiniButton("HQ 513", res == 513)) { ApplyHeightmapResolution(513); }
-            if (WorldGenEditorUi.DrawMiniButton("Ultra 1025", res == 1025)) { ApplyHeightmapResolution(1025); }
             EditorGUILayout.EndHorizontal();
             WorldGenEditorUi.EndPanel();
 
-            WorldGenEditorUi.BeginPanel("Height Preview", "Live map — toggles Biomes / Height / Hybrid. Updates as you edit.");
-            WorldGenTerrainPreview.DrawPreview(config, 360);
-            WorldGenEditorUi.EndPanel();
-
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.BeginVertical(GUILayout.Width(300f));
-            WorldGenEditorUi.BeginPanel("World Dimensions");
-            DrawProperty("worldSeed");
-            DrawProperty("worldSizeInChunks");
-            DrawProperty("chunkSizeMeters");
-            DrawProperty("maxHeightMeters");
-            DrawProperty("seaLevel01");
+
+            EditorGUILayout.BeginVertical(GUILayout.Width(440f));
+            WorldGenEditorUi.BeginPanel("Live World Map", "Drag sculpt sliders — preview updates in real time.");
+            WorldGenLivePreview.PreviewResolution = 400;
+            WorldGenTerrainPreview.DrawPreview(config, 400);
             WorldGenEditorUi.EndPanel();
             EditorGUILayout.EndVertical();
 
             EditorGUILayout.BeginVertical();
-            WorldGenEditorUi.BeginPanel("Unity Terrain", "Splat maps from biome textures. Assign default + per-biome diffuse in Biomes tab.");
-            DrawProperty("terrainGeneration");
+            WorldGenEditorUi.BeginPanel("Terrain Sculpt", "Mountains, plains, valleys, coastlines, noise.");
+            WorldGenTerrainSculptPanel.Draw(config, NotifySculptChanged);
             WorldGenEditorUi.EndPanel();
-            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.BeginHorizontal();
+            if (WorldGenEditorUi.DrawMiniButton("129", config.terrainGeneration.heightmapResolution == 129))
+            {
+                ApplyHeightmapResolution(129);
+            }
+            if (WorldGenEditorUi.DrawMiniButton("257", config.terrainGeneration.heightmapResolution == 257))
+            {
+                ApplyHeightmapResolution(257);
+            }
+            if (WorldGenEditorUi.DrawMiniButton("513", config.terrainGeneration.heightmapResolution == 513))
+            {
+                ApplyHeightmapResolution(513);
+            }
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.LabelField("Bake resolution", EditorStyles.miniLabel);
             EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
 
-            WorldGenEditorUi.BeginPanel("Height Noise");
-            DrawProperty("heightNoise");
-            DrawProperty("terrainShape");
-            WorldGenEditorUi.EndPanel();
+            EditorGUILayout.EndHorizontal();
+        }
 
-            WorldGenEditorUi.BeginPanel("Climate Fields");
-            DrawProperty("moistureNoise");
-            DrawProperty("temperatureNoise");
-            DrawProperty("biomeClimate");
-            WorldGenEditorUi.EndPanel();
+        private void NotifySculptChanged()
+        {
+            if (config == null)
+            {
+                return;
+            }
+
+            EditorUtility.SetDirty(config);
+            WorldGenLivePreview.NotifyConfigChanged(config);
+            Repaint();
         }
 
         private void DrawWorldSection()
@@ -658,9 +659,8 @@ namespace AaaWorldGen.Editor
             WorldGenStudioPresets.ApplyHeightmapProfile(config, profile);
             selectedHeightmap = profile;
             statusLine = $"Heightmap style: {WorldGenStudioPresets.HeightmapNames[(int)profile]}";
-            WorldGenTerrainPreview.Invalidate();
+            NotifySculptChanged();
             RefreshValidation();
-            Repaint();
         }
 
         private void ApplyHeightmapResolution(int resolution)
