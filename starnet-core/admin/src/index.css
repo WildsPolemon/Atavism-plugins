@@ -13,3 +13,5 @@ body {
 .glass {
   @apply rounded-xl border border-ainur-border bg-white shadow-card;
 }
+
+.inp { @apply w-full rounded-lg border border-ainur-border px-3 py-2 text-sm focus:border-ainur-blue focus:outline-none; }

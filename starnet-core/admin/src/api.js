@@ -23,9 +23,19 @@ export const api = {
   saveSettings: (d) => req('/api/settings', { method: 'PUT', body: JSON.stringify(d) }),
   categories: () => req('/api/products/categories'),
   createCategory: (d) => req('/api/products/categories', { method: 'POST', body: JSON.stringify(d) }),
-  products: (page, search) => req(`/api/products?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ''}`),
+  updateCategory: (id, d) => req(`/api/products/categories/${id}`, { method: 'PATCH', body: JSON.stringify(d) }),
+  deleteCategory: (id) => req(`/api/products/categories/${id}`, { method: 'DELETE' }),
+  products: (page, search, filters = {}) => {
+    const q = new URLSearchParams({ page });
+    if (search) q.set('search', search);
+    if (filters.type) q.set('type', filters.type);
+    if (filters.category_id) q.set('category_id', filters.category_id);
+    if (filters.group_id) q.set('group_id', filters.group_id);
+    return req(`/api/products?${q}`);
+  },
   createProduct: (d) => req('/api/products', { method: 'POST', body: JSON.stringify(d) }),
   updateProduct: (id, d) => req(`/api/products/${id}`, { method: 'PATCH', body: JSON.stringify(d) }),
+  generateBarcode: (id) => req(`/api/products/${id}/barcode`, { method: 'POST' }),
   stock: (wid) => req(`/api/warehouse/stock${wid ? `?warehouse_id=${wid}` : ''}`),
   warehouses: () => req('/api/warehouse/warehouses'),
   warehouseOps: () => req('/api/warehouse/operations'),

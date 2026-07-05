@@ -9,9 +9,11 @@ class ProductModel extends Model
     protected $table = 'products';
     protected $primaryKey = 'id';
     protected $allowedFields = [
-        'name', 'sku', 'barcode', 'description', 'category_id', 'type', 'unit',
-        'is_weighted', 'plu', 'purchase_price', 'retail_price', 'sale_price',
-        'cost_price', 'image_url', 'active', 'created_at', 'updated_at',
+        'name', 'sku', 'barcode', 'product_code', 'description', 'category_id', 'group_id',
+        'type', 'unit', 'is_weighted', 'plu', 'purchase_price', 'retail_price', 'sale_price',
+        'cost_price', 'markup_percent', 'tax_percent', 'discount_percent', 'min_stock',
+        'expiry_date', 'free_price', 'packaging_qty', 'country', 'supplier_id',
+        'image_url', 'image_urls', 'estore_visible', 'active', 'created_at', 'updated_at',
     ];
     protected $useTimestamps = false;
 }

@@ -19,8 +19,13 @@
 |------|-------------|
 | `admin-login.png` | Login |
 | `admin-dashboard.png` | Головна / overview |
-| `admin-products-form.png` | Full product add form |
-| `admin-products.png` | Product list |
+| `admin-products-list.png` | Товари і послуги — список, фільтри |
+| `admin-products-categories.png` | Управління групами та категоріями |
+| `admin-products-create-general.png` | Створити товар — загальне (тип, код, категорії) |
+| `admin-products-create-prices.png` | Створити товар — ціни, націнка, податок |
+| `admin-products-create-warehouse.png` | Створити товар — склад, постачальник, залишки |
+| `admin-products-form.png` | (legacy) форма товару |
+| `admin-products.png` | (legacy) список товарів |
 | `admin-crm.png` | CRM |
 
 ## Reference

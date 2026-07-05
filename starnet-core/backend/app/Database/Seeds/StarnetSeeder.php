@@ -46,20 +46,29 @@ class StarnetSeeder extends Seeder
 
         if ($this->db->table('warehouses')->countAllResults() === 0) {
             $whId = $this->db->table('warehouses')->insert(['name' => 'Основний склад', 'address' => 'Магазин №1', 'active' => 1]);
-            $catId = $this->db->table('categories')->insert(['name' => 'Загальне', 'sort_order' => 0]);
+            $this->db->table('categories')->insert(['name' => 'Головна', 'sort_order' => 0, 'is_group' => 1]);
+            $groupId = $this->db->insertID();
+            $this->db->table('categories')->insert(['name' => 'Випічка', 'sort_order' => 1, 'is_group' => 0]);
+            $catBakery = $this->db->insertID();
+            $this->db->table('categories')->insert(['name' => 'Молочні', 'sort_order' => 2, 'is_group' => 0]);
+            $catDairy = $this->db->insertID();
 
             foreach ([
-                ['Хліб білий', 'BR001', '4820000000001', 25, 15],
-                ['Молоко 1л', 'ML001', '4820000000002', 35, 28],
-                ['Яблука', 'FR001', '2001', 45, 30],
-            ] as [$name, $sku, $barcode, $retail, $cost]) {
-                $pid = $this->db->table('products')->insert([
+                ['Хліб білий', 'BR001', '4820000000001', 25, 15, $catBakery],
+                ['Молоко 1л', 'ML001', '4820000000002', 35, 28, $catDairy],
+                ['Яблука', 'FR001', '2001', 45, 30, $catDairy],
+            ] as [$name, $sku, $barcode, $retail, $cost, $tagCat]) {
+                $this->db->table('products')->insert([
                     'name' => $name, 'sku' => $sku, 'barcode' => $barcode,
-                    'category_id' => $catId, 'retail_price' => $retail, 'cost_price' => $cost,
+                    'category_id' => $tagCat, 'group_id' => $groupId,
+                    'retail_price' => $retail, 'cost_price' => $cost,
                     'unit' => str_contains($name, 'Ябл') ? 'кг' : 'шт',
                     'is_weighted' => str_contains($name, 'Ябл') ? 1 : 0,
                     'active' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
                 ]);
+                $pid = $this->db->insertID();
+                $this->db->table('products')->where('id', $pid)->update(['product_code' => 'P' . str_pad((string) $pid, 6, '0', STR_PAD_LEFT)]);
+                $this->db->table('product_categories')->replace(['product_id' => $pid, 'category_id' => $tagCat]);
                 $this->db->table('stock')->replace(['warehouse_id' => $whId, 'product_id' => $pid, 'quantity' => 100]);
             }
         }

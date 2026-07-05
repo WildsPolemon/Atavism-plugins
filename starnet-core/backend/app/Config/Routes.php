@@ -24,9 +24,12 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
 
         $routes->get('products/categories', 'Api\ProductController::categories');
         $routes->post('products/categories', 'Api\ProductController::createCategory');
+        $routes->patch('products/categories/(:num)', 'Api\ProductController::updateCategory/$1');
+        $routes->delete('products/categories/(:num)', 'Api\ProductController::deleteCategory/$1');
         $routes->get('products', 'Api\ProductController::index');
         $routes->post('products', 'Api\ProductController::create');
         $routes->patch('products/(:num)', 'Api\ProductController::update/$1');
+        $routes->post('products/(:num)/barcode', 'Api\ProductController::generateBarcode/$1');
 
         $routes->get('export/products', 'Api\ExportController::products');
         $routes->get('export/customers', 'Api\ExportController::customers');
