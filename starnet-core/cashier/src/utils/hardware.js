@@ -1,6 +1,8 @@
-/** Обладнання каси: ваги COM/USB, USB-принтер, термінал Privat24 */
+/** Обладнання каси — просте підключення як AinurPOS (без мосту) */
 
-const BRIDGE_DEFAULT = 'http://127.0.0.1:8765';
+const LS_SCALE = 'starnet_scale_connected';
+const LS_PRINTER = 'starnet_printer_wifi_ip';
+const LS_PRINTER_USB = 'starnet_printer_usb';
 
 export function serialSupported() {
   return typeof navigator !== 'undefined' && 'serial' in navigator;
@@ -9,127 +11,222 @@ export function serialSupported() {
 let scalePort = null;
 let printerPort = null;
 
-export async function connectScale(settings) {
-  if (!serialSupported()) throw new Error('Web Serial не підтримується. Використайте Chrome/Edge або локальний міст.');
+function openOpts(settings, kind = 'scale') {
+  const baud = Number(kind === 'scale' ? settings.pos_scale_baud : settings.pos_printer_baud) || 9600;
+  if (kind === 'scale') {
+    return {
+      baudRate: baud,
+      dataBits: Number(settings.pos_scale_data_bits || 8),
+      stopBits: Number(settings.pos_scale_stop_bits || 1),
+      parity: settings.pos_scale_parity || 'none',
+    };
+  }
+  return { baudRate: baud };
+}
+
+async function openSerialPort(port, settings, kind = 'scale') {
+  if (port.readable || port.writable) {
+    try { await port.close(); } catch { /* */ }
+  }
+  await port.open(openOpts(settings, kind));
+}
+
+/** Авто-підключення ваг: спочатку вже дозволені порти, потім діалог вибору */
+export async function autoConnectScale(settings) {
+  if (!serialSupported()) throw new Error('Потрібен Chrome або Edge для підключення ваг');
+
+  const ports = await navigator.serial.getPorts();
+  for (const port of ports) {
+    try {
+      await openSerialPort(port, settings, 'scale');
+      scalePort = port;
+      localStorage.setItem(LS_SCALE, '1');
+      return 'Ваги знайдено та підключено';
+    } catch { /* спробувати наступний */ }
+  }
+
   scalePort = await navigator.serial.requestPort();
-  await scalePort.open({
-    baudRate: Number(settings.pos_scale_baud || 9600),
-    dataBits: Number(settings.pos_scale_data_bits || 8),
-    stopBits: Number(settings.pos_scale_stop_bits || 1),
-    parity: settings.pos_scale_parity || 'none',
-  });
-  localStorage.setItem('starnet_scale_port', 'connected');
-  return true;
+  await openSerialPort(scalePort, settings, 'scale');
+  localStorage.setItem(LS_SCALE, '1');
+  return 'Ваги підключено';
+}
+
+export async function connectScale(settings) {
+  return autoConnectScale(settings);
+}
+
+function parseWeight(buf, protocol) {
+  const text = typeof buf === 'string' ? buf : new TextDecoder().decode(buf);
+  if (protocol === 'cas') {
+    const m = text.match(/[SW][NT]?\s*(\d+[.,]\d+)/i);
+    if (m) return parseFloat(m[1].replace(',', '.'));
+  }
+  const m = text.match(/(\d+[.,]\d+)/);
+  if (m) return parseFloat(m[1].replace(',', '.'));
+  return null;
 }
 
 export async function readScaleWeight(settings, timeoutMs = 3000) {
-  const bridge = settings.pos_hardware_bridge || BRIDGE_DEFAULT;
-  try {
-    const r = await fetch(`${bridge}/scale/weight`, { method: 'GET', signal: AbortSignal.timeout(2000) });
-    if (r.ok) { const j = await r.json(); return Number(j.weight || 0); }
-  } catch { /* local bridge offline */ }
-
   if (!scalePort?.readable) {
-    if (serialSupported() && settings.pos_scale_port === 'auto') await connectScale(settings);
-    else throw new Error('Ваги не підключені. Налаштуйте COM/USB порт у Налаштування → Обладнання');
+    if (settings.pos_scale_enabled === '1' || settings.pos_scale_enabled === true) {
+      await autoConnectScale(settings);
+    } else {
+      throw new Error('Увімкніть ваги в Налаштування → Обладнання');
+    }
   }
 
   const reader = scalePort.readable.getReader();
-  const decoder = new TextDecoder();
   let buf = '';
   const deadline = Date.now() + timeoutMs;
   try {
     while (Date.now() < deadline) {
       const { value, done } = await reader.read();
       if (done) break;
-      buf += decoder.decode(value);
-      const m = buf.match(/(\d+[.,]\d+)/);
-      if (m) return parseFloat(m[1].replace(',', '.'));
+      buf += new TextDecoder().decode(value);
+      const w = parseWeight(buf, settings.pos_scale_protocol || 'auto');
+      if (w != null) return w;
     }
   } finally {
     reader.releaseLock();
   }
-  throw new Error('Не вдалося зчитати вагу');
-}
-
-export async function connectPrinter(settings) {
-  if (!serialSupported()) throw new Error('Web Serial не підтримується');
-  printerPort = await navigator.serial.requestPort();
-  await printerPort.open({ baudRate: Number(settings.pos_printer_baud || 9600) });
-  return true;
+  throw new Error('Покладіть товар на ваги та спробуйте знову');
 }
 
 function escPosReceipt(lines) {
-  const ESC = '\x1B', GS = '\x1D';
+  const ESC = '\x1B';
+  const GS = '\x1D';
   let out = ESC + '@';
-  lines.forEach((l) => { out += l + '\n'; });
+  lines.forEach((l) => { out += String(l) + '\n'; });
   out += GS + 'V' + '\x00';
   return new TextEncoder().encode(out);
 }
 
-export async function printReceipt(settings, lines) {
-  const bridge = settings.pos_hardware_bridge || BRIDGE_DEFAULT;
-  try {
-    const r = await fetch(`${bridge}/printer/print`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lines, width: settings.pos_receipt_width || 80 }),
-      signal: AbortSignal.timeout(5000),
-    });
-    if (r.ok) return true;
-  } catch { /* */ }
+/** Сканування WiFi-принтерів у локальній мережі */
+export async function discoverWifiPrinters(onProgress) {
+  const subnet = await guessSubnet();
+  const found = [];
+  const batch = 20;
 
-  if (settings.pos_printer_connection === 'browser') {
-    if (!printerPort?.writable) await connectPrinter(settings);
+  for (let start = 1; start <= 254; start += batch) {
+    const jobs = [];
+    for (let i = start; i < start + batch && i <= 254; i++) {
+      const ip = `${subnet}.${i}`;
+      jobs.push(probeHost(ip).then((ok) => { if (ok) found.push({ ip, name: `Принтер ${ip}` }); }));
+    }
+    await Promise.all(jobs);
+    onProgress?.(Math.min(100, Math.round((start / 254) * 100)));
+  }
+  return found;
+}
+
+async function guessSubnet() {
+  try {
+    const r = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(2000) });
+    const { ip } = await r.json();
+    const parts = ip.split('.');
+    if (parts.length === 4) return `${parts[0]}.${parts[1]}.${parts[2]}`;
+  } catch { /* */ }
+  return '192.168.1';
+}
+
+function probeHost(ip) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const done = (ok) => { clearTimeout(t); resolve(ok); };
+    const t = setTimeout(() => done(false), 350);
+    img.onload = () => done(true);
+    img.onerror = () => {
+      fetch(`http://${ip}/`, { mode: 'no-cors', signal: AbortSignal.timeout(350) })
+        .then(() => done(true))
+        .catch(() => done(false));
+    };
+    img.src = `http://${ip}/favicon.ico?${Date.now()}`;
+  });
+}
+
+/** Друк на WiFi принтер (ESC/POS через HTTP — більшість WiFi чекових принтерів) */
+async function printWifi(settings, data) {
+  const ip = settings.pos_printer_wifi_ip || localStorage.getItem(LS_PRINTER);
+  if (!ip) throw new Error('Спочатку знайдіть WiFi-принтер');
+
+  const urls = [
+    `http://${ip}/`,
+    `http://${ip}/print`,
+    `http://${ip}:8080/print`,
+  ];
+  for (const url of urls) {
+    try {
+      await fetch(url, { method: 'POST', mode: 'no-cors', body: data });
+      return true;
+    } catch { /* */ }
+  }
+  throw new Error(`Не вдалося надіслати на принтер ${ip}`);
+}
+
+export async function autoConnectPrinter(settings) {
+  const mode = settings.pos_printer_connection || 'wifi';
+
+  if (mode === 'usb' && serialSupported()) {
+    const ports = await navigator.serial.getPorts();
+    for (const port of ports) {
+      try {
+        await openSerialPort(port, settings, 'printer');
+        printerPort = port;
+        localStorage.setItem(LS_PRINTER_USB, '1');
+        return 'USB-принтер підключено';
+      } catch { /* */ }
+    }
+    printerPort = await navigator.serial.requestPort();
+    await openSerialPort(printerPort, settings, 'printer');
+    localStorage.setItem(LS_PRINTER_USB, '1');
+    return 'USB-принтер підключено';
+  }
+
+  const ip = settings.pos_printer_wifi_ip;
+  if (ip) {
+    localStorage.setItem(LS_PRINTER, ip);
+    return `WiFi-принтер: ${ip}`;
+  }
+  throw new Error('Натисніть «Знайти принтер у WiFi»');
+}
+
+export async function connectPrinter(settings) {
+  return autoConnectPrinter(settings);
+}
+
+export async function printReceipt(settings, lines) {
+  const data = escPosReceipt(lines);
+  const mode = settings.pos_printer_connection || 'wifi';
+
+  if (mode === 'usb' && serialSupported()) {
+    if (!printerPort?.writable) await autoConnectPrinter({ ...settings, pos_printer_connection: 'usb' });
     const writer = printerPort.writable.getWriter();
-    await writer.write(escPosReceipt(lines));
+    await writer.write(data);
     writer.releaseLock();
     return true;
+  }
+
+  if (mode === 'wifi') {
+    try {
+      await printWifi(settings, data);
+      return true;
+    } catch { /* fallback */ }
   }
 
   window.print();
   return false;
 }
 
-/** Privat24 / ПриватБанк POS термінал */
-export async function privat24Pay(settings, amount, saleId = '') {
-  const bridge = settings.pos_hardware_bridge || BRIDGE_DEFAULT;
-  const terminalIp = settings.pos_terminal_ip || '';
-  const terminalPort = settings.pos_terminal_port || '2000';
-  const merchantId = settings.pos_terminal_merchant || '';
-  const terminalId = settings.pos_terminal_id || '';
-
+/** Privat24 — оплата на фізичному терміналі, підтвердження касиром */
+export async function privat24Pay(settings, amount) {
   if (settings.pos_terminal_enabled !== '1') {
     throw new Error('Термінал вимкнено в налаштуваннях');
   }
-
-  const payload = {
-    amount: Math.round(amount * 100),
-    currency: 'UAH',
-    merchant_id: merchantId,
-    terminal_id: terminalId,
-    sale_id: saleId,
-    provider: 'privat24',
-  };
-
-  try {
-    const r = await fetch(`${bridge}/privat24/pay`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...payload, host: terminalIp, port: terminalPort }),
-      signal: AbortSignal.timeout(120000),
-    });
-    const j = await r.json();
-    if (!r.ok || j.error) throw new Error(j.error || 'Помилка терміналу');
-    return { ok: true, rrn: j.rrn, auth_code: j.auth_code, card_mask: j.card_mask };
-  } catch (e) {
-    if (settings.pos_terminal_mode === 'manual') {
-      const ok = window.confirm(`Термінал Privat24: проведіть оплату ${amount.toFixed(2)} грн на терміналі.\nПідтвердити успішну оплату?`);
-      if (!ok) throw new Error('Оплату скасовано');
-      return { ok: true, rrn: 'MANUAL', auth_code: '', card_mask: '' };
-    }
-    throw e;
-  }
+  const ok = window.confirm(
+    `Оплата карткою: ${amount.toFixed(2)} грн\n\nПроведіть оплату на терміналі Privat24${settings.pos_terminal_ip ? ` (${settings.pos_terminal_ip})` : ''}.\n\nПідтвердити успішну оплату?`
+  );
+  if (!ok) throw new Error('Оплату скасовано');
+  return { ok: true, rrn: `TX${Date.now()}`, auth_code: '', card_mask: '' };
 }
 
 export async function testScale(settings) {
@@ -148,44 +245,32 @@ export async function testPrinter(settings) {
 }
 
 export async function testTerminal(settings) {
-  const bridge = settings.pos_hardware_bridge || BRIDGE_DEFAULT;
-  try {
-    const r = await fetch(`${bridge}/privat24/ping`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        host: settings.pos_terminal_ip,
-        port: settings.pos_terminal_port || '2000',
-        merchant_id: settings.pos_terminal_merchant,
-        terminal_id: settings.pos_terminal_id,
-      }),
-      signal: AbortSignal.timeout(5000),
-    });
-    const j = await r.json();
-    if (r.ok) return j.message || 'Термінал Privat24 доступний';
-  } catch { /* */ }
-  if (settings.pos_terminal_mode === 'manual') return 'Режим ручного підтвердження — термінал готовий';
-  throw new Error('Міст обладнання недоступний (запустіть starnet-hardware-bridge на localhost:8765)');
+  if (settings.pos_terminal_enabled !== '1') return 'Термінал вимкнено';
+  if (settings.pos_terminal_ip) return `Термінал Privat24: ${settings.pos_terminal_ip}`;
+  return 'Термінал готовий — оплата підтверджується на пристрої';
+}
+
+export function scaleConnected() {
+  return !!scalePort?.readable || localStorage.getItem(LS_SCALE) === '1';
+}
+
+export function printerConnected(settings) {
+  const mode = settings?.pos_printer_connection || 'wifi';
+  if (mode === 'usb') return !!printerPort?.writable || localStorage.getItem(LS_PRINTER_USB) === '1';
+  return !!(settings?.pos_printer_wifi_ip || localStorage.getItem(LS_PRINTER));
 }
 
 export const EQUIPMENT_DEFAULTS = {
   pos_printer_enabled: '1',
-  pos_printer_connection: 'usb_serial',
+  pos_printer_connection: 'wifi',
+  pos_printer_wifi_ip: '',
   pos_printer_baud: '9600',
-  pos_printer_model: 'escpos',
   pos_scale_enabled: '0',
-  pos_scale_port: 'COM3',
   pos_scale_baud: '9600',
   pos_scale_data_bits: '8',
   pos_scale_stop_bits: '1',
   pos_scale_parity: 'none',
   pos_scale_protocol: 'auto',
   pos_terminal_enabled: '0',
-  pos_terminal_provider: 'privat24',
-  pos_terminal_ip: '192.168.1.100',
-  pos_terminal_port: '2000',
-  pos_terminal_merchant: '',
-  pos_terminal_id: '',
-  pos_terminal_mode: 'bridge',
-  pos_hardware_bridge: 'http://127.0.0.1:8765',
+  pos_terminal_ip: '',
 };

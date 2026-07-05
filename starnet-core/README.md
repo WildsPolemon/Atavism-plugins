@@ -41,11 +41,8 @@ cd starnet-core/landing && npm i && npm run dev
 
 ## Обладнання каси
 
-Ваги (COM/USB), USB-принтер чека, термінал **Privat24** — **Каса → Меню → Налаштування → Обладнання**.
-
-```bash
-cd starnet-core/hardware-bridge && npm i && npm start
-```
+Ваги (USB), WiFi-принтер чека, термінал Privat24 — **Каса → Меню → Налаштування → Обладнання**.  
+Просте підключення без мостів: **Знайти ваги** / **Знайти принтер у WiFi**.
 
 Детально: `docs/HARDWARE.md`
 

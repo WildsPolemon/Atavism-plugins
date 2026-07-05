@@ -89,7 +89,8 @@ class StarnetSeeder extends Seeder
             'pos_sort_by' => 'name',
             'pos_sort_dir' => 'asc',
             'pos_printer_enabled' => '1',
-            'pos_printer_connection' => 'usb_serial',
+            'pos_printer_connection' => 'wifi',
+            'pos_printer_wifi_ip' => '',
             'pos_printer_baud' => '9600',
             'pos_printer_model' => 'escpos',
             'pos_receipt_font' => '4',
@@ -102,13 +103,7 @@ class StarnetSeeder extends Seeder
             'pos_scale_parity' => 'none',
             'pos_scale_protocol' => 'auto',
             'pos_terminal_enabled' => '0',
-            'pos_terminal_provider' => 'privat24',
-            'pos_terminal_ip' => '192.168.1.100',
-            'pos_terminal_port' => '2000',
-            'pos_terminal_merchant' => '',
-            'pos_terminal_id' => '',
-            'pos_terminal_mode' => 'bridge',
-            'pos_hardware_bridge' => 'http://127.0.0.1:8765',
+            'pos_terminal_ip' => '',
         ];
         foreach ($defaults as $k => $v) {
             if (!$this->db->table('settings')->where('key', $k)->countAllResults()) {
