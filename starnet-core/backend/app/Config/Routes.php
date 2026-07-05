@@ -3,7 +3,7 @@
 use CodeIgniter\Router\RouteCollection;
 
 /** @var RouteCollection $routes */
-$routes->get('/', static fn () => 'AinurPOS API v1');
+$routes->get('/', static fn () => 'StarNet Core API v1');
 
 $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
     $routes->post('auth/login', 'Api\AuthController::login');
@@ -49,11 +49,18 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
         $routes->post('pos/sales/(:num)/return', 'Api\PosController::returnSale/$1');
         $routes->get('pos/xz-report', 'Api\PosController::xzReport');
         $routes->get('pos/shifts', 'Api\ShiftController::index');
+        $routes->get('pos/shifts/(:num)/xz-report', 'Api\ShiftController::xzReport/$1');
         $routes->get('pos/shifts/(:num)', 'Api\ShiftController::show/$1');
+        $routes->get('pos/my-registers', 'Api\ShiftController::myRegisters');
         $routes->get('pos/registers', 'Api\ShiftController::registers');
+        $routes->get('pos/registers/(:num)', 'Api\ShiftController::showRegister/$1');
         $routes->post('pos/registers', 'Api\ShiftController::createRegister');
+        $routes->patch('pos/registers/(:num)', 'Api\ShiftController::updateRegister/$1');
+        $routes->get('pos/users', 'Api\ShiftController::users');
         $routes->delete('pos/sales/(:num)/held', 'Api\PosController::cancelHeld/$1');
 
+        $routes->get('finance/accounts', 'Api\MoneyMovementController::accounts');
+        $routes->post('finance/accounts', 'Api\MoneyMovementController::createAccount');
         $routes->get('money-movements', 'Api\MoneyMovementController::index');
         $routes->post('money-movements', 'Api\MoneyMovementController::create');
 

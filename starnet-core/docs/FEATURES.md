@@ -13,10 +13,10 @@
 | Відкладений чек | hold/restore | ✅ |
 | Split pay (готівка + картка) | POS | ✅ |
 | Повернення | returnSale + restock | ✅ |
-| X/Z-звіти, зміна | ShiftsModal + XZReportModal + CloseShiftModal | ✅ |
+| X/Z-звіти, зміна | ShiftsModal + XZReportModal + CloseShiftModal + X/Z з адмінки | ✅ |
 | Повернення боргу | DebtReturnModal + debt-payment API | ✅ |
-| Каса та зміни (адмін) | `admin/shifts` | ✅ |
-| Рух грошей (адмін) | `admin/money` | ✅ |
+| Каса та зміни (адмін) | Прив'язка касирів, баланс кас, історія, X/Z | ✅ |
+| Рух грошей (адмін) | Рахунки магазин/каса/банк, прихід, витрата, переказ | ✅ |
 | Шаблони чеків / друк | receipt settings + print | ✅ |
 | Товари + автопошук штрихкоду | Products + Open Food Facts | ✅ |
 | Закупівлі постачальникам | `purchases/` | ✅ |

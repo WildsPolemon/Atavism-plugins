@@ -27,7 +27,7 @@ export default function Dashboard() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-ainur-text">Огляд</h1>
-      <p className="text-sm text-ainur-muted">AinurPOS — огляд бізнесу</p>
+      <p className="text-sm text-ainur-muted">StarNet Core — огляд бізнесу</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((k) => (
           <div key={k.l} className="glass p-5">

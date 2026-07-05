@@ -2,6 +2,7 @@
 
 namespace App\Database\Seeds;
 
+use App\Libraries\FinanceService;
 use CodeIgniter\Database\Seeder;
 
 class StarnetSeeder extends Seeder
@@ -74,7 +75,7 @@ class StarnetSeeder extends Seeder
         }
 
         $defaults = [
-            'company_name' => 'AinurPOS',
+            'company_name' => 'StarNet Core',
             'receipt_logo' => '',
             'receipt_footer' => 'Дякуємо за покупку!',
             'receipt_address' => 'м. Київ, вул. Прикладна 1',
@@ -111,15 +112,46 @@ class StarnetSeeder extends Seeder
             }
         }
 
-        if ($this->db->tableExists('cash_registers') && $this->db->table('cash_registers')->countAllResults() === 0) {
-            $storeId = $this->db->table('stores')->limit(1)->get()->getRow('id');
-            $this->db->table('cash_registers')->insert([
-                'name' => 'Каса №1',
-                'store_id' => $storeId,
-                'balance' => 0,
-                'active' => 1,
-                'created_at' => date('Y-m-d H:i:s'),
+        $this->db->table('settings')->where('key', 'company_name')->update(['value' => 'StarNet Core']);
+
+        $storeId = (int) ($this->db->table('stores')->limit(1)->get()->getRow('id') ?? 0);
+        $cashierId = (int) ($this->db->table('users')->where('email', 'cashier@starnetcore.local')->get()->getRow('id') ?? 0);
+
+        if ($this->db->tableExists('finance_accounts') && $this->db->table('finance_accounts')->countAllResults() === 0 && $storeId) {
+            $this->db->table('finance_accounts')->insert([
+                'name' => 'Рахунок магазину', 'type' => 'store', 'store_id' => $storeId,
+                'balance' => 0, 'active' => 1, 'created_at' => date('Y-m-d H:i:s'),
             ]);
+            $this->db->table('finance_accounts')->insert([
+                'name' => 'Банківський рахунок', 'type' => 'bank', 'store_id' => $storeId,
+                'balance' => 0, 'bank_details' => 'UA00...', 'active' => 1, 'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        if ($this->db->tableExists('cash_registers')) {
+            if ($this->db->table('cash_registers')->countAllResults() === 0 && $storeId) {
+                $this->db->table('cash_registers')->insert([
+                    'name' => 'Каса №1', 'code' => 'N1', 'store_id' => $storeId,
+                    'terminal_info' => 'Каса', 'balance' => 0, 'active' => 1,
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
+            $regs = $this->db->table('cash_registers')->get()->getResultArray();
+            $finance = class_exists(FinanceService::class) ? new FinanceService() : null;
+            foreach ($regs as $reg) {
+                if (empty($reg['account_id']) && $finance && $this->db->tableExists('finance_accounts')) {
+                    $aid = $finance->createCashAccount((int) $reg['id'], $reg['name'], (int) ($reg['store_id'] ?: $storeId), (float) $reg['balance']);
+                    if (empty($reg['code'])) {
+                        $this->db->table('cash_registers')->where('id', $reg['id'])->update(['code' => 'N' . $reg['id']]);
+                    }
+                }
+                if ($cashierId && $this->db->tableExists('register_users')) {
+                    $exists = $this->db->table('register_users')->where('register_id', $reg['id'])->where('user_id', $cashierId)->countAllResults();
+                    if (!$exists) {
+                        $this->db->table('register_users')->insert(['register_id' => $reg['id'], 'user_id' => $cashierId]);
+                    }
+                }
+            }
         }
     }
 }

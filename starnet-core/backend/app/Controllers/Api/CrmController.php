@@ -2,6 +2,7 @@
 
 namespace App\Controllers\Api;
 
+use App\Libraries\FinanceService;
 use App\Models\CustomerModel;
 
 class CrmController extends BaseApiController
@@ -80,15 +81,33 @@ class CrmController extends BaseApiController
         model(CustomerModel::class)->update($id, ['debt' => $newDebt]);
         $shift = $db->table('shifts')->where('status', 'open')->where('user_id', $jwt['sub'])->get()->getRowArray()
             ?: $db->table('shifts')->where('status', 'open')->get()->getRowArray();
-        $db->table('money_movements')->insert([
-            'type' => 'debt_payment',
-            'amount' => $amount,
-            'customer_id' => $id,
-            'user_id' => $jwt['sub'],
-            'shift_id' => $shift['id'] ?? null,
-            'notes' => $body['notes'] ?? 'Повернення боргу',
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
+        $accountId = null;
+        if ($shift && !empty($shift['register_id'])) {
+            $reg = $db->table('cash_registers')->where('id', $shift['register_id'])->get()->getRowArray();
+            $accountId = $reg['account_id'] ?? null;
+        }
+        if ($cash > 0 && $accountId) {
+            (new FinanceService())->record((int) $jwt['sub'], [
+                'type' => 'debt_payment',
+                'amount' => $cash,
+                'to_account_id' => $accountId,
+                'register_id' => $shift['register_id'] ?? null,
+                'shift_id' => $shift['id'] ?? null,
+                'customer_id' => $id,
+                'notes' => $body['notes'] ?? 'Погашення боргу',
+            ]);
+        } else {
+            $db->table('money_movements')->insert([
+                'type' => 'debt_payment',
+                'amount' => $amount,
+                'customer_id' => $id,
+                'user_id' => $jwt['sub'],
+                'shift_id' => $shift['id'] ?? null,
+                'register_id' => $shift['register_id'] ?? null,
+                'notes' => $body['notes'] ?? 'Погашення боргу',
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
         if ($shift && $cash > 0) {
             $db->table('shifts')->where('id', $shift['id'])->update([
                 'cash_sales' => (float) $shift['cash_sales'] + $cash,

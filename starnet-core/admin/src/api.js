@@ -69,9 +69,21 @@ export const api = {
   importProducts: (rows) => req('/api/import/products', { method: 'POST', body: JSON.stringify({ rows }) }),
   shifts: () => req('/api/pos/shifts'),
   shiftDetail: (id) => req(`/api/pos/shifts/${id}`),
+  shiftXzReport: (id, type = 'X') => req(`/api/pos/shifts/${id}/xz-report?type=${type}`),
   registers: () => req('/api/pos/registers'),
+  registerDetail: (id) => req(`/api/pos/registers/${id}`),
   createRegister: (d) => req('/api/pos/registers', { method: 'POST', body: JSON.stringify(d) }),
-  moneyMovements: (from, to) => req(`/api/money-movements${from ? `?from=${from}&to=${to || ''}` : ''}`),
+  updateRegister: (id, d) => req(`/api/pos/registers/${id}`, { method: 'PATCH', body: JSON.stringify(d) }),
+  shiftUsers: () => req('/api/pos/users'),
+  financeAccounts: () => req('/api/finance/accounts'),
+  createFinanceAccount: (d) => req('/api/finance/accounts', { method: 'POST', body: JSON.stringify(d) }),
+  moneyMovements: (from, to, accountId) => {
+    const q = new URLSearchParams();
+    if (from) q.set('from', from);
+    if (to) q.set('to', to);
+    if (accountId) q.set('account_id', accountId);
+    return req(`/api/money-movements${q.toString() ? `?${q}` : ''}`);
+  },
   createMoneyMovement: (d) => req('/api/money-movements', { method: 'POST', body: JSON.stringify(d) }),
 };
 

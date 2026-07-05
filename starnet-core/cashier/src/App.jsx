@@ -19,6 +19,8 @@ import ShiftsModal from './components/ShiftsModal';
 import XZReportModal from './components/XZReportModal';
 import DebtReturnModal from './components/DebtReturnModal';
 import CloseShiftModal from './components/CloseShiftModal';
+import RegisterSelectModal from './components/RegisterSelectModal';
+import OpenShiftModal from './components/OpenShiftModal';
 
 const priceOf = (p) => Number(p.sale_price || p.retail_price || 0);
 
@@ -57,6 +59,9 @@ export default function App() {
   const [debtOpen, setDebtOpen] = useState(false);
   const [debtors, setDebtors] = useState([]);
   const [closeShiftOpen, setCloseShiftOpen] = useState(false);
+  const [registerSelectOpen, setRegisterSelectOpen] = useState(false);
+  const [openShiftModal, setOpenShiftModal] = useState(null);
+  const [myRegisters, setMyRegisters] = useState([]);
   const [err, setErr] = useState('');
   const searchRef = useRef(null);
   const searchTimer = useRef(null);
@@ -92,6 +97,14 @@ export default function App() {
     api.categories().then((r) => setCategories(r.categories || []));
   }, []);
 
+  useEffect(() => {
+    if (user && !shift && getToken()) {
+      api.shift().then((r) => {
+        if (!r.shift) startShiftFlow();
+        else setShift(r.shift);
+      }).catch(() => {});
+    }
+  }, [user]);
   useEffect(() => { if (user) loadCatalog(); }, [categoryId, user, loadCatalog]);
   useEffect(() => { if (user) loadSuggestions(); }, [cart, user, loadSuggestions]);
 
@@ -108,7 +121,7 @@ export default function App() {
         setMenuOpen(false); setPayOpen(false); setCustomerOpen(false); setNewCustomerOpen(false);
         setEditItem(null); setJournalOpen(false); setSettingsOpen(false); setBarcodeOpen(false);
         setProductAddOpen(null); setCommentOpen(false); setShiftsOpen(false); setXzOpen(false);
-        setDebtOpen(false); setCloseShiftOpen(false);
+        setDebtOpen(false); setCloseShiftOpen(false); setRegisterSelectOpen(false); setOpenShiftModal(null);
       }
       if (e.key === 'f' || e.key === 'F') { if (!payOpen && !customerOpen && !settingsOpen) { e.preventDefault(); searchRef.current?.focus(); } }
       if (e.key === 'c' || e.key === 'C') { if (!payOpen && !settingsOpen) { e.preventDefault(); setCustomerOpen(true); } }
@@ -116,6 +129,16 @@ export default function App() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [payOpen, customerOpen, settingsOpen]);
+
+  const startShiftFlow = async () => {
+    const r = await api.myRegisters();
+    const regs = r.registers || [];
+    setMyRegisters(regs);
+    const available = regs.filter((x) => !x.open_shift);
+    if (!available.length) { setErr('Немає вільних кас'); return; }
+    if (available.length === 1) { setOpenShiftModal(available[0]); return; }
+    setRegisterSelectOpen(true);
+  };
 
   const login = async (e) => {
     e.preventDefault();
@@ -126,8 +149,16 @@ export default function App() {
       setUser(r.user);
       const s = await api.shift();
       setShift(s.shift);
-      if (!s.shift) await api.openShift(0).then((r) => setShift(r.shift || r));
+      if (!s.shift) await startShiftFlow();
     } catch (ex) { setErr(ex.message); }
+  };
+
+  const confirmOpenShift = async (openingCash) => {
+    const reg = openShiftModal;
+    const opened = await api.openShift(reg.id, openingCash);
+    setShift(opened.shift || opened);
+    setOpenShiftModal(null);
+    setRegisterSelectOpen(false);
   };
 
   const addToCart = async (p) => {
@@ -191,7 +222,7 @@ export default function App() {
     if (print_receipt) {
       if (settings.pos_printer_enabled === '1') {
         const lines = [
-          settings.company_name || 'AinurPOS',
+          settings.company_name || 'StarNet Core',
           settings.receipt_address || '',
           `Чек · ${new Date().toLocaleString('uk-UA')}`,
           ...soldItems.map((i) => `${i.name} x${i.qty} = ${fmt(i.price * i.qty)}`),
@@ -231,7 +262,7 @@ export default function App() {
       const r = await api.xzReport('X');
       setXzReport(r); setXzType('X'); setXzOpen(true);
     }
-    if (id === 'old-version') setErr('Класична версія AinurPOS — використовуйте поточний інтерфейс');
+    if (id === 'old-version') setErr('Стара версія недоступна в StarNet Core');
     if (id === 'debt-return') { setDebtors((await api.debtors()).customers || []); setDebtOpen(true); }
     if (id === 'cancel' && cart.length) setCart([]);
   };
@@ -250,7 +281,7 @@ export default function App() {
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1a3b5d] text-white">
             <div className="h-4 w-4 rounded-sm bg-white" />
           </div>
-          <span className="text-2xl font-bold text-[#1a3b5d]">AinurPOS</span>
+          <span className="text-2xl font-bold text-[#1a3b5d]">StarNet POS</span>
         </div>
         <form onSubmit={login} className="w-full max-w-md rounded-lg border border-ainur-border bg-white p-8 shadow-sm">
           <h2 className="mb-8 text-center text-xl text-ainur-text">Авторизація</h2>
@@ -311,7 +342,7 @@ export default function App() {
         />
       </div>
 
-      <FooterBar storeName={settings.company_name || 'AinurPOS'} shift={shift} onMenu={() => setMenuOpen(true)}
+      <FooterBar storeName={settings.company_name || 'StarNet Core'} shift={shift} onMenu={() => setMenuOpen(true)}
         onXReport={async () => { const r = await api.xzReport('X'); setXzReport(r); setXzType('X'); setXzOpen(true); }} />
 
       {menuOpen && <SideMenu user={user} onClose={() => setMenuOpen(false)} onAction={menuAction} />}
@@ -360,6 +391,16 @@ export default function App() {
         setDebtors(q ? all.filter((c) => c.name?.includes(q) || c.phone?.includes(q)) : all);
       }} onPay={(id, d) => api.debtPayment(id, d)} onClose={() => setDebtOpen(false)} />}
       {closeShiftOpen && <CloseShiftModal shift={shift} report={xzReport} onClose={() => setCloseShiftOpen(false)} onConfirm={confirmCloseShift} />}
+      {registerSelectOpen && (
+        <RegisterSelectModal
+          registers={myRegisters.filter((r) => !r.open_shift)}
+          onSelect={(r) => { setRegisterSelectOpen(false); setOpenShiftModal(r); }}
+          onClose={() => setRegisterSelectOpen(false)}
+        />
+      )}
+      {openShiftModal && (
+        <OpenShiftModal register={openShiftModal} onClose={() => setOpenShiftModal(null)} onConfirm={confirmOpenShift} />
+      )}
     </div>
   );
 }

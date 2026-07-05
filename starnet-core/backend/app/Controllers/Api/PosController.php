@@ -2,16 +2,35 @@
 
 namespace App\Controllers\Api;
 
+use App\Libraries\FinanceService;
 use App\Libraries\StockService;
 use App\Models\ProductModel;
 use App\Models\SaleModel;
 
 class PosController extends BaseApiController
 {
-    protected function openShift(int $userId): ?array
+    protected function openShift(int $userId, ?int $registerId = null): ?array
     {
-        return db_connect()->table('shifts')->where('status', 'open')->where('user_id', $userId)->get()->getRowArray()
-            ?: db_connect()->table('shifts')->where('status', 'open')->get()->getRowArray();
+        $db = db_connect();
+        if ($registerId) {
+            return $db->table('shifts')->where('status', 'open')->where('register_id', $registerId)->get()->getRowArray();
+        }
+        return $db->table('shifts')->where('status', 'open')->where('user_id', $userId)->get()->getRowArray()
+            ?: $db->table('shifts')->where('status', 'open')->get()->getRowArray();
+    }
+
+    protected function canUseRegister(int $userId, int $registerId): bool
+    {
+        $user = db_connect()->table('users')->where('id', $userId)->get()->getRowArray();
+        if (($user['role'] ?? '') === 'admin') return true;
+        return (bool) db_connect()->table('register_users')
+            ->where('register_id', $registerId)->where('user_id', $userId)->countAllResults();
+    }
+
+    protected function registerAccountId(int $registerId): ?int
+    {
+        $reg = db_connect()->table('cash_registers')->where('id', $registerId)->get()->getRowArray();
+        return $reg['account_id'] ?? null;
     }
 
     public function shift()
@@ -23,20 +42,28 @@ class PosController extends BaseApiController
     public function openShiftAction()
     {
         $jwt = service('jwtauth')->userFromRequest();
-        if ($this->openShift((int) $jwt['sub'])) {
-            return $this->err('Зміна вже відкрита');
+        $userId = (int) $jwt['sub'];
+        $body = $this->request->getJSON(true) ?? [];
+        $registerId = (int) ($body['register_id'] ?? 0);
+        $cash = (float) ($body['opening_cash'] ?? 0);
+        if (!$registerId) {
+            return $this->err('Оберіть касу');
         }
-        $cash = (float) (($this->request->getJSON(true) ?? [])['opening_cash'] ?? 0);
+        if (!$this->canUseRegister($userId, $registerId)) {
+            return $this->err('Немає доступу до цієї каси');
+        }
+        if ($this->openShift($userId, $registerId)) {
+            return $this->err('На цій касі вже відкрита зміна');
+        }
         $db = db_connect();
-        $register = $db->table('cash_registers')->where('active', 1)->orderBy('id')->limit(1)->get()->getRowArray();
         $id = $db->table('shifts')->insert([
-            'user_id' => $jwt['sub'],
-            'register_id' => $register['id'] ?? null,
+            'user_id' => $userId,
+            'register_id' => $registerId,
             'opened_at' => date('Y-m-d H:i:s'),
             'opening_cash' => $cash,
             'status' => 'open',
         ]);
-        return $this->ok(db_connect()->table('shifts')->where('id', $id)->get()->getRowArray(), 201);
+        return $this->ok($db->table('shifts')->where('id', $id)->get()->getRowArray(), 201);
     }
 
     public function closeShiftAction()
@@ -47,10 +74,14 @@ class PosController extends BaseApiController
             return $this->err('Немає відкритої зміни');
         }
         $cash = (float) (($this->request->getJSON(true) ?? [])['closing_cash'] ?? 0);
+        $expected = (float) $shift['opening_cash'] + (float) $shift['cash_sales'];
+        $variance = $cash - $expected;
         db_connect()->table('shifts')->where('id', $shift['id'])->update([
             'status' => 'closed',
             'closed_at' => date('Y-m-d H:i:s'),
             'closing_cash' => $cash,
+            'expected_cash' => $expected,
+            'variance' => $variance,
         ]);
         return $this->ok(db_connect()->table('shifts')->where('id', $shift['id'])->get()->getRowArray());
     }
@@ -203,6 +234,21 @@ class PosController extends BaseApiController
                 'cash_sales' => (float) $shift['cash_sales'] + $cash,
                 'card_sales' => (float) $shift['card_sales'] + $card,
             ]);
+            if ($cash > 0 && !empty($shift['register_id'])) {
+                $accountId = $this->registerAccountId((int) $shift['register_id']);
+                if ($accountId) {
+                    try {
+                        (new FinanceService())->record((int) $jwt['sub'], [
+                            'type' => 'sale_cash',
+                            'amount' => $cash,
+                            'to_account_id' => $accountId,
+                            'register_id' => $shift['register_id'],
+                            'shift_id' => $shift['id'],
+                            'notes' => 'Продаж #' . $saleId,
+                        ]);
+                    } catch (\Throwable) { /* account sync optional */ }
+                }
+            }
         }
 
         $db->transComplete();
