@@ -32,15 +32,23 @@ cp "$ROOT/deploy/index.php" "$BUILD/index.php"
 cp "$ROOT/deploy/htaccess-root" "$BUILD/.htaccess"
 cp "$ROOT/deploy/install.php" "$BUILD/install.php"
 cp "$ROOT/deploy/ok.txt" "$BUILD/ok.txt"
+cp "$ROOT/deploy/index.html" "$BUILD/index.html"
+cp "$ROOT/deploy/root-check.php" "$BUILD/root-check.php"
+cp "$ROOT/deploy/404-FIX.txt" "$BUILD/404-FIX.txt"
 cp -r "$ROOT/install" "$BUILD/install"
 cp -r "$ROOT/admin/dist" "$BUILD/admin"
 cp -r "$ROOT/cashier/dist" "$BUILD/cashier"
 cp -r "$ROOT/estore" "$BUILD/estore"
 
 cat > "$BUILD/index.html" << 'EOF'
-<!DOCTYPE html><html><head><meta charset="utf-8">
-<meta http-equiv="refresh" content="0;url=install.php"></head>
-<body><a href="install.php">Установка StarNet Core</a></body></html>
+<!DOCTYPE html>
+<html lang="uk">
+<head><meta charset="utf-8"><title>StarNet OK</title></head>
+<body style="font-family:sans-serif;text-align:center;padding:48px;background:#e8f5e9">
+  <h1 style="color:#2e7d32">✓ Файли на правильному місці</h1>
+  <p><a href="install.php" style="font-size:1.2rem">install.php</a> — установка</p>
+  <p style="color:#666;font-size:.9rem">404? Читайте 404-FIX.txt</p>
+</body></html>
 EOF
 
 cat > "$BUILD/INSTALL.txt" << 'EOF'
@@ -65,3 +73,10 @@ EOF
 echo "==> ZIP"
 (cd "$BUILD" && zip -rq "$ZIP" . -x "*.git*")
 ls -lh "$ZIP"
+
+# Мини-архив для поиска правильной папки
+DIAG="$OUT/upload-diagnostic.zip"
+rm -f "$DIAG"
+(cd "$ROOT/deploy" && zip -q "$DIAG" ok.txt index.html root-check.php 404-FIX.txt)
+cp "$ROOT/deploy/404-FIX.txt" "$OUT/404-FIX.txt"
+ls -lh "$DIAG"
