@@ -236,7 +236,7 @@ export async function testScale(settings) {
 
 export async function testPrinter(settings) {
   await printReceipt(settings, [
-    settings.company_name || 'StarNet Core',
+    settings.company_name || 'AinurPOS',
     '--- ТЕСТ ДРУКУ ---',
     new Date().toLocaleString('uk-UA'),
     'Принтер OK',

@@ -1,11 +1,11 @@
-# StarNet Core — повний аналог AinurPOS
+# AinurPOS — повний аналог
 
 Джерела: [ainurpos.com.ua](https://ainurpos.com.ua/)
 
 ## Статус реалізації
 
-| Модуль AinurPOS | StarNet Core | Статус |
-|-----------------|--------------|--------|
+| Модуль AinurPOS | Реалізація | Статус |
+|-----------------|------------|--------|
 | POS — продаж на одному екрані | `cashier/` | ✅ |
 | Сканер штрихкодів | Barcode API + миттєве додавання | ✅ |
 | Пошук клієнтів (ім'я, телефон, картка) | POS search + CRM | ✅ |
@@ -13,7 +13,10 @@
 | Відкладений чек | hold/restore | ✅ |
 | Split pay (готівка + картка) | POS | ✅ |
 | Повернення | returnSale + restock | ✅ |
-| X/Z-звіти, зміна | POS UI | ✅ |
+| X/Z-звіти, зміна | ShiftsModal + XZReportModal + CloseShiftModal | ✅ |
+| Повернення боргу | DebtReturnModal + debt-payment API | ✅ |
+| Каса та зміни (адмін) | `admin/shifts` | ✅ |
+| Рух грошей (адмін) | `admin/money` | ✅ |
 | Шаблони чеків / друк | receipt settings + print | ✅ |
 | Товари + автопошук штрихкоду | Products + Open Food Facts | ✅ |
 | Закупівлі постачальникам | `purchases/` | ✅ |

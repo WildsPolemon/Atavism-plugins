@@ -1,12 +1,14 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Package, Warehouse, Users, BarChart3, ShoppingCart, ClipboardList, ScanBarcode, Globe, Settings, Truck, Building2, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Package, Warehouse, Users, BarChart3, ShoppingCart, ClipboardList, ScanBarcode, Globe, Settings, Truck, Building2, CreditCard, Banknote, Wallet } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api, fmtUah } from './api';
 
 const NAV = [
   { to: '/', label: 'Головна', icon: LayoutDashboard, end: true },
   { to: '/products', label: 'Товари і послуги', icon: Package },
+  { to: '/shifts', label: 'Каса та зміни', icon: Banknote },
   { to: '/warehouse', label: 'Рух товару', icon: Warehouse },
+  { to: '/money', label: 'Рух грошей', icon: Wallet },
   { to: '/purchases', label: 'Закупівлі', icon: ClipboardList },
   { to: '/inventory', label: 'Інвентаризація', icon: ScanBarcode },
   { to: '/price-tags', label: 'Цінники', icon: ScanBarcode },
@@ -28,7 +30,7 @@ export default function Layout() {
         <div className="flex items-center gap-3 border-b border-ainur-border px-6 py-5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ainur-blue text-lg font-bold text-white">A</div>
           <div>
-            <p className="text-sm font-bold text-ainur-text">StarNet Core</p>
+            <p className="text-sm font-bold text-ainur-text">AinurPOS</p>
             <p className="text-xs text-ainur-muted">Адмін-панель</p>
           </div>
         </div>

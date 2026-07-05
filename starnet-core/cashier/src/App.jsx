@@ -15,6 +15,10 @@ import ReceiptPrint from './components/ReceiptPrint';
 import PosSettings from './components/PosSettings';
 import BarcodeModal from './components/BarcodeModal';
 import ProductAddModal from './components/ProductAddModal';
+import ShiftsModal from './components/ShiftsModal';
+import XZReportModal from './components/XZReportModal';
+import DebtReturnModal from './components/DebtReturnModal';
+import CloseShiftModal from './components/CloseShiftModal';
 
 const priceOf = (p) => Number(p.sale_price || p.retail_price || 0);
 
@@ -45,6 +49,14 @@ export default function App() {
   const [lastSale, setLastSale] = useState(null);
   const [commentOpen, setCommentOpen] = useState(false);
   const [saleComment, setSaleComment] = useState('');
+  const [shiftsOpen, setShiftsOpen] = useState(false);
+  const [shifts, setShifts] = useState([]);
+  const [xzOpen, setXzOpen] = useState(false);
+  const [xzReport, setXzReport] = useState(null);
+  const [xzType, setXzType] = useState('X');
+  const [debtOpen, setDebtOpen] = useState(false);
+  const [debtors, setDebtors] = useState([]);
+  const [closeShiftOpen, setCloseShiftOpen] = useState(false);
   const [err, setErr] = useState('');
   const searchRef = useRef(null);
   const searchTimer = useRef(null);
@@ -95,7 +107,8 @@ export default function App() {
       if (e.key === 'Escape') {
         setMenuOpen(false); setPayOpen(false); setCustomerOpen(false); setNewCustomerOpen(false);
         setEditItem(null); setJournalOpen(false); setSettingsOpen(false); setBarcodeOpen(false);
-        setProductAddOpen(null); setCommentOpen(false);
+        setProductAddOpen(null); setCommentOpen(false); setShiftsOpen(false); setXzOpen(false);
+        setDebtOpen(false); setCloseShiftOpen(false);
       }
       if (e.key === 'f' || e.key === 'F') { if (!payOpen && !customerOpen && !settingsOpen) { e.preventDefault(); searchRef.current?.focus(); } }
       if (e.key === 'c' || e.key === 'C') { if (!payOpen && !settingsOpen) { e.preventDefault(); setCustomerOpen(true); } }
@@ -178,7 +191,7 @@ export default function App() {
     if (print_receipt) {
       if (settings.pos_printer_enabled === '1') {
         const lines = [
-          settings.company_name || 'StarNet Core',
+          settings.company_name || 'AinurPOS',
           settings.receipt_address || '',
           `Чек · ${new Date().toLocaleString('uk-UA')}`,
           ...soldItems.map((i) => `${i.name} x${i.qty} = ${fmt(i.price * i.qty)}`),
@@ -200,16 +213,34 @@ export default function App() {
 
   const menuAction = async (id) => {
     if (id === 'logout') { setToken(null); setUser(null); }
-    if (id === 'close-shift') { await api.closeShift(0); setShift(null); }
+    if (id === 'close-shift') {
+      const r = await api.xzReport('Z');
+      setXzReport(r); setCloseShiftOpen(true);
+    }
     if (id === 'journal') { setSales((await api.sales()).sales || []); setJournalOpen(true); }
     if (id === 'return') { setSales((await api.sales('completed')).sales || []); setJournalOpen(true); }
     if (id === 'hold' && cart.length) { await api.holdSale({ items: cart.map((i) => ({ product_id: i.product_id, quantity: i.qty, price: i.price })) }); setCart([]); }
     if (id === 'held') { setHeld((await api.heldSales()).sales || []); }
     if (id === 'settings') setSettingsOpen(true);
     if (id === 'add-product') setProductAddOpen('');
-    if (id === 'old-version') alert('Стара версія недоступна в StarNet Core');
-    if (id === 'debt-return') alert('Повернення боргу — оберіть клієнта в CRM');
+    if (id === 'shifts') {
+      setShifts((await api.shifts()).shifts || []);
+      setShiftsOpen(true);
+    }
+    if (id === 'xz-report') {
+      const r = await api.xzReport('X');
+      setXzReport(r); setXzType('X'); setXzOpen(true);
+    }
+    if (id === 'old-version') setErr('Класична версія AinurPOS — використовуйте поточний інтерфейс');
+    if (id === 'debt-return') { setDebtors((await api.debtors()).customers || []); setDebtOpen(true); }
     if (id === 'cancel' && cart.length) setCart([]);
+  };
+
+  const confirmCloseShift = async (closingCash) => {
+    await api.closeShift(closingCash);
+    const r = await api.xzReport('Z');
+    setXzReport(r); setXzType('Z'); setXzOpen(true);
+    setShift(null); setCloseShiftOpen(false);
   };
 
   if (!user) {
@@ -219,7 +250,7 @@ export default function App() {
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1a3b5d] text-white">
             <div className="h-4 w-4 rounded-sm bg-white" />
           </div>
-          <span className="text-2xl font-bold text-[#1a3b5d]">StarNet POS</span>
+          <span className="text-2xl font-bold text-[#1a3b5d]">AinurPOS</span>
         </div>
         <form onSubmit={login} className="w-full max-w-md rounded-lg border border-ainur-border bg-white p-8 shadow-sm">
           <h2 className="mb-8 text-center text-xl text-ainur-text">Авторизація</h2>
@@ -280,7 +311,8 @@ export default function App() {
         />
       </div>
 
-      <FooterBar storeName={settings.company_name || 'StarNet Core'} shift={shift} onMenu={() => setMenuOpen(true)} />
+      <FooterBar storeName={settings.company_name || 'AinurPOS'} shift={shift} onMenu={() => setMenuOpen(true)}
+        onXReport={async () => { const r = await api.xzReport('X'); setXzReport(r); setXzType('X'); setXzOpen(true); }} />
 
       {menuOpen && <SideMenu user={user} onClose={() => setMenuOpen(false)} onAction={menuAction} />}
       {payOpen && <PaymentScreen total={total} customer={customer} settings={settings} printDefault={settings.pos_print_default !== '0'}
@@ -317,6 +349,17 @@ export default function App() {
         </div>
       )}
       {err && <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 cursor-pointer rounded-lg bg-red-600 px-4 py-2 text-sm text-white" onClick={() => setErr('')}>{err}</div>}
+      {shiftsOpen && <ShiftsModal shifts={shifts} onClose={() => setShiftsOpen(false)} onSelect={async (s) => {
+        if (s.status === 'open') { const r = await api.xzReport('X'); setXzReport(r); setXzType('X'); setXzOpen(true); }
+      }} />}
+      {xzOpen && <XZReportModal report={xzReport} type={xzType} onClose={() => setXzOpen(false)}
+        onSwitchType={async (t) => { const r = await api.xzReport(t); setXzReport(r); setXzType(t); }}
+        onPrint={() => window.print()} />}
+      {debtOpen && <DebtReturnModal customers={debtors} onSearch={async (q) => {
+        const all = (await api.debtors()).customers || [];
+        setDebtors(q ? all.filter((c) => c.name?.includes(q) || c.phone?.includes(q)) : all);
+      }} onPay={(id, d) => api.debtPayment(id, d)} onClose={() => setDebtOpen(false)} />}
+      {closeShiftOpen && <CloseShiftModal shift={shift} report={xzReport} onClose={() => setCloseShiftOpen(false)} onConfirm={confirmCloseShift} />}
     </div>
   );
 }

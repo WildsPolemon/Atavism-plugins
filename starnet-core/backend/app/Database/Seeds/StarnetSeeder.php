@@ -74,7 +74,7 @@ class StarnetSeeder extends Seeder
         }
 
         $defaults = [
-            'company_name' => 'StarNet Core',
+            'company_name' => 'AinurPOS',
             'receipt_logo' => '',
             'receipt_footer' => 'Дякуємо за покупку!',
             'receipt_address' => 'м. Київ, вул. Прикладна 1',
@@ -109,6 +109,17 @@ class StarnetSeeder extends Seeder
             if (!$this->db->table('settings')->where('key', $k)->countAllResults()) {
                 $this->db->table('settings')->insert(['key' => $k, 'value' => $v]);
             }
+        }
+
+        if ($this->db->tableExists('cash_registers') && $this->db->table('cash_registers')->countAllResults() === 0) {
+            $storeId = $this->db->table('stores')->limit(1)->get()->getRow('id');
+            $this->db->table('cash_registers')->insert([
+                'name' => 'Каса №1',
+                'store_id' => $storeId,
+                'balance' => 0,
+                'active' => 1,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
         }
     }
 }

@@ -1,4 +1,4 @@
-# StarNet Core — POS система
+# AinurPOS — повний клон хмарної POS-системи
 
 Веб-POS за зразком [AinurPOS web.ainur.app](https://web.ainur.app/pos/home) (світлий інтерфейс каси: сітка товарів + кошик-таблиця).
 

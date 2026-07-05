@@ -10,7 +10,7 @@ export default function ReceiptPrint({ sale, items, settings, customer, cashier 
   return (
     <div id="receipt-print" className="hidden print:block fixed inset-0 bg-white p-4 text-black text-xs font-mono">
       <div className="mx-auto max-w-[80mm]">
-        <p className="text-center font-bold text-sm">{settings.company_name || 'StarNet Core'}</p>
+        <p className="text-center font-bold text-sm">{settings.company_name || 'AinurPOS'}</p>
         {settings.receipt_address && <p className="text-center">{settings.receipt_address}</p>}
         <p className="text-center text-[10px] mt-1">Чек №{sale.id}</p>
         <p className="text-center text-[10px]">{sale.created_at || new Date().toLocaleString('uk-UA')}</p>

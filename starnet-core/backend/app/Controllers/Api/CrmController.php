@@ -50,4 +50,56 @@ class CrmController extends BaseApiController
         model(CustomerModel::class)->update($id, $data);
         return $this->ok(model(CustomerModel::class)->find($id));
     }
+
+    public function debtors()
+    {
+        $customers = model(CustomerModel::class)->where('debt >', 0)->orderBy('debt', 'DESC')->findAll(100);
+        return $this->ok(['customers' => $customers]);
+    }
+
+    public function debtPayment(int $id)
+    {
+        $jwt = service('jwtauth')->userFromRequest();
+        $body = $this->request->getJSON(true) ?? [];
+        $amount = (float) ($body['amount'] ?? 0);
+        $cash = (float) ($body['payment_cash'] ?? 0);
+        $card = (float) ($body['payment_card'] ?? 0);
+        if ($amount <= 0 || ($cash + $card) < $amount - 0.01) {
+            return $this->err('Невірна сума оплати');
+        }
+        $customer = model(CustomerModel::class)->find($id);
+        if (!$customer) {
+            return $this->err('Клієнта не знайдено', 404);
+        }
+        if ((float) $customer['debt'] < $amount - 0.01) {
+            return $this->err('Сума більша за борг');
+        }
+        $db = db_connect();
+        $db->transStart();
+        $newDebt = max(0, (float) $customer['debt'] - $amount);
+        model(CustomerModel::class)->update($id, ['debt' => $newDebt]);
+        $shift = $db->table('shifts')->where('status', 'open')->where('user_id', $jwt['sub'])->get()->getRowArray()
+            ?: $db->table('shifts')->where('status', 'open')->get()->getRowArray();
+        $db->table('money_movements')->insert([
+            'type' => 'debt_payment',
+            'amount' => $amount,
+            'customer_id' => $id,
+            'user_id' => $jwt['sub'],
+            'shift_id' => $shift['id'] ?? null,
+            'notes' => $body['notes'] ?? 'Повернення боргу',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        if ($shift && $cash > 0) {
+            $db->table('shifts')->where('id', $shift['id'])->update([
+                'cash_sales' => (float) $shift['cash_sales'] + $cash,
+            ]);
+        }
+        if ($shift && $card > 0) {
+            $db->table('shifts')->where('id', $shift['id'])->update([
+                'card_sales' => (float) $shift['card_sales'] + $card,
+            ]);
+        }
+        $db->transComplete();
+        return $this->ok(['customer' => model(CustomerModel::class)->find($id), 'paid' => $amount]);
+    }
 }

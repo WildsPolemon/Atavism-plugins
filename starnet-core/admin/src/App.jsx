@@ -15,6 +15,8 @@ import Inventory from './pages/Inventory';
 import PriceTags from './pages/PriceTags';
 import Estore from './pages/Estore';
 import Settings from './pages/Settings';
+import Shifts from './pages/Shifts';
+import MoneyMovement from './pages/MoneyMovement';
 
 function Guard({ children }) {
   const [ok, setOk] = useState(null);
@@ -30,6 +32,8 @@ export default function App() {
       <Route element={<Guard><Layout /></Guard>}>
         <Route index element={<Dashboard />} />
         <Route path="products" element={<Products />} />
+        <Route path="shifts" element={<Shifts />} />
+        <Route path="money" element={<MoneyMovement />} />
         <Route path="warehouse" element={<Warehouse />} />
         <Route path="purchases" element={<Purchases />} />
         <Route path="inventory" element={<Inventory />} />

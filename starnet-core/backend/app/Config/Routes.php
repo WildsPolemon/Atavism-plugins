@@ -3,7 +3,7 @@
 use CodeIgniter\Router\RouteCollection;
 
 /** @var RouteCollection $routes */
-$routes->get('/', static fn () => 'StarNet Core API v1');
+$routes->get('/', static fn () => 'AinurPOS API v1');
 
 $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
     $routes->post('auth/login', 'Api\AuthController::login');
@@ -48,7 +48,14 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
         $routes->post('pos/sale', 'Api\PosController::sale');
         $routes->post('pos/sales/(:num)/return', 'Api\PosController::returnSale/$1');
         $routes->get('pos/xz-report', 'Api\PosController::xzReport');
+        $routes->get('pos/shifts', 'Api\ShiftController::index');
+        $routes->get('pos/shifts/(:num)', 'Api\ShiftController::show/$1');
+        $routes->get('pos/registers', 'Api\ShiftController::registers');
+        $routes->post('pos/registers', 'Api\ShiftController::createRegister');
         $routes->delete('pos/sales/(:num)/held', 'Api\PosController::cancelHeld/$1');
+
+        $routes->get('money-movements', 'Api\MoneyMovementController::index');
+        $routes->post('money-movements', 'Api\MoneyMovementController::create');
 
         $routes->get('warehouse/stock', 'Api\WarehouseController::stock');
         $routes->get('warehouse/warehouses', 'Api\WarehouseController::warehouses');
@@ -77,6 +84,8 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
         $routes->post('crm/customers', 'Api\CrmController::createCustomer');
         $routes->get('crm/customers/(:num)', 'Api\CrmController::show/$1');
         $routes->patch('crm/customers/(:num)', 'Api\CrmController::updateCustomer/$1');
+        $routes->post('crm/customers/(:num)/debt-payment', 'Api\CrmController::debtPayment/$1');
+        $routes->get('crm/customers/debtors', 'Api\CrmController::debtors');
 
         $routes->get('reports/sales', 'Api\ReportController::sales');
         $routes->get('reports/finance', 'Api\ReportController::finance');

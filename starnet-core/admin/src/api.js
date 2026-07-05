@@ -67,6 +67,12 @@ export const api = {
   exportProducts: () => req('/api/export/products', { raw: true }),
   exportCustomers: () => req('/api/export/customers', { raw: true }),
   importProducts: (rows) => req('/api/import/products', { method: 'POST', body: JSON.stringify({ rows }) }),
+  shifts: () => req('/api/pos/shifts'),
+  shiftDetail: (id) => req(`/api/pos/shifts/${id}`),
+  registers: () => req('/api/pos/registers'),
+  createRegister: (d) => req('/api/pos/registers', { method: 'POST', body: JSON.stringify(d) }),
+  moneyMovements: (from, to) => req(`/api/money-movements${from ? `?from=${from}&to=${to || ''}` : ''}`),
+  createMoneyMovement: (d) => req('/api/money-movements', { method: 'POST', body: JSON.stringify(d) }),
 };
 
 export const fmtUah = (n) => `${new Intl.NumberFormat('uk-UA').format(n ?? 0)} ₴`;

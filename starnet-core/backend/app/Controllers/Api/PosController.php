@@ -27,8 +27,11 @@ class PosController extends BaseApiController
             return $this->err('Зміна вже відкрита');
         }
         $cash = (float) (($this->request->getJSON(true) ?? [])['opening_cash'] ?? 0);
-        $id = db_connect()->table('shifts')->insert([
+        $db = db_connect();
+        $register = $db->table('cash_registers')->where('active', 1)->orderBy('id')->limit(1)->get()->getRowArray();
+        $id = $db->table('shifts')->insert([
             'user_id' => $jwt['sub'],
+            'register_id' => $register['id'] ?? null,
             'opened_at' => date('Y-m-d H:i:s'),
             'opening_cash' => $cash,
             'status' => 'open',
@@ -295,12 +298,18 @@ class PosController extends BaseApiController
         $jwt = service('jwtauth')->userFromRequest();
         $shift = $this->openShift((int) $jwt['sub']);
         if (!$shift) return $this->err('Немає відкритої зміни');
-        $sales = db_connect()->query("
+        $db = db_connect();
+        $shiftFull = $db->table('shifts s')
+            ->select('s.*, u.name as cashier, r.name as register_name')
+            ->join('users u', 'u.id = s.user_id', 'left')
+            ->join('cash_registers r', 'r.id = s.register_id', 'left')
+            ->where('s.id', $shift['id'])->get()->getRowArray();
+        $sales = $db->query("
             SELECT COUNT(*) as count, COALESCE(SUM(total),0) as total,
               COALESCE(SUM(payment_cash),0) as cash, COALESCE(SUM(payment_card),0) as card,
               COALESCE(SUM(payment_deferred),0) as deferred
             FROM sales WHERE shift_id=? AND status='completed'
         ", [$shift['id']])->getRowArray();
-        return $this->ok(['shift' => $shift, 'sales' => $sales, 'type' => $this->request->getGet('type') ?? 'X']);
+        return $this->ok(['shift' => $shiftFull, 'sales' => $sales, 'type' => $this->request->getGet('type') ?? 'X']);
     }
 }

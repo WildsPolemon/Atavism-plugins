@@ -270,7 +270,7 @@ export default function PosSettings({ settings, onClose, onSave }) {
             </>
           )}
 
-          <p className="mt-8 text-center text-xs text-ainur-muted">Версія: 4.0.1 (StarNet Core)</p>
+          <p className="mt-8 text-center text-xs text-ainur-muted">Версія: 4.0.1 (AinurPOS)</p>
         </div>
       </div>
 

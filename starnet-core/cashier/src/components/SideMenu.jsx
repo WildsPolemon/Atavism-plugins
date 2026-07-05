@@ -1,4 +1,4 @@
-import { LogOut, RotateCcw, X, FileText, Clock, Settings, RefreshCw, Wallet } from 'lucide-react';
+import { LogOut, RotateCcw, X, FileText, Clock, Settings, RefreshCw, Wallet, BarChart3 } from 'lucide-react';
 
 export default function SideMenu({ user, onClose, onAction }) {
   const items = [
@@ -9,6 +9,7 @@ export default function SideMenu({ user, onClose, onAction }) {
     { id: 'debt-return', label: 'Повернення боргу', icon: Wallet },
     { id: 'journal', label: 'Журнал чеків', icon: FileText },
     { id: 'shifts', label: 'Зміни', icon: Clock },
+    { id: 'xz-report', label: 'X-звіт', icon: BarChart3 },
     { id: 'settings', label: 'Налаштування', icon: Settings },
     { id: 'add-product', label: 'Додати товар', icon: FileText },
     { id: 'held', label: 'Відкладені чеки', icon: FileText },
