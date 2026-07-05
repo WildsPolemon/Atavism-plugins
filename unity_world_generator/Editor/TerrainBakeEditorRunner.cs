@@ -220,7 +220,7 @@ namespace AaaWorldGen.Editor
             }
 
             string title = activeMode == RunMode.TerrainOnly ? "Baking terrain" : "Generating world";
-            string phaseLabel = activeSession.phase == TerrainGenerator.TerrainBakePhase.Clearing
+            string phaseLabel = activeSession.Phase == TerrainGenerator.TerrainBakePhase.Clearing
                 ? "Clearing old terrain tiles..."
                 : $"Terrain tile {Mathf.Min(activeSession.CompletedTiles + 1, activeSession.TotalTileSlots)} / {activeSession.TotalTileSlots}";
             float progress = TerrainGenerator.GetProgress01(activeSession);
@@ -233,7 +233,7 @@ namespace AaaWorldGen.Editor
 
             TerrainGenerator.StepBakeBudget(activeSession, () => EditorApplication.timeSinceStartup < deadline);
 
-            if (activeSession.phase == TerrainGenerator.TerrainBakePhase.Clearing)
+            if (activeSession.Phase == TerrainGenerator.TerrainBakePhase.Clearing)
             {
                 onStatus?.Invoke("Clearing old terrain tiles...");
             }

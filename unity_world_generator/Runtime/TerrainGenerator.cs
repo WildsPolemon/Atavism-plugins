@@ -50,8 +50,9 @@ namespace AaaWorldGen
             internal int tilesPerAxis;
             internal int resolution;
             internal int nextTileIndex;
-            internal TerrainBakePhase phase;
             internal TerrainTileBuildState activeTile;
+
+            public TerrainBakePhase Phase { get; internal set; }
 
             public TerrainGenerationResult Result { get; internal set; }
             public int TotalTileSlots { get; internal set; }
@@ -100,7 +101,7 @@ namespace AaaWorldGen
                 return new TerrainBakeSession
                 {
                     Result = new TerrainGenerationResult(),
-                    phase = TerrainBakePhase.Complete,
+                    Phase = TerrainBakePhase.Complete,
                     IsComplete = true
                 };
             }
@@ -126,7 +127,7 @@ namespace AaaWorldGen
                 tilesPerAxis = tilesPerAxis,
                 resolution = resolution,
                 nextTileIndex = 0,
-                phase = initialPhase,
+                Phase = initialPhase,
                 TotalTileSlots = tilesPerAxis * tilesPerAxis,
                 CompletedTiles = 0,
                 Result = new TerrainGenerationResult
@@ -166,22 +167,22 @@ namespace AaaWorldGen
 
             while (shouldContinue() && !session.IsComplete && !session.CancelRequested)
             {
-                if (session.phase == TerrainBakePhase.Clearing)
+                if (session.Phase == TerrainBakePhase.Clearing)
                 {
                     if (!StepClearTerrain(session))
                     {
-                        session.phase = TerrainBakePhase.BakingTiles;
+                        session.Phase = TerrainBakePhase.BakingTiles;
                     }
 
                     continue;
                 }
 
-                if (session.phase == TerrainBakePhase.BakingTiles)
+                if (session.Phase == TerrainBakePhase.BakingTiles)
                 {
                     if (!StepActiveTile(session, shouldContinue))
                     {
                         session.IsComplete = true;
-                        session.phase = TerrainBakePhase.Complete;
+                        session.Phase = TerrainBakePhase.Complete;
                     }
 
                     continue;
@@ -193,7 +194,7 @@ namespace AaaWorldGen
             if (session.CancelRequested)
             {
                 session.IsComplete = true;
-                session.phase = TerrainBakePhase.Complete;
+                session.Phase = TerrainBakePhase.Complete;
             }
         }
 
@@ -204,7 +205,7 @@ namespace AaaWorldGen
                 return session != null && session.IsComplete ? 1f : 0f;
             }
 
-            if (session.phase == TerrainBakePhase.Clearing)
+            if (session.Phase == TerrainBakePhase.Clearing)
             {
                 return 0f;
             }
