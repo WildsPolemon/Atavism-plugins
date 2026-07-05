@@ -21,15 +21,26 @@ namespace AaaWorldGen.Editor
             Results = 6
         }
 
+        private static readonly string[] SectionIcons =
+        {
+            "⌂",
+            "◎",
+            "⛰",
+            "🗺",
+            "🌿",
+            "⚡",
+            "📊"
+        };
+
         private static readonly string[] SectionLabels =
         {
-            "  Setup",
-            "  Location Wizard",
-            "  Terrain Studio",
-            "  World Layout",
-            "  Biomes",
-            "  Spawns & Perf",
-            "  Results"
+            "Home",
+            "Build Location",
+            "Terrain Studio",
+            "World Layout",
+            "Biomes",
+            "Spawns",
+            "Results"
         };
 
         private WorldGenerator generator;
@@ -37,11 +48,11 @@ namespace AaaWorldGen.Editor
         private SerializedObject configSerializedObject;
         private Vector2 sidebarScroll;
         private Vector2 contentScroll;
-        private Section activeSection = Section.Setup;
+        private Section activeSection = Section.Location;
         private string statusLine = "Ready";
         private string searchQuery = string.Empty;
         private List<string> validationMessages = new List<string>();
-        private float sidebarWidth = 188f;
+        private float sidebarWidth = 220f;
         private WorldGenStudioPresets.MapSizeId selectedMapSize = WorldGenStudioPresets.MapSizeId.Zone;
         private WorldGenStudioPresets.HeightmapProfileId selectedHeightmap = WorldGenStudioPresets.HeightmapProfileId.RollingMmo;
         private DefaultAsset pendingPrefabFolder;
@@ -51,7 +62,7 @@ namespace AaaWorldGen.Editor
         {
             WorldGeneratorDashboardWindow window = GetWindow<WorldGeneratorDashboardWindow>();
             window.titleContent = new GUIContent("WorldGen Studio");
-            window.minSize = new Vector2(1180f, 700f);
+            window.minSize = new Vector2(1280f, 760f);
             window.Show();
         }
 
@@ -74,9 +85,10 @@ namespace AaaWorldGen.Editor
         private void OnGUI()
         {
             WorldGenEditorUi.EnsureStyles();
-            WorldGenEditorUi.DrawTopBanner(
+            WorldGenEditorUi.DrawHeroBanner(
                 "WorldGen Studio",
-                "Location Wizard — Zone preset, Alpine/Heroic terrain, 10 biomes, Synty kits, POI markers.");
+                "Procedural MMO worlds — zone builder, terrain sculpt, biomes, Synty kits, POI polish.",
+                $"engine {TerrainGenerator.BakeEngineVersion}");
 
             DrawCommandRail();
 
@@ -90,49 +102,34 @@ namespace AaaWorldGen.Editor
 
         private void DrawCommandRail()
         {
-            EditorGUILayout.Space(6f);
+            EditorGUILayout.Space(8f);
             EditorGUILayout.BeginHorizontal();
-
-            EditorGUI.BeginDisabledGroup(TerrainBakeEditorRunner.IsRunning);
-            if (WorldGenEditorUi.DrawPrimaryButton("  GENERATE WORLD  ", 48f))
+            EditorGUI.BeginDisabledGroup(TerrainBakeEditorRunner.IsRunning || config == null);
+            if (WorldGenEditorUi.DrawPrimaryButton("  GENERATE WORLD  ", 44f))
             {
                 TryGenerateWorld();
             }
 
-            if (GUILayout.Button("Terrain Only", GUILayout.Height(48f), GUILayout.Width(96f)))
+            if (WorldGenEditorUi.DrawSecondaryButton("Terrain Only", 108f, 44f))
             {
                 TryGenerateTerrainOnly();
             }
             EditorGUI.EndDisabledGroup();
 
-            if (GUILayout.Button("Validate", GUILayout.Height(48f), GUILayout.Width(72f)))
+            if (WorldGenEditorUi.DrawSecondaryButton("Validate", 84f, 44f))
             {
                 RefreshValidation();
             }
 
-            if (GUILayout.Button("Random Seed", GUILayout.Height(48f), GUILayout.Width(96f)))
+            if (WorldGenEditorUi.DrawSecondaryButton("Random Seed", 104f, 44f))
             {
                 RandomizeSeed();
             }
 
             GUILayout.FlexibleSpace();
-            DrawCompactBindings();
+            WorldGenEditorUi.DrawStatusChip(statusLine, validationMessages.Count == 0 ? WorldGenEditorUi.Success : WorldGenEditorUi.Warning);
             EditorGUILayout.EndHorizontal();
-            EditorGUILayout.Space(4f);
-        }
-
-        private void DrawCompactBindings()
-        {
-            EditorGUILayout.BeginVertical(GUILayout.Width(300f));
-            generator = (WorldGenerator)EditorGUILayout.ObjectField("Generator", generator, typeof(WorldGenerator), true);
-            config = (WorldGeneratorConfig)EditorGUILayout.ObjectField("Config", config, typeof(WorldGeneratorConfig), false);
-            if (generator != null && config != null && generator.Config != config)
-            {
-                Undo.RecordObject(generator, "Assign World Generator Config");
-                generator.Config = config;
-                EditorUtility.SetDirty(generator);
-            }
-            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space(6f);
         }
 
         private void DrawSidebar()
@@ -142,17 +139,34 @@ namespace AaaWorldGen.Editor
             bg.width = sidebarWidth;
             EditorGUI.DrawRect(bg, WorldGenEditorUi.BgSidebar);
 
-            GUILayout.Space(8f);
+            GUILayout.Space(10f);
             sidebarScroll = EditorGUILayout.BeginScrollView(sidebarScroll, GUILayout.Width(sidebarWidth));
             for (int i = 0; i < SectionLabels.Length; i++)
             {
-                if (WorldGenEditorUi.DrawSidebarNav(SectionLabels[i], activeSection == (Section)i, sidebarWidth - 8f))
+                if (WorldGenEditorUi.DrawSidebarNav(
+                        SectionIcons[i],
+                        SectionLabels[i],
+                        activeSection == (Section)i,
+                        sidebarWidth - 10f,
+                        i == 1 ? WorldGenEditorArt.GetStepIcon(5) : null))
                 {
                     activeSection = (Section)i;
                     GUI.FocusControl(null);
                 }
             }
             EditorGUILayout.EndScrollView();
+
+            EditorGUILayout.Space(8f);
+            GUILayout.Label("Scene Bindings", EditorStyles.miniBoldLabel);
+            generator = (WorldGenerator)EditorGUILayout.ObjectField(generator, typeof(WorldGenerator), true);
+            config = (WorldGeneratorConfig)EditorGUILayout.ObjectField(config, typeof(WorldGeneratorConfig), false);
+            if (generator != null && config != null && generator.Config != config)
+            {
+                Undo.RecordObject(generator, "Assign World Generator Config");
+                generator.Config = config;
+                EditorUtility.SetDirty(generator);
+            }
+            EditorGUILayout.Space(10f);
             EditorGUILayout.EndVertical();
         }
 
@@ -161,7 +175,11 @@ namespace AaaWorldGen.Editor
             EditorGUILayout.BeginVertical();
             if (config == null)
             {
-                EditorGUILayout.HelpBox("Assign a WorldGeneratorConfig to begin.", MessageType.Info);
+                WorldGenEditorUi.DrawEmptyState(
+                    "Welcome to WorldGen Studio",
+                    "Assign a WorldGeneratorConfig in the sidebar, then open Build Location to create your first zone.",
+                    "I have a config",
+                    () => { });
                 EditorGUILayout.EndVertical();
                 return;
             }
@@ -170,7 +188,10 @@ namespace AaaWorldGen.Editor
             configSerializedObject.Update();
 
             DrawMetricsRow();
-            DrawSearchBar();
+            if (activeSection == Section.World || activeSection == Section.Spawns || activeSection == Section.Results)
+            {
+                DrawSearchBar();
+            }
 
             contentScroll = EditorGUILayout.BeginScrollView(contentScroll);
             switch (activeSection)
@@ -242,91 +263,12 @@ namespace AaaWorldGen.Editor
 
         private void DrawSetupSection()
         {
-            WorldGenEditorUi.BeginPanel("Quick Start", "New here? Open Location Wizard for the full zone → boss flow.");
-            EditorGUILayout.BeginHorizontal();
-            if (WorldGenEditorUi.DrawPresetCard("Location Wizard", "Zone + Alpine/Heroic + 10 biomes + Synty + POIs", WorldGenEditorUi.Accent))
-            {
-                activeSection = Section.Location;
-            }
-            if (WorldGenEditorUi.DrawPresetCard("Terrain Studio", "Sculpt mountains, plains, coast live", WorldGenEditorUi.Success))
-            {
-                activeSection = Section.Terrain;
-            }
-            EditorGUILayout.EndHorizontal();
-            WorldGenEditorUi.EndPanel();
-
-            WorldGenEditorUi.BeginPanel("Map Size — Small & Fast", "Start here for prototypes and zone-scale worlds. Fewer tiles = faster iteration.");
-            EditorGUILayout.BeginHorizontal();
-            if (WorldGenEditorUi.DrawPresetCard("Prototype", WorldGenStudioPresets.MapSizeHints[0], WorldGenEditorUi.Success))
-            {
-                ApplyMapSize(WorldGenStudioPresets.MapSizeId.Prototype);
-            }
-            if (WorldGenEditorUi.DrawPresetCard("Arena", WorldGenStudioPresets.MapSizeHints[1], WorldGenEditorUi.Success))
-            {
-                ApplyMapSize(WorldGenStudioPresets.MapSizeId.Arena);
-            }
-            if (WorldGenEditorUi.DrawPresetCard("Zone", WorldGenStudioPresets.MapSizeHints[2], WorldGenEditorUi.Accent))
-            {
-                ApplyMapSize(WorldGenStudioPresets.MapSizeId.Zone);
-            }
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.BeginHorizontal();
-            if (WorldGenEditorUi.DrawPresetCard("Region", WorldGenStudioPresets.MapSizeHints[3], WorldGenEditorUi.Accent, true))
-            {
-                ApplyMapSize(WorldGenStudioPresets.MapSizeId.Region);
-            }
-            if (WorldGenEditorUi.DrawPresetCard("Continent", WorldGenStudioPresets.MapSizeHints[4], WorldGenEditorUi.Warning, true))
-            {
-                ApplyMapSize(WorldGenStudioPresets.MapSizeId.Continent);
-            }
-            if (WorldGenEditorUi.DrawPresetCard("Mega World", WorldGenStudioPresets.MapSizeHints[5], WorldGenEditorUi.Danger, true))
-            {
-                ApplyMapSize(WorldGenStudioPresets.MapSizeId.MegaWorld);
-            }
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.BeginHorizontal();
-            WorldGenEditorUi.DrawStatusChip($"Selected: {WorldGenStudioPresets.MapSizeNames[(int)selectedMapSize]}", WorldGenEditorUi.AccentSoft);
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Open Terrain Tab", GUILayout.Height(22f), GUILayout.Width(120f)))
-            {
-                activeSection = Section.Terrain;
-            }
-            EditorGUILayout.EndHorizontal();
-            WorldGenEditorUi.EndPanel();
-
-            WorldGenEditorUi.BeginPanel("Production Profiles", "Full game-ready presets — layout density + streaming tuned.");
-            EditorGUILayout.BeginHorizontal();
-            if (WorldGenEditorUi.DrawPresetCard("Balanced MMO", "48 chunks, 18 cities, streaming tuned"))
-            {
-                ApplyPreset(WorldGenPresetLibrary.PresetId.BalancedMmo);
-            }
-            if (WorldGenEditorUi.DrawPresetCard("WoW-like Adventure", "56 chunks, shaped terrain, 16 cities"))
-            {
-                ApplyPreset(WorldGenPresetLibrary.PresetId.WowLike);
-            }
-            if (WorldGenEditorUi.DrawPresetCard("Performance", "Fewer objects, larger terrain tiles"))
-            {
-                ApplyPreset(WorldGenPresetLibrary.PresetId.Performance);
-            }
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.BeginHorizontal();
-            if (WorldGenEditorUi.DrawPresetCard("Cinematic", "Richer density + higher terrain res", true))
-            {
-                ApplyPreset(WorldGenPresetLibrary.PresetId.Cinematic);
-            }
-            if (WorldGenEditorUi.DrawPresetCard("Mega World", "64 chunks, 28 cities, huge sectors", true))
-            {
-                ApplyPreset(WorldGenPresetLibrary.PresetId.MegaWorld);
-            }
-            EditorGUILayout.EndHorizontal();
-            WorldGenEditorUi.EndPanel();
-
-            WorldGenEditorUi.BeginPanel("Pipeline", "Layout from height function → Unity terrain bake → optional runtime spawn");
-            EditorGUILayout.LabelField("1. Sample height + biome fields (analytical)");
-            EditorGUILayout.LabelField("2. Cities, roads, caves, resources, spawns, sectors");
-            EditorGUILayout.LabelField("3. Bake Unity Terrain heightmaps (post-process + erosion)");
-            EditorGUILayout.LabelField("4. Spawn markers / streaming (if enabled on generator)");
-            WorldGenEditorUi.EndPanel();
+            WorldGenStudioHome.Draw(
+                config,
+                () => activeSection = Section.Location,
+                () => activeSection = Section.Terrain,
+                () => activeSection = Section.Biomes,
+                TryGenerateWorld);
 
             if (PropertyVisible("runtime"))
             {
@@ -361,24 +303,28 @@ namespace AaaWorldGen.Editor
             EditorGUILayout.BeginHorizontal();
             for (int i = 0; i < 4; i++)
             {
+                int idx = i;
                 if (WorldGenEditorUi.DrawPresetCard(
-                        WorldGenStudioPresets.HeightmapNames[i],
-                        WorldGenStudioPresets.HeightmapHints[i],
-                        WorldGenStudioPresets.HeightmapAccentColors[i],
-                        true))
+                        WorldGenStudioPresets.HeightmapNames[idx],
+                        WorldGenStudioPresets.HeightmapHints[idx],
+                        WorldGenStudioPresets.HeightmapAccentColors[idx],
+                        true,
+                        selectedHeightmap == (WorldGenStudioPresets.HeightmapProfileId)idx))
                 {
-                    ApplyHeightmapProfile((WorldGenStudioPresets.HeightmapProfileId)i);
+                    ApplyHeightmapProfile((WorldGenStudioPresets.HeightmapProfileId)idx);
                 }
             }
             for (int i = 4; i < 7; i++)
             {
+                int idx = i;
                 if (WorldGenEditorUi.DrawPresetCard(
-                        WorldGenStudioPresets.HeightmapNames[i],
-                        WorldGenStudioPresets.HeightmapHints[i],
-                        WorldGenStudioPresets.HeightmapAccentColors[i],
-                        true))
+                        WorldGenStudioPresets.HeightmapNames[idx],
+                        WorldGenStudioPresets.HeightmapHints[idx],
+                        WorldGenStudioPresets.HeightmapAccentColors[idx],
+                        true,
+                        selectedHeightmap == (WorldGenStudioPresets.HeightmapProfileId)idx))
                 {
-                    ApplyHeightmapProfile((WorldGenStudioPresets.HeightmapProfileId)i);
+                    ApplyHeightmapProfile((WorldGenStudioPresets.HeightmapProfileId)idx);
                 }
             }
             EditorGUILayout.EndHorizontal();
@@ -386,10 +332,10 @@ namespace AaaWorldGen.Editor
 
             EditorGUILayout.BeginHorizontal();
 
-            EditorGUILayout.BeginVertical(GUILayout.Width(440f));
-            WorldGenEditorUi.BeginPanel("Live World Map", "Drag sculpt sliders — preview updates in real time.");
-            WorldGenLivePreview.PreviewResolution = 400;
-            WorldGenTerrainPreview.DrawPreview(config, 400);
+            EditorGUILayout.BeginVertical(GUILayout.Width(460f));
+            WorldGenEditorUi.BeginPanel("Live World Map", "Sculpt sliders on the right — preview updates live.");
+            WorldGenLivePreview.PreviewResolution = 440;
+            WorldGenTerrainPreview.DrawPreview(config, 440);
             WorldGenEditorUi.EndPanel();
             EditorGUILayout.EndVertical();
 
@@ -463,6 +409,7 @@ namespace AaaWorldGen.Editor
 
         private void DrawBiomesSection()
         {
+            WorldGenPresetLibrary.EnsureConfigSections(config);
             WorldGenEditorUi.BeginPanel("Biome Studio", "Templates, textures, and Synty prefab folders — all from the editor.");
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("10-Biome Rich World", GUILayout.Height(28f)))
@@ -480,30 +427,37 @@ namespace AaaWorldGen.Editor
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space(4f);
-            EditorGUILayout.LabelField("Default terrain ground texture (all biomes fallback)", EditorStyles.miniLabel);
-            WorldGenPresetLibrary.EnsureConfigSections(config);
-            EditorGUI.BeginChangeCheck();
-            config.terrainGeneration.defaultTerrainDiffuse = (Texture2D)EditorGUILayout.ObjectField(
-                "Default Diffuse",
-                config.terrainGeneration.defaultTerrainDiffuse,
-                typeof(Texture2D),
-                false);
-            config.terrainGeneration.defaultTerrainNormal = (Texture2D)EditorGUILayout.ObjectField(
-                "Default Normal",
-                config.terrainGeneration.defaultTerrainNormal,
-                typeof(Texture2D),
-                false);
+            EditorGUILayout.LabelField("Default ground textures", EditorStyles.boldLabel);
+            EditorGUILayout.BeginHorizontal();
+            Texture2D grass = config.terrainGeneration.defaultTerrainDiffuse;
+            Texture2D grassN = config.terrainGeneration.defaultTerrainNormal;
+            Texture2D stone = config.locationKit?.stoneDiffuse;
+            Texture2D stoneN = config.locationKit?.stoneNormal;
+            WorldGenEditorUi.DrawTextureSlot("Grass", ref grass);
+            WorldGenEditorUi.DrawTextureSlot("Grass N", ref grassN);
+            WorldGenEditorUi.DrawTextureSlot("Stone", ref stone);
+            WorldGenEditorUi.DrawTextureSlot("Stone N", ref stoneN);
+            if (grass != config.terrainGeneration.defaultTerrainDiffuse ||
+                grassN != config.terrainGeneration.defaultTerrainNormal)
+            {
+                config.terrainGeneration.defaultTerrainDiffuse = grass;
+                config.terrainGeneration.defaultTerrainNormal = grassN;
+                EditorUtility.SetDirty(config);
+            }
+
+            if (config.locationKit != null &&
+                (stone != config.locationKit.stoneDiffuse || stoneN != config.locationKit.stoneNormal))
+            {
+                WorldGenBiomeTemplates.AssignGrassStoneTextures(config, grass, grassN, stone, stoneN);
+            }
+            EditorGUILayout.EndHorizontal();
+
             config.terrainGeneration.paintBiomeTerrainLayers = EditorGUILayout.Toggle(
                 "Paint Biome Splat On Bake",
                 config.terrainGeneration.paintBiomeTerrainLayers);
-            if (EditorGUI.EndChangeCheck())
-            {
-                EditorUtility.SetDirty(config);
-                WorldGenLivePreview.NotifyConfigChanged(config);
-            }
 
             EditorGUILayout.Space(4f);
-            EditorGUILayout.LabelField("Drop a folder of Synty prefabs to fill resourcePrefabs for all biomes", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField("Drop a Synty prefab folder for all biomes", EditorStyles.miniLabel);
             pendingPrefabFolder = (DefaultAsset)EditorGUILayout.ObjectField(
                 "Prefab Folder",
                 pendingPrefabFolder,

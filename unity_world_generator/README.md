@@ -26,6 +26,18 @@ This module provides a Unity-ready procedural world generation pipeline for larg
 - `tools/` - standalone preview generator for CI/smoke checks.
 - `tests/` - automated tests for deterministic generation and constraints.
 
+## WorldGen Studio (Editor)
+
+![WorldGen Studio — Build Location tab](releases/editor_media_2026-07-05/worldgen_studio_v6_location.png)
+
+Open **Window → World Generation → AAA Generator Dashboard**.
+
+- **Home** — workflow cards and map-size presets
+- **Build Location** — zone → boss pipeline with live map preview, step rail, Synty kits, POI markers
+- **Terrain Studio** — live heightmap sculpt with sliders
+- **Biomes** — texture slots, 10-biome template, prefab folders
+- Footer shows bake engine version (e.g. `bake studio-v6.0`)
+
 ## Unity integration
 
 1. Copy `unity_world_generator/Runtime` into your Unity project's `Assets/WorldGen/Runtime`.
@@ -37,14 +49,14 @@ This module provides a Unity-ready procedural world generation pipeline for larg
    - Tune `biomeClimate` values for stronger biome contrast and smoother natural transitions.
 5. Add `WorldGenerator` component to an empty scene object and assign config.
 6. Open **Window > World Generation > AAA Generator Dashboard** (WorldGen Studio).
-7. **Location Wizard** tab — one-click zone flow:
+7. **Build Location** tab — one-click zone flow:
    - Map size **Zone** (~3 km)
    - **Alpine Peaks** or **Heroic WoW** terrain + mountain tweak slider
    - **10-Biome Rich World** + grass/stone terrain textures
    - Synty kit folders: Forest, Ruins, Road to Boss
    - **BUILD ZONE LOCATION** — generates world + spawns POI markers (`POI_SpawnHub`, `POI_Ruins`, `POI_BossArena`) and road hints for hand polish
 8. Click **GENERATE WORLD** for manual pipeline — layout runs first, then terrain bakes incrementally (progress bar, cancellable).
-9. Footer shows bake engine version (e.g. `bake studio-v5.2`).
+9. Footer shows bake engine version (e.g. `bake studio-v6.0`).
 9. Terrain tiles appear under `TerrainRoot` (auto-created on the generator). Tune `terrainGeneration` in config:
    - `enableTerrainGeneration` — on by default
    - `terrainTileSizeMeters` — tile size (512 recommended for large worlds)
