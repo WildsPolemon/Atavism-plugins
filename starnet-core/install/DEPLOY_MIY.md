@@ -1,81 +1,100 @@
-# Встановлення на mystfall.miy.link (та ін. nginx-хостинг)
+# mystfall.miy.link — встановлення StarNet Core
 
-## Чому 404?
+## Помилка 404 = файли НЕ в корені сайту
 
-Сервер відповідає стандартною сторінкою nginx — **файли ще не завантажені** в корінь сайту.
+Якщо **будь-який** URL (навіть `/ok.txt`) дає 404 — архів ще не розпаковано в `public_html`.
 
-## Кроки
+---
 
-### 1. Завантажте архів
+## Крок 1. Завантажте ZIP
 
-З репозиторію: `starnet-core/release/starnet-core-hosting.zip`
-
-### 2. Розпакуйте в корінь сайту
-
-У файловому менеджері хостингу (panel21.myhosting.name):
+З GitHub (гілка `main`):
 
 ```
-public_html/          ← корінь mystfall.miy.link
+https://github.com/WildsPolemon/Atavism-plugins/raw/main/starnet-core/release/starnet-core-hosting.zip
+```
+
+Або з репозиторію: `starnet-core/release/starnet-core-hosting.zip`
+
+---
+
+## Крок 2. Панель хостингу
+
+1. Увійдіть: **panel21.myhosting.name**
+2. Файловий менеджер → **`public_html`** (корінь домену mystfall.miy.link)
+3. Завантажте `starnet-core-hosting.zip`
+4. **Розпакуйте (Extract) прямо в `public_html`**
+
+### Як має виглядати public_html після розпакування:
+
+```
+public_html/
+├── ok.txt          ← перевірка
+├── install.php     ← інсталятор
 ├── install/
-│   └── index.php
 ├── backend/
 ├── admin/
 ├── cashier/
 ├── api/
-│   └── index.php
-├── index.php
 └── index.html
 ```
 
-**Важливо:** розпакуйте **вміст** архіву прямо в `public_html/`,  
-не папку `starnet-core` всередині ще однієї папки.
-
-### 3. Відкрийте інсталятор
+### НЕПРАВИЛЬНО (дасть 404):
 
 ```
-https://mystfall.miy.link/install/index.php
+public_html/starnet-core-hosting/install.php   ❌
+public_html/starnet-core/install.php           ❌
 ```
 
-(на nginx `/install/` без `index.php` може дати 404 — використовуйте повний шлях)
+Файли `install.php` і `ok.txt` мають лежати **безпосередньо** в `public_html/`.
 
-### 4. У формі вкажіть URL
+---
+
+## Крок 3. Перевірка
+
+Відкрийте в браузері:
+
+```
+https://mystfall.miy.link/ok.txt
+```
+
+- **Бачите текст** «StarNet Core — файли завантажено правильно» → все ОК
+- **404** → файли не в тому каталозі, повторіть крок 2
+
+---
+
+## Крок 4. Інсталятор
+
+```
+https://mystfall.miy.link/install.php
+```
+
+У формі URL сайту:
 
 ```
 https://mystfall.miy.link/
 ```
 
-(зі слешем в кінці)
+Увімкніть «Завантажити демо-базу» → **Встановити**.
 
-### 5. Після встановлення
+---
+
+## Після встановлення
 
 | Модуль | URL |
 |--------|-----|
 | Адмін | https://mystfall.miy.link/admin/ |
 | Каса | https://mystfall.miy.link/cashier/ |
-| API | https://mystfall.miy.link/api/ |
 
-## Перевірка завантаження
+**Логіни:** admin@starnetcore.local / admin123
 
-Якщо після upload все ще 404 — відкрийте:
+---
 
-```
-https://mystfall.miy.link/install/index.php
-```
+## Якщо ok.txt працює, а install.php — ні
 
-Якщо бачите «StarNet Core — Інсталятор» — файли на місці.
+- Перевірте версію PHP у панелі (потрібно **8.1+**)
+- Права: `chmod -R 755 backend/writable`
 
-## nginx
+## Якщо API не працює після install
 
-На nginx `.htaccess` не працює. У архіві є папка `api/` з `index.php` для API.  
-Якщо API не відповідає — додайте правила з `deploy/nginx.conf.example` у панелі хостингу.
-
-## Права доступу
-
-```bash
-chmod -R 755 backend/writable
-```
-
-## Демо-логіни
-
-- admin@starnetcore.local / admin123
-- cashier@starnetcore.local / cashier123
+Додайте правила з `nginx.conf.example` у панелі хостингу.

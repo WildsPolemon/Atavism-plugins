@@ -46,6 +46,8 @@ mkdir -p "$BUILD/api"
 cp "$ROOT/deploy/api-index.php" "$BUILD/api/index.php"
 cp "$ROOT/deploy/api-htaccess" "$BUILD/api/.htaccess"
 cp "$ROOT/deploy/root-index.php" "$BUILD/index.php"
+cp "$ROOT/deploy/install.php" "$BUILD/install.php"
+cp "$ROOT/deploy/ok.txt" "$BUILD/ok.txt"
 cp "$ROOT/deploy/nginx.conf.example" "$BUILD/nginx.conf.example"
 cp "$ROOT/install/DEPLOY_MIY.md" "$BUILD/DEPLOY.txt"
 
@@ -54,11 +56,11 @@ cat > "$BUILD/index.html" << 'EOF'
 <html lang="uk">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0;url=install/index.php">
+  <meta http-equiv="refresh" content="0;url=install.php">
   <title>StarNet Core</title>
 </head>
 <body>
-  <p><a href="install/index.php">Перейти до інсталятора StarNet Core →</a></p>
+  <p><a href="install.php">Перейти до інсталятора StarNet Core →</a></p>
 </body>
 </html>
 EOF
@@ -68,7 +70,8 @@ StarNet Core — встановлення на хостинг
 =====================================
 
 1. Розпакуйте ВМІСТ цього ZIP у public_html (корінь сайту), не в підпапку.
-2. Відкрийте: https://ваш-домен/install/index.php
+2. Відкрийте: https://ваш-домен/install.php
+3. Перевірка upload: https://ваш-домен/ok.txt — має показати текст, не 404
 3. URL сайту: https://ваш-домен/  (зі слешем)
 4. Після встановлення: /admin/ та /cashier/
 
