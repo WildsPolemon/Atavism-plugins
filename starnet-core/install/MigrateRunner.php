@@ -1,15 +1,13 @@
 <?php
 /**
- * Міграції та seed без exec() — для shared-хостингу
+ * Міграції та seed без exec() — з веб-інсталятора (не CLI)
  */
 declare(strict_types=1);
 
 use CodeIgniter\Boot;
 use CodeIgniter\Database\Seeder;
-use Config\App;
 use Config\Database;
 use Config\Paths;
-use Config\Services;
 
 final class MigrateRunner
 {
@@ -72,8 +70,5 @@ final class MigrateRunner
         $init = $ref->getMethod('initializeCodeIgniter');
         $init->setAccessible(true);
         $init->invoke(null);
-
-        Services::createRequest(new App(), true);
-        service('routes')->loadRoutes();
     }
 }
