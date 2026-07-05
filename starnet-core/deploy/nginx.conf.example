@@ -1,0 +1,24 @@
+# StarNet Core — nginx (miy.link / myhosting та ін.)
+# Додайте в панелі хостингу або в server { }
+
+location /api/ {
+    try_files $uri $uri/ /api/index.php?$query_string;
+}
+
+location ~ ^/api/index\.php {
+    include fastcgi_params;
+    fastcgi_param SCRIPT_FILENAME $document_root/api/index.php;
+    fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;  # змініть під ваш PHP
+}
+
+location /admin/ {
+    try_files $uri $uri/ /admin/index.html;
+}
+
+location /cashier/ {
+    try_files $uri $uri/ /cashier/index.html;
+}
+
+location /install/ {
+    try_files $uri $uri/ /install/index.php?$query_string;
+}

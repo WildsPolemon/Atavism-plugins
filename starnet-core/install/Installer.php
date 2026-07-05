@@ -160,12 +160,12 @@ HTA;
         @file_put_contents($this->backend . '/public/.htaccess', $htaccess);
 
         $rootHt = <<<'HTA'
-# StarNet Core
-DirectoryIndex index.html
+# StarNet Core (Apache). nginx: див. nginx.conf.example та api/index.php
+DirectoryIndex index.html index.php
 <IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteRule ^api/?(.*)$ backend/public/index.php/api/$1 [L,QSA]
-RewriteRule ^$ install/ [L,R=302]
+RewriteRule ^api/?(.*)$ api/index.php/$1 [L,QSA]
+RewriteRule ^$ install/index.php [L,R=302]
 </IfModule>
 HTA;
         @file_put_contents($this->root . '/.htaccess', $rootHt);

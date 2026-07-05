@@ -1,65 +1,87 @@
 #!/usr/bin/env bash
-# Збірка архіву StarNet Core для хостингу
+# Збірка ZIP для shared hosting (nginx / Apache). Вміст архіву — прямо в public_html.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-RELEASE_DIR="$ROOT/release/starnet-core"
-ARCHIVE="$ROOT/release/starnet-core-hosting.zip"
-VERSION=$(date +%Y%m%d)
+OUT="$ROOT/release"
+BUILD="$OUT/build"
+ZIP="$OUT/starnet-core-hosting.zip"
 
-echo "==> Build admin + cashier"
-cd "$ROOT/admin" && npm ci --silent 2>/dev/null || npm install --silent
-VITE_BASE=/admin/ npm run build
-cd "$ROOT/cashier" && npm ci --silent 2>/dev/null || npm install --silent
-VITE_BASE=/cashier/ npm run build
+rm -rf "$BUILD" "$ZIP"
+mkdir -p "$BUILD"
 
-echo "==> Composer production"
-cd "$ROOT/backend"
-composer install --no-dev --optimize-autoloader --quiet 2>/dev/null || composer install --no-dev --optimize-autoloader
+echo "==> Admin build"
+(cd "$ROOT/admin" && (npm ci --silent 2>/dev/null || npm install --silent))
+(cd "$ROOT/admin" && VITE_BASE=/admin/ npm run build)
 
-echo "==> Prepare release folder"
-rm -rf "$RELEASE_DIR" "$ARCHIVE"
-mkdir -p "$RELEASE_DIR"
+echo "==> Cashier build"
+(cd "$ROOT/cashier" && (npm ci --silent 2>/dev/null || npm install --silent))
+(cd "$ROOT/cashier" && VITE_BASE=/cashier/ npm run build)
 
-rsync -a --exclude='node_modules' --exclude='.env' --exclude='writable/database.db' \
-  --exclude='writable/logs/*' --exclude='writable/cache/*' --exclude='writable/session/*' \
-  "$ROOT/backend/" "$RELEASE_DIR/backend/"
+echo "==> Backend vendor"
+(cd "$ROOT/backend" && composer install --no-dev --optimize-autoloader --quiet)
 
-mkdir -p "$RELEASE_DIR/backend/writable/cache" "$RELEASE_DIR/backend/writable/logs" \
-  "$RELEASE_DIR/backend/writable/session" "$RELEASE_DIR/backend/writable/uploads"
-touch "$RELEASE_DIR/backend/writable/cache/index.html"
+echo "==> Assemble hosting tree"
+rsync -a \
+  --exclude='node_modules' \
+  --exclude='.env' \
+  --exclude='writable/database.db' \
+  --exclude='writable/logs/*' \
+  --exclude='writable/cache/*' \
+  --exclude='writable/session/*' \
+  --exclude='writable/uploads/*' \
+  --exclude='tests' \
+  --exclude='.git' \
+  "$ROOT/backend/" "$BUILD/backend/"
 
-cp -r "$ROOT/admin/dist" "$RELEASE_DIR/admin"
-cp -r "$ROOT/cashier/dist" "$RELEASE_DIR/cashier"
-cp -r "$ROOT/estore" "$RELEASE_DIR/estore"
-cp -r "$ROOT/install" "$RELEASE_DIR/install"
-cp "$ROOT/README.md" "$RELEASE_DIR/"
-cp "$ROOT/docs/HARDWARE.md" "$RELEASE_DIR/docs-HARDWARE.md" 2>/dev/null || true
+mkdir -p "$BUILD/backend/writable/cache" "$BUILD/backend/writable/logs" \
+  "$BUILD/backend/writable/session" "$BUILD/backend/writable/uploads"
+touch "$BUILD/backend/writable/cache/index.html"
 
-cat > "$RELEASE_DIR/INSTALL.txt" << 'EOF'
+cp -r "$ROOT/admin/dist" "$BUILD/admin"
+cp -r "$ROOT/cashier/dist" "$BUILD/cashier"
+cp -r "$ROOT/install" "$BUILD/install"
+cp -r "$ROOT/estore" "$BUILD/estore"
+
+mkdir -p "$BUILD/api"
+cp "$ROOT/deploy/api-index.php" "$BUILD/api/index.php"
+cp "$ROOT/deploy/api-htaccess" "$BUILD/api/.htaccess"
+cp "$ROOT/deploy/root-index.php" "$BUILD/index.php"
+cp "$ROOT/deploy/nginx.conf.example" "$BUILD/nginx.conf.example"
+cp "$ROOT/install/DEPLOY_MIY.md" "$BUILD/DEPLOY.txt"
+
+cat > "$BUILD/index.html" << 'EOF'
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="0;url=install/index.php">
+  <title>StarNet Core</title>
+</head>
+<body>
+  <p><a href="install/index.php">Перейти до інсталятора StarNet Core →</a></p>
+</body>
+</html>
+EOF
+
+cat > "$BUILD/INSTALL.txt" << 'EOF'
 StarNet Core — встановлення на хостинг
 =====================================
 
-1. Завантажте всі файли на хостинг (public_html або піддомен)
-2. Відкрийте в браузері: https://ваш-домен/install/
-3. Пройдіть майстер (2 кроки) — демо-база встановиться автоматично
-4. Готово! Відкрийте /admin/ та /cashier/
+1. Розпакуйте ВМІСТ цього ZIP у public_html (корінь сайту), не в підпапку.
+2. Відкрийте: https://ваш-домен/install/index.php
+3. URL сайту: https://ваш-домен/  (зі слешем)
+4. Після встановлення: /admin/ та /cashier/
 
-Логіни за замовчуванням (демо):
-  Адмін:  admin@starnetcore.local / admin123
-  Касир:  cashier@starnetcore.local / cashier123
+Детально для mystfall.miy.link — файл DEPLOY.txt
 
-Вимоги: PHP 8.1+, SQLite3, mod_rewrite (Apache)
+Демо-логіни:
+  admin@starnetcore.local / admin123
+  cashier@starnetcore.local / cashier123
 EOF
 
-cat > "$RELEASE_DIR/index.html" << 'EOF'
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=install/">
-<title>StarNet Core</title></head>
-<body><p><a href="install/">Перейти до інсталятора →</a></p></body></html>
-EOF
+echo "==> Create ZIP (flat root)"
+(cd "$BUILD" && zip -rq "$ZIP" . -x "*.git*")
 
-echo "==> Create ZIP archive"
-cd "$ROOT/release"
-zip -rq "starnet-core-hosting.zip" starnet-core/
-ls -lh "$ARCHIVE"
-echo "OK: $ARCHIVE"
+SIZE=$(du -h "$ZIP" | cut -f1)
+echo "==> Done: $ZIP ($SIZE)"
+echo "    Unzip into public_html, then open /install/index.php"
