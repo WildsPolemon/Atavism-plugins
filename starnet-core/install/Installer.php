@@ -4,6 +4,8 @@
  */
 declare(strict_types=1);
 
+require_once __DIR__ . '/MigrateRunner.php';
+
 class StarNetInstaller
 {
     private string $root;
@@ -29,14 +31,15 @@ class StarNetInstaller
             $this->root . '/writable/session',
             $this->root . '/writable/uploads',
         ];
+        $execOk = function_exists('exec') && !in_array('exec', array_map('trim', explode(',', (string) ini_get('disable_functions'))), true);
         $checks = [
-            ['label' => 'PHP 8.1+', 'ok' => version_compare(PHP_VERSION, '8.1.0', '>='), 'hint' => PHP_VERSION],
-            ['label' => 'SQLite3', 'ok' => extension_loaded('sqlite3'), 'hint' => ''],
-            ['label' => 'mbstring', 'ok' => extension_loaded('mbstring'), 'hint' => ''],
-            ['label' => 'json', 'ok' => extension_loaded('json'), 'hint' => ''],
-            ['label' => 'intl', 'ok' => extension_loaded('intl'), 'hint' => ''],
-            ['label' => 'vendor/', 'ok' => is_dir($this->root . '/vendor'), 'hint' => ''],
-            ['label' => 'exec()', 'ok' => function_exists('exec'), 'hint' => 'міграції'],
+            ['label' => 'PHP 8.1+', 'ok' => version_compare(PHP_VERSION, '8.1.0', '>='), 'hint' => PHP_VERSION, 'required' => true],
+            ['label' => 'SQLite3', 'ok' => extension_loaded('sqlite3'), 'hint' => '', 'required' => true],
+            ['label' => 'mbstring', 'ok' => extension_loaded('mbstring'), 'hint' => '', 'required' => true],
+            ['label' => 'json', 'ok' => extension_loaded('json'), 'hint' => '', 'required' => true],
+            ['label' => 'intl', 'ok' => extension_loaded('intl'), 'hint' => '', 'required' => true],
+            ['label' => 'vendor/', 'ok' => is_dir($this->root . '/vendor'), 'hint' => '', 'required' => true],
+            ['label' => 'exec()', 'ok' => true, 'hint' => $execOk ? 'є (не обовʼязково)' : 'вимкнено — ОК, вбудований режим', 'required' => false],
         ];
         foreach ($writable as $dir) {
             if (!is_dir($dir)) {
@@ -46,6 +49,7 @@ class StarNetInstaller
                 'label' => 'Запис: ' . basename(dirname($dir)) . '/' . basename($dir),
                 'ok' => is_writable($dir),
                 'hint' => 'chmod 755',
+                'required' => true,
             ];
         }
         return $checks;
@@ -54,7 +58,7 @@ class StarNetInstaller
     public function allRequirementsOk(): bool
     {
         foreach ($this->requirements() as $c) {
-            if (!$c['ok']) {
+            if (!empty($c['required']) && !$c['ok']) {
                 return false;
             }
         }
@@ -80,11 +84,7 @@ CI_ENVIRONMENT = production
 app.baseURL = '{$siteUrl}'
 app.forceGlobalSecureRequests = false
 
-database.default.database = WRITEPATH . 'database.db'
-database.default.DBDriver = SQLite3
-database.default.foreignKeys = true
-
-starnetcore.corsOrigins = {$cors}
+starnetcore.corsOrigins = '{$cors}'
 starnetcore.jwtSecret = {$jwt}
 starnetcore.adminEmail = {$adminEmail}
 starnetcore.adminPassword = {$adminPass}
@@ -99,24 +99,10 @@ ENV;
             @unlink($dbPath);
         }
 
-        $php = escapeshellarg(PHP_BINARY);
-        $root = escapeshellarg($this->root);
-
-        $migrate = [];
-        $code = 0;
-        exec("cd {$root} && {$php} spark migrate --all 2>&1", $migrate, $code);
-        if ($code !== 0) {
-            return ['ok' => false, 'error' => 'Міграція: ' . implode("\n", $migrate)];
-        }
-
-        if ($demo) {
-            $seed = [];
-            exec("cd {$root} && {$php} spark db:seed StarnetSeeder 2>&1", $seed, $code);
-            if ($code !== 0) {
-                return ['ok' => false, 'error' => 'Демо-дані: ' . implode("\n", $seed)];
-            }
-        } else {
-            exec("cd {$root} && {$php} spark db:seed StarnetSeeder 2>&1");
+        try {
+            MigrateRunner::migrateAndSeed($this->root);
+        } catch (Throwable $e) {
+            return ['ok' => false, 'error' => $e->getMessage()];
         }
 
         file_put_contents($this->lockFile, date('c') . "\n" . $siteUrl);
