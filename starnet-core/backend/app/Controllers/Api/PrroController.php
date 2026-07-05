@@ -22,6 +22,15 @@ class PrroController extends BaseApiController
         ]);
     }
 
+    public function shiftStatus()
+    {
+        try {
+            return $this->ok(CheckboxService::fromSettings()->shiftStatus());
+        } catch (\Throwable $e) {
+            return $this->err($e->getMessage());
+        }
+    }
+
     public function test()
     {
         try {

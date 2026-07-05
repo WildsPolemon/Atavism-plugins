@@ -47,6 +47,7 @@ export const api = {
   recommendations: (cartIds) => req(`/api/pos/recommendations?cart_ids=${cartIds}`),
   updateSettings: (data) => req('/api/settings', { method: 'PUT', body: JSON.stringify(data) }),
   prroStatus: () => req('/api/prro/status'),
+  prroShift: () => req('/api/prro/shift'),
   prroTest: () => req('/api/prro/test', { method: 'POST' }),
   fiscalize: (saleId) => req(`/api/prro/fiscalize/${saleId}`, { method: 'POST' }),
   fiscalReceiptUrl: (saleId) => `/api/prro/receipt/${saleId}/png`,

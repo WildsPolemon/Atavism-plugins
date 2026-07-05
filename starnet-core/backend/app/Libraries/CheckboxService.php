@@ -51,35 +51,178 @@ class CheckboxService
     public function testConnection(): array
     {
         $this->signIn();
-        $shift = $this->request('GET', '/cashier/shift');
+        $shift = $this->getCashierShift();
         return [
             'ok' => true,
             'message' => 'Підключено до Checkbox',
-            'shift_open' => !empty($shift['id']),
+            'shift_open' => $this->isShiftOpen($shift),
+            'shift' => $this->shiftSummary($shift),
             'cashier' => $shift['cashier']['full_name'] ?? ($this->settings['checkbox_login'] ?? ''),
+        ];
+    }
+
+    public function getCashierShift(): array
+    {
+        if (!$this->token) {
+            $this->signIn();
+        }
+        return $this->request('GET', '/cashier/shift');
+    }
+
+    public function shiftStatus(): array
+    {
+        if (!$this->isEnabled()) {
+            return ['enabled' => false, 'shift_open' => false];
+        }
+        $this->signIn();
+        $shift = $this->getCashierShift();
+        return [
+            'enabled' => true,
+            'shift_open' => $this->isShiftOpen($shift),
+            'shift' => $this->shiftSummary($shift),
+        ];
+    }
+
+    /** Відкрити зміну Checkbox (як AinurPOS при відкритті POS-зміни). */
+    public function openShift(float $openingCashUah = 0): array
+    {
+        if (!$this->isEnabled()) {
+            throw new \RuntimeException('PRRO вимкнено');
+        }
+        $this->signIn();
+        $current = $this->getCashierShift();
+        if ($this->isShiftOpen($current)) {
+            return [
+                'already_open' => true,
+                'shift' => $this->shiftSummary($current),
+            ];
+        }
+
+        $created = $this->request('POST', '/shifts', []);
+        $shiftId = $created['id'] ?? null;
+        if (!$shiftId) {
+            throw new \RuntimeException('Checkbox не повернув ID зміни');
+        }
+
+        $opened = $this->waitShiftOpened($shiftId);
+        if ($openingCashUah > 0) {
+            $this->serviceCashIn($openingCashUah);
+            $opened = $this->getCashierShift();
+        }
+
+        return [
+            'already_open' => false,
+            'shift' => $this->shiftSummary($opened),
         ];
     }
 
     public function ensureShift(): void
     {
-        if (!$this->token) {
-            $this->signIn();
+        if (!$this->isEnabled()) {
+            return;
         }
-        $shift = $this->request('GET', '/cashier/shift');
-        if (empty($shift['id'])) {
-            $this->request('POST', '/shifts', []);
-        }
+        $this->openShift(0);
     }
 
-    public function closeShift(): void
+    public function closeShift(): array
     {
-        if (!$this->token) {
-            $this->signIn();
+        if (!$this->isEnabled()) {
+            return ['closed' => false, 'reason' => 'disabled'];
         }
-        $shift = $this->request('GET', '/cashier/shift');
-        if (!empty($shift['id'])) {
-            $this->request('POST', '/shifts/close', []);
+        $this->signIn();
+        $shift = $this->getCashierShift();
+        if (!$this->isShiftOpen($shift)) {
+            return ['closed' => false, 'reason' => 'not_open'];
         }
+        $shiftId = $shift['id'];
+        $this->request('POST', '/shifts/close', []);
+        $closed = $this->waitShiftClosed($shiftId);
+        return [
+            'closed' => true,
+            'shift' => $this->shiftSummary($closed),
+        ];
+    }
+
+    public function serviceCashIn(float $amountUah): array
+    {
+        $kop = (int) round($amountUah * 100);
+        if ($kop <= 0) {
+            return [];
+        }
+        return $this->request('POST', '/receipts/service', [
+            'id' => $this->uuid(),
+            'payment' => ['type' => 'CASH', 'value' => $kop],
+        ]);
+    }
+
+    protected function waitShiftOpened(string $shiftId, int $timeoutSec = 45): array
+    {
+        $deadline = time() + $timeoutSec;
+        do {
+            $shift = $this->request('GET', "/shifts/{$shiftId}");
+            $status = strtoupper($shift['status'] ?? '');
+            if ($status === 'OPENED') {
+                return $shift;
+            }
+            if ($status === 'CLOSED') {
+                $err = $shift['initial_transaction']['response_error_message'] ?? 'Зміна Checkbox закрита';
+                throw new \RuntimeException('Checkbox: ' . $err);
+            }
+            usleep(800000);
+        } while (time() < $deadline);
+
+        throw new \RuntimeException('Checkbox: час очікування відкриття зміни вичерпано');
+    }
+
+    protected function waitShiftClosed(string $shiftId, int $timeoutSec = 45): array
+    {
+        $deadline = time() + $timeoutSec;
+        do {
+            $shift = $this->request('GET', "/shifts/{$shiftId}");
+            $status = strtoupper($shift['status'] ?? '');
+            if ($status === 'CLOSED') {
+                return $shift;
+            }
+            usleep(800000);
+        } while (time() < $deadline);
+
+        throw new \RuntimeException('Checkbox: час очікування закриття зміни вичерпано');
+    }
+
+    protected function isShiftOpen(array $shift): bool
+    {
+        return !empty($shift['id']) && strtoupper($shift['status'] ?? '') === 'OPENED';
+    }
+
+    protected function shiftSummary(array $shift): ?array
+    {
+        if (empty($shift['id'])) {
+            return null;
+        }
+        $balance = $shift['balance'] ?? [];
+        return [
+            'id' => $shift['id'],
+            'serial' => $shift['serial'] ?? null,
+            'status' => $shift['status'] ?? null,
+            'opened_at' => $shift['opened_at'] ?? null,
+            'balance' => isset($balance['balance']) ? round((float) $balance['balance'] / 100, 2) : null,
+            'initial' => isset($balance['initial']) ? round((float) $balance['initial'] / 100, 2) : null,
+        ];
+    }
+
+    protected function uuid(): string
+    {
+        return sprintf(
+            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            random_int(0, 0xffff),
+            random_int(0, 0xffff),
+            random_int(0, 0xffff),
+            random_int(0, 0x0fff) | 0x4000,
+            random_int(0, 0x3fff) | 0x8000,
+            random_int(0, 0xffff),
+            random_int(0, 0xffff),
+            random_int(0, 0xffff)
+        );
     }
 
     public function fiscalizeSale(array $sale, array $items, array $payments): array

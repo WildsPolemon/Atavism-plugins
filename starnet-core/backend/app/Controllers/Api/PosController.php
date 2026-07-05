@@ -37,7 +37,17 @@ class PosController extends BaseApiController
     public function shift()
     {
         $jwt = service('jwtauth')->userFromRequest();
-        return $this->ok(['shift' => $this->openShift((int) $jwt['sub'])]);
+        $shift = $this->openShift((int) $jwt['sub']);
+        $out = ['shift' => $shift];
+        $cb = CheckboxService::fromSettings();
+        if ($cb->isEnabled()) {
+            try {
+                $out['checkbox'] = $cb->shiftStatus();
+            } catch (\Throwable $e) {
+                $out['checkbox'] = ['enabled' => true, 'shift_open' => false, 'error' => $e->getMessage()];
+            }
+        }
+        return $this->ok($out);
     }
 
     public function openShiftAction()
@@ -64,10 +74,24 @@ class PosController extends BaseApiController
             'opening_cash' => $cash,
             'status' => 'open',
         ]);
-        try {
-            CheckboxService::fromSettings()->ensureShift();
-        } catch (\Throwable) { /* Checkbox shift optional */ }
-        return $this->ok($db->table('shifts')->where('id', $id)->get()->getRowArray(), 201);
+
+        $checkbox = null;
+        $cb = CheckboxService::fromSettings();
+        if ($cb->isEnabled()) {
+            try {
+                $opened = $cb->openShift($cash);
+                $checkbox = $opened['shift'] ?? null;
+                if (!empty($checkbox['id'])) {
+                    $db->table('shifts')->where('id', $id)->update(['checkbox_shift_id' => $checkbox['id']]);
+                }
+            } catch (\Throwable $e) {
+                $db->table('shifts')->where('id', $id)->delete();
+                return $this->err('Checkbox: ' . $e->getMessage());
+            }
+        }
+
+        $shift = $db->table('shifts')->where('id', $id)->get()->getRowArray();
+        return $this->ok(['shift' => $shift, 'checkbox' => $checkbox], 201);
     }
 
     public function closeShiftAction()
@@ -87,10 +111,20 @@ class PosController extends BaseApiController
             'expected_cash' => $expected,
             'variance' => $variance,
         ]);
-        try {
-            CheckboxService::fromSettings()->closeShift();
-        } catch (\Throwable) { /* Checkbox shift optional */ }
-        return $this->ok(db_connect()->table('shifts')->where('id', $shift['id'])->get()->getRowArray());
+
+        $checkbox = null;
+        $cb = CheckboxService::fromSettings();
+        if ($cb->isEnabled()) {
+            try {
+                $checkbox = $cb->closeShift();
+            } catch (\Throwable $e) {
+                db_connect()->table('shifts')->where('id', $shift['id'])->update(['status' => 'open', 'closed_at' => null]);
+                return $this->err('Checkbox: ' . $e->getMessage());
+            }
+        }
+
+        $closed = db_connect()->table('shifts')->where('id', $shift['id'])->get()->getRowArray();
+        return $this->ok(['shift' => $closed, 'checkbox' => $checkbox['shift'] ?? null]);
     }
 
     public function products()

@@ -64,6 +64,8 @@ export default function App() {
   const [myRegisters, setMyRegisters] = useState([]);
   const [err, setErr] = useState('');
   const [prroEnabled, setPrroEnabled] = useState(false);
+  const [checkboxShift, setCheckboxShift] = useState(null);
+  const [shiftLoading, setShiftLoading] = useState(false);
   const searchRef = useRef(null);
   const searchTimer = useRef(null);
 
@@ -96,6 +98,7 @@ export default function App() {
     api.shift().then((r) => setShift(r.shift)).catch(() => {});
     api.receiptSettings().then((r) => setSettings(r.settings || {}));
     api.prroStatus().then((r) => setPrroEnabled(!!r.enabled)).catch(() => setPrroEnabled(false));
+    api.prroShift().then((r) => { if (r.shift_open && r.shift) setCheckboxShift(r.shift); }).catch(() => {});
     api.categories().then((r) => setCategories(r.categories || []));
   }, []);
 
@@ -103,7 +106,10 @@ export default function App() {
     if (user && !shift && getToken()) {
       api.shift().then((r) => {
         if (!r.shift) startShiftFlow();
-        else setShift(r.shift);
+        else {
+          setShift(r.shift);
+          if (r.checkbox?.shift) setCheckboxShift(r.checkbox.shift);
+        }
       }).catch(() => {});
     }
   }, [user]);
@@ -151,16 +157,26 @@ export default function App() {
       setUser(r.user);
       const s = await api.shift();
       setShift(s.shift);
+      setCheckboxShift(s.checkbox?.shift || null);
       if (!s.shift) await startShiftFlow();
     } catch (ex) { setErr(ex.message); }
   };
 
   const confirmOpenShift = async (openingCash) => {
     const reg = openShiftModal;
-    const opened = await api.openShift(reg.id, openingCash);
-    setShift(opened.shift || opened);
-    setOpenShiftModal(null);
-    setRegisterSelectOpen(false);
+    setShiftLoading(true);
+    setErr('');
+    try {
+      const opened = await api.openShift(reg.id, openingCash);
+      setShift(opened.shift || opened);
+      setCheckboxShift(opened.checkbox || null);
+      setOpenShiftModal(null);
+      setRegisterSelectOpen(false);
+    } catch (ex) {
+      setErr(ex.message);
+    } finally {
+      setShiftLoading(false);
+    }
   };
 
   const addToCart = async (p) => {
@@ -305,10 +321,22 @@ export default function App() {
   };
 
   const confirmCloseShift = async (closingCash) => {
-    await api.closeShift(closingCash);
-    const r = await api.xzReport('Z');
-    setXzReport(r); setXzType('Z'); setXzOpen(true);
-    setShift(null); setCloseShiftOpen(false);
+    setShiftLoading(true);
+    setErr('');
+    try {
+      const r = await api.closeShift(closingCash);
+      const xz = await api.xzReport('Z');
+      setXzReport(xz);
+      setXzType('Z');
+      setXzOpen(true);
+      setShift(null);
+      setCheckboxShift(null);
+      setCloseShiftOpen(false);
+    } catch (ex) {
+      setErr(ex.message);
+    } finally {
+      setShiftLoading(false);
+    }
   };
 
   if (!user) {
@@ -382,7 +410,8 @@ export default function App() {
         />
       </div>
 
-      <FooterBar storeName={settings.company_name || 'StarNet Core'} shift={shift} user={user} onMenu={() => setMenuOpen(true)}
+      <FooterBar storeName={settings.company_name || 'StarNet Core'} shift={shift} checkboxShift={checkboxShift}
+        prroEnabled={prroEnabled} user={user} onMenu={() => setMenuOpen(true)}
         onXReport={async () => { const r = await api.xzReport('X'); setXzReport(r); setXzType('X'); setXzOpen(true); }} />
 
       {menuOpen && <SideMenu user={user} onClose={() => setMenuOpen(false)} onAction={menuAction} />}
@@ -438,7 +467,8 @@ export default function App() {
         const all = (await api.debtors()).customers || [];
         setDebtors(q ? all.filter((c) => c.name?.includes(q) || c.phone?.includes(q)) : all);
       }} onPay={(id, d) => api.debtPayment(id, d)} onClose={() => setDebtOpen(false)} />}
-      {closeShiftOpen && <CloseShiftModal shift={shift} report={xzReport} onClose={() => setCloseShiftOpen(false)} onConfirm={confirmCloseShift} />}
+      {closeShiftOpen && <CloseShiftModal shift={shift} report={xzReport} prroEnabled={prroEnabled} loading={shiftLoading}
+        onClose={() => setCloseShiftOpen(false)} onConfirm={confirmCloseShift} />}
       {registerSelectOpen && (
         <RegisterSelectModal
           registers={myRegisters.filter((r) => !r.open_shift)}
@@ -447,7 +477,8 @@ export default function App() {
         />
       )}
       {openShiftModal && (
-        <OpenShiftModal register={openShiftModal} onClose={() => setOpenShiftModal(null)} onConfirm={confirmOpenShift} />
+        <OpenShiftModal register={openShiftModal} prroEnabled={prroEnabled} loading={shiftLoading}
+          onClose={() => setOpenShiftModal(null)} onConfirm={confirmOpenShift} />
       )}
     </div>
   );
