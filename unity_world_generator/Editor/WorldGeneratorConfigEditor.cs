@@ -225,8 +225,7 @@ namespace AaaWorldGen.Editor
             if (generator == null) return;
             Undo.RecordObject(generator, "Generate terrain");
             generator.Config = config;
-            generator.GenerateTerrainOnly();
-            WorldGenTerrainPreview.Invalidate();
+            TerrainBakeEditorRunner.RunTerrainOnly(generator, () => WorldGenTerrainPreview.Invalidate());
         }
 
         private void DrawSearch()

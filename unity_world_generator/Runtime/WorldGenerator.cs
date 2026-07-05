@@ -229,6 +229,17 @@ namespace AaaWorldGen
         /// <summary>Bakes Unity terrain tiles only — fast iteration without layout/spawn pass.</summary>
         public TerrainGenerator.TerrainGenerationResult GenerateTerrainOnly()
         {
+            TerrainGenerator.TerrainBakeSession session = BeginTerrainOnlyBake();
+            while (!session.IsComplete)
+            {
+                session = TerrainGenerator.StepBake(session, int.MaxValue);
+            }
+
+            return CompleteTerrainOnlyBake(session);
+        }
+
+        public TerrainGenerator.TerrainBakeSession BeginTerrainOnlyBake()
+        {
             if (config == null)
             {
                 throw new InvalidOperationException("WorldGeneratorConfig is missing.");
@@ -242,7 +253,23 @@ namespace AaaWorldGen
 
             Func<float, float, float> sampleHeight01 = HeightSampler.BuildHeight01Sampler(config);
             Transform terrainRoot = EnsureTerrainRoot(terrainSettings);
-            lastTerrainResult = TerrainGenerator.Generate(config, sampleHeight01, terrainRoot);
+            return TerrainGenerator.BeginBake(config, sampleHeight01, terrainRoot);
+        }
+
+        public TerrainGenerator.TerrainGenerationResult CompleteTerrainOnlyBake(
+            TerrainGenerator.TerrainBakeSession session)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            if (!session.IsComplete)
+            {
+                throw new InvalidOperationException("Terrain bake session is not complete.");
+            }
+
+            lastTerrainResult = session.Result;
             Debug.Log($"Terrain-only bake: {lastTerrainResult.terrains.Count} tiles.");
             return lastTerrainResult;
         }

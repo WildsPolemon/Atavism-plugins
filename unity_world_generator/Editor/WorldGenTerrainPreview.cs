@@ -162,8 +162,9 @@ namespace AaaWorldGen.Editor
             {
                 Undo.RecordObject(generator, "Generate terrain");
                 generator.Config = config;
-                generator.GenerateTerrainOnly();
-                EditorUtility.DisplayDialog("Terrain", "Terrain tiles baked into scene.", "OK");
+                TerrainBakeEditorRunner.RunTerrainOnly(
+                    generator,
+                    () => EditorUtility.DisplayDialog("Terrain", "Terrain tiles baked into scene.", "OK"));
             }
             catch (Exception ex)
             {

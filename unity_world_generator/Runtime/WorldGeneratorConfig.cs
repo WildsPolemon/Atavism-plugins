@@ -98,6 +98,13 @@ namespace AaaWorldGen
                 {
                     messages.Add("terrainGeneration.heightmapResolution should be >= 33.");
                 }
+
+                int terrainTiles = TerrainGenerator.EstimateTileCount(this);
+                if (terrainTiles > 64)
+                {
+                    messages.Add(
+                        $"terrainGeneration will create {terrainTiles} tiles — increase terrainTileSizeMeters for faster bakes.");
+                }
             }
 
             if (biomeClimate == null)

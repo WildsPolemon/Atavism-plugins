@@ -93,10 +93,12 @@ namespace AaaWorldGen.Editor
                 TryGenerateWorld();
             }
 
+            EditorGUI.BeginDisabledGroup(TerrainBakeEditorRunner.IsRunning);
             if (GUILayout.Button("Terrain Only", GUILayout.Height(48f), GUILayout.Width(96f)))
             {
                 TryGenerateTerrainOnly();
             }
+            EditorGUI.EndDisabledGroup();
 
             if (GUILayout.Button("Validate", GUILayout.Height(48f), GUILayout.Width(72f)))
             {
@@ -488,15 +490,25 @@ namespace AaaWorldGen.Editor
         {
             if (generator == null) { statusLine = "No WorldGenerator in scene."; return; }
             if (config == null) { statusLine = "No config selected."; return; }
+            if (TerrainBakeEditorRunner.IsRunning)
+            {
+                statusLine = "Terrain bake already running.";
+                return;
+            }
+
             try
             {
                 Undo.RecordObject(generator, "Generate terrain");
                 generator.Config = config;
-                TerrainGenerator.TerrainGenerationResult terrain = generator.GenerateTerrainOnly();
-                statusLine = $"Terrain baked — {terrain.terrains.Count} tiles";
-                activeSection = Section.Terrain;
-                WorldGenTerrainPreview.Invalidate();
-                Repaint();
+                TerrainBakeEditorRunner.RunTerrainOnly(
+                    generator,
+                    () =>
+                    {
+                        activeSection = Section.Terrain;
+                        WorldGenTerrainPreview.Invalidate();
+                        Repaint();
+                    },
+                    message => statusLine = message);
             }
             catch (Exception ex)
             {

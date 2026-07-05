@@ -15,7 +15,45 @@ namespace AaaWorldGen
             public List<Terrain> terrains = new List<Terrain>();
         }
 
-        public static TerrainGenerationResult Generate(
+        public sealed class TerrainBakeSession
+        {
+            internal WorldGeneratorConfig config;
+            internal Func<float, float, float> sampleHeight01;
+            internal Transform terrainRoot;
+            internal TerrainGenerationSettings settings;
+            internal float worldSizeMeters;
+            internal float tileSize;
+            internal int tilesPerAxis;
+            internal int resolution;
+            internal int nextTileIndex;
+
+            public TerrainGenerationResult Result { get; internal set; }
+            public int TotalTileSlots { get; internal set; }
+            public int CompletedTiles { get; internal set; }
+            public bool IsComplete { get; internal set; }
+            public bool CancelRequested { get; set; }
+        }
+
+        public static int EstimateTileCount(WorldGeneratorConfig config)
+        {
+            if (config == null)
+            {
+                return 0;
+            }
+
+            TerrainGenerationSettings settings = config.terrainGeneration ?? new TerrainGenerationSettings();
+            if (!settings.enableTerrainGeneration)
+            {
+                return 0;
+            }
+
+            float worldSizeMeters = config.worldSizeInChunks * config.chunkSizeMeters;
+            float tileSize = Mathf.Max(32f, settings.terrainTileSizeMeters);
+            int tilesPerAxis = Mathf.Max(1, Mathf.CeilToInt(worldSizeMeters / tileSize));
+            return tilesPerAxis * tilesPerAxis;
+        }
+
+        public static TerrainBakeSession BeginBake(
             WorldGeneratorConfig config,
             Func<float, float, float> sampleHeight01,
             Transform terrainRoot)
@@ -33,14 +71,17 @@ namespace AaaWorldGen
             TerrainGenerationSettings settings = config.terrainGeneration ?? new TerrainGenerationSettings();
             if (!settings.enableTerrainGeneration)
             {
-                return new TerrainGenerationResult();
+                return new TerrainBakeSession
+                {
+                    Result = new TerrainGenerationResult(),
+                    IsComplete = true
+                };
             }
 
             float worldSizeMeters = config.worldSizeInChunks * config.chunkSizeMeters;
             float tileSize = Mathf.Max(32f, settings.terrainTileSizeMeters);
             int tilesPerAxis = Mathf.Max(1, Mathf.CeilToInt(worldSizeMeters / tileSize));
             int resolution = Mathf.Clamp(settings.heightmapResolution, 33, 4097);
-            // Unity terrains expect 2^n + 1 resolutions.
             resolution = Mathf.ClosestPowerOfTwo(resolution - 1) + 1;
 
             if (settings.clearTerrainBeforeGenerate && terrainRoot != null)
@@ -48,47 +89,109 @@ namespace AaaWorldGen
                 ClearTerrainChildren(terrainRoot);
             }
 
-            TerrainGenerationResult result = new TerrainGenerationResult
+            TerrainBakeSession session = new TerrainBakeSession
             {
-                tilesX = tilesPerAxis,
-                tilesZ = tilesPerAxis,
-                heightmapResolution = resolution,
-                tileSizeMeters = tileSize
+                config = config,
+                sampleHeight01 = sampleHeight01,
+                terrainRoot = terrainRoot,
+                settings = settings,
+                worldSizeMeters = worldSizeMeters,
+                tileSize = tileSize,
+                tilesPerAxis = tilesPerAxis,
+                resolution = resolution,
+                nextTileIndex = 0,
+                TotalTileSlots = tilesPerAxis * tilesPerAxis,
+                CompletedTiles = 0,
+                Result = new TerrainGenerationResult
+                {
+                    tilesX = tilesPerAxis,
+                    tilesZ = tilesPerAxis,
+                    heightmapResolution = resolution,
+                    tileSizeMeters = tileSize
+                }
             };
 
-            for (int tz = 0; tz < tilesPerAxis; tz++)
-            {
-                for (int tx = 0; tx < tilesPerAxis; tx++)
-                {
-                    float originX = tx * tileSize;
-                    float originZ = tz * tileSize;
-                    float effectiveTileWidth = Mathf.Min(tileSize, worldSizeMeters - originX);
-                    float effectiveTileLength = Mathf.Min(tileSize, worldSizeMeters - originZ);
-                    if (effectiveTileWidth <= 0.5f || effectiveTileLength <= 0.5f)
-                    {
-                        continue;
-                    }
+            return session;
+        }
 
+        public static TerrainBakeSession StepBake(TerrainBakeSession session, int maxTiles = 1)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            if (session.IsComplete || session.CancelRequested)
+            {
+                session.IsComplete = true;
+                return session;
+            }
+
+            int processed = 0;
+            while (processed < maxTiles && session.nextTileIndex < session.TotalTileSlots)
+            {
+                int tileIndex = session.nextTileIndex++;
+                int tx = tileIndex % session.tilesPerAxis;
+                int tz = tileIndex / session.tilesPerAxis;
+                float originX = tx * session.tileSize;
+                float originZ = tz * session.tileSize;
+                float effectiveTileWidth = Mathf.Min(session.tileSize, session.worldSizeMeters - originX);
+                float effectiveTileLength = Mathf.Min(session.tileSize, session.worldSizeMeters - originZ);
+                if (effectiveTileWidth > 0.5f && effectiveTileLength > 0.5f)
+                {
                     Terrain terrain = CreateTerrainTile(
-                        config,
-                        sampleHeight01,
-                        settings,
-                        terrainRoot,
+                        session.config,
+                        session.sampleHeight01,
+                        session.settings,
+                        session.terrainRoot,
                         tx,
                         tz,
                         originX,
                         originZ,
                         effectiveTileWidth,
                         effectiveTileLength,
-                        resolution);
+                        session.resolution);
                     if (terrain != null)
                     {
-                        result.terrains.Add(terrain);
+                        session.Result.terrains.Add(terrain);
                     }
+
+                    session.CompletedTiles++;
                 }
+
+                processed++;
             }
 
-            return result;
+            if (session.nextTileIndex >= session.TotalTileSlots || session.CancelRequested)
+            {
+                session.IsComplete = true;
+            }
+
+            return session;
+        }
+
+        public static TerrainGenerationResult Generate(
+            WorldGeneratorConfig config,
+            Func<float, float, float> sampleHeight01,
+            Transform terrainRoot)
+        {
+            if (config == null)
+            {
+                throw new ArgumentNullException(nameof(config));
+            }
+
+            if (sampleHeight01 == null)
+            {
+                throw new ArgumentNullException(nameof(sampleHeight01));
+            }
+
+            TerrainBakeSession session = BeginBake(config, sampleHeight01, terrainRoot);
+            while (!session.IsComplete)
+            {
+                session = StepBake(session, int.MaxValue);
+            }
+
+            return session.Result;
         }
 
         private static Terrain CreateTerrainTile(
