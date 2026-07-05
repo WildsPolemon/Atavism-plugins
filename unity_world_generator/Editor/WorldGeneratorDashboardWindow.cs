@@ -88,12 +88,12 @@ namespace AaaWorldGen.Editor
             EditorGUILayout.Space(6f);
             EditorGUILayout.BeginHorizontal();
 
+            EditorGUI.BeginDisabledGroup(TerrainBakeEditorRunner.IsRunning);
             if (WorldGenEditorUi.DrawPrimaryButton("  GENERATE WORLD  ", 48f))
             {
                 TryGenerateWorld();
             }
 
-            EditorGUI.BeginDisabledGroup(TerrainBakeEditorRunner.IsRunning);
             if (GUILayout.Button("Terrain Only", GUILayout.Height(48f), GUILayout.Width(96f)))
             {
                 TryGenerateTerrainOnly();
@@ -467,17 +467,25 @@ namespace AaaWorldGen.Editor
         {
             if (generator == null) { statusLine = "No WorldGenerator in scene."; return; }
             if (config == null) { statusLine = "No config selected."; return; }
+            if (TerrainBakeEditorRunner.IsRunning)
+            {
+                statusLine = "World generation already running.";
+                return;
+            }
+
             try
             {
                 Undo.RecordObject(generator, "Generate World");
                 generator.Config = config;
-                WorldGenerationResult result = generator.GenerateNow();
-                TerrainGenerator.TerrainGenerationResult terrain = generator.LastTerrainResult;
-                string terrainInfo = terrain?.terrains != null ? $", {terrain.terrains.Count} terrain tiles" : string.Empty;
-                statusLine = $"Done — {result.cities.Count} cities, {result.resources.Count} resources{terrainInfo}";
-                activeSection = Section.Results;
-                WorldGenTerrainPreview.Invalidate();
-                Repaint();
+                TerrainBakeEditorRunner.RunFullWorld(
+                    generator,
+                    result =>
+                    {
+                        activeSection = Section.Results;
+                        WorldGenTerrainPreview.Invalidate();
+                        Repaint();
+                    },
+                    message => statusLine = message);
             }
             catch (Exception ex)
             {

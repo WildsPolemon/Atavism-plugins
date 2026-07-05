@@ -216,8 +216,9 @@ namespace AaaWorldGen.Editor
             if (generator == null) return;
             Undo.RecordObject(generator, "Generate world");
             generator.Config = config;
-            generator.GenerateNow();
-            WorldGenTerrainPreview.Invalidate();
+            TerrainBakeEditorRunner.RunFullWorld(
+                generator,
+                _ => WorldGenTerrainPreview.Invalidate());
         }
 
         private static void TryTerrainOnlyFromInspector(WorldGenerator generator, WorldGeneratorConfig config)

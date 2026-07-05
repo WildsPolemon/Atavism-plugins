@@ -124,6 +124,14 @@ namespace AaaWorldGen
 
         public WorldGenerationResult GenerateNow()
         {
+            GenerateLayout();
+            BakeTerrainSynchronously();
+            return FinalizeWorldGeneration();
+        }
+
+        /// <summary>Builds cities, roads, caves, resources, spawns, and sectors without terrain or runtime spawning.</summary>
+        public WorldGenerationResult GenerateLayout()
+        {
             if (config == null)
             {
                 throw new InvalidOperationException("WorldGeneratorConfig is missing.");
@@ -197,18 +205,22 @@ namespace AaaWorldGen
                 sectors = sectors
             };
             BuildSectorLookup(lastResult.sectors);
+            return lastResult;
+        }
 
-            TerrainGenerationSettings terrainSettings = config.terrainGeneration ?? new TerrainGenerationSettings();
-            if (terrainSettings.enableTerrainGeneration)
+        /// <summary>Spawns runtime prefabs and exports JSON after layout when terrain is disabled.</summary>
+        public WorldGenerationResult CompleteWorldGenerationWithoutTerrain()
+        {
+            lastTerrainResult = null;
+            return FinalizeWorldGeneration();
+        }
+
+        /// <summary>Spawns runtime prefabs and exports JSON after layout and terrain are ready.</summary>
+        public WorldGenerationResult FinalizeWorldGeneration()
+        {
+            if (lastResult == null)
             {
-                Transform terrainRoot = EnsureTerrainRoot(terrainSettings);
-                lastTerrainResult = TerrainGenerator.Generate(config, sampleHeight01, terrainRoot);
-                Debug.Log($"Terrain generated: {lastTerrainResult.terrains.Count} tiles " +
-                          $"({lastTerrainResult.tilesX}x{lastTerrainResult.tilesZ}, res={lastTerrainResult.heightmapResolution}).");
-            }
-            else
-            {
-                lastTerrainResult = null;
+                throw new InvalidOperationException("GenerateLayout must run before FinalizeWorldGeneration.");
             }
 
             if (spawnRuntimePrefabs)
@@ -224,6 +236,27 @@ namespace AaaWorldGen
             }
 
             return lastResult;
+        }
+
+        private void BakeTerrainSynchronously()
+        {
+            TerrainGenerationSettings terrainSettings = config.terrainGeneration ?? new TerrainGenerationSettings();
+            if (terrainSettings.enableTerrainGeneration)
+            {
+                TerrainGenerator.TerrainBakeSession session = BeginTerrainOnlyBake();
+                while (!session.IsComplete)
+                {
+                    session = TerrainGenerator.StepBake(session, int.MaxValue);
+                }
+
+                CompleteTerrainOnlyBake(session);
+                Debug.Log($"Terrain generated: {lastTerrainResult.terrains.Count} tiles " +
+                          $"({lastTerrainResult.tilesX}x{lastTerrainResult.tilesZ}, res={lastTerrainResult.heightmapResolution}).");
+            }
+            else
+            {
+                lastTerrainResult = null;
+            }
         }
 
         /// <summary>Bakes Unity terrain tiles only — fast iteration without layout/spawn pass.</summary>
