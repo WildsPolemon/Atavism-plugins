@@ -6,7 +6,7 @@ namespace AaaWorldGen
 {
     public static class TerrainGenerator
     {
-        public const string BakeEngineVersion = "studio-v5.2";
+        public const string BakeEngineVersion = "studio-v5.2.1";
 
         public enum TerrainBakePhase
         {

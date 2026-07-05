@@ -23,7 +23,7 @@ namespace AaaWorldGen.Editor
         internal static void Draw(
             WorldGeneratorConfig config,
             WorldGenerator generator,
-            ref string statusLine,
+            Action<string> setStatusLine,
             Action<WorldGenerationResult> onWorldComplete)
         {
             if (config == null)
@@ -114,7 +114,7 @@ namespace AaaWorldGen.Editor
             if (GUILayout.Button("Apply Setup Only", GUILayout.Height(32f)))
             {
                 ApplyZoneLocationPreset(config);
-                statusLine = $"Location preset applied — {kit.locationName}";
+                setStatusLine?.Invoke($"Location preset applied — {kit.locationName}");
                 WorldGenLivePreview.NotifyConfigChanged(config);
                 WorldGenTerrainPreview.Invalidate();
             }
@@ -124,9 +124,9 @@ namespace AaaWorldGen.Editor
             {
                 BuildZoneLocation(generator, config, result =>
                 {
-                    statusLine = $"Location built — {kit.locationName}";
+                    setStatusLine?.Invoke($"Location built — {kit.locationName}");
                     onWorldComplete?.Invoke(result);
-                }, message => statusLine = message);
+                }, setStatusLine);
             }
             EditorGUI.EndDisabledGroup();
             EditorGUILayout.EndHorizontal();

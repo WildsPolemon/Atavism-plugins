@@ -346,7 +346,7 @@ namespace AaaWorldGen.Editor
             WorldGenLocationWizard.Draw(
                 config,
                 generator,
-                ref statusLine,
+                message => statusLine = message,
                 result =>
                 {
                     activeSection = Section.Results;
