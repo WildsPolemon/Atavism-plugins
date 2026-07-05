@@ -13,16 +13,18 @@ namespace AaaWorldGen.Editor
         private enum Section
         {
             Setup = 0,
-            Terrain = 1,
-            World = 2,
-            Biomes = 3,
-            Spawns = 4,
-            Results = 5
+            Location = 1,
+            Terrain = 2,
+            World = 3,
+            Biomes = 4,
+            Spawns = 5,
+            Results = 6
         }
 
         private static readonly string[] SectionLabels =
         {
             "  Setup",
+            "  Location Wizard",
             "  Terrain Studio",
             "  World Layout",
             "  Biomes",
@@ -74,7 +76,7 @@ namespace AaaWorldGen.Editor
             WorldGenEditorUi.EnsureStyles();
             WorldGenEditorUi.DrawTopBanner(
                 "WorldGen Studio",
-                "Terrain sculpt studio — mountains, plains, coasts, biomes. Live preview as you drag sliders.");
+                "Location Wizard — Zone preset, Alpine/Heroic terrain, 10 biomes, Synty kits, POI markers.");
 
             DrawCommandRail();
 
@@ -176,6 +178,9 @@ namespace AaaWorldGen.Editor
                 case Section.Setup:
                     DrawSetupSection();
                     break;
+                case Section.Location:
+                    DrawLocationSection();
+                    break;
                 case Section.Terrain:
                     DrawTerrainSection();
                     break;
@@ -237,6 +242,19 @@ namespace AaaWorldGen.Editor
 
         private void DrawSetupSection()
         {
+            WorldGenEditorUi.BeginPanel("Quick Start", "New here? Open Location Wizard for the full zone → boss flow.");
+            EditorGUILayout.BeginHorizontal();
+            if (WorldGenEditorUi.DrawPresetCard("Location Wizard", "Zone + Alpine/Heroic + 10 biomes + Synty + POIs", WorldGenEditorUi.Accent))
+            {
+                activeSection = Section.Location;
+            }
+            if (WorldGenEditorUi.DrawPresetCard("Terrain Studio", "Sculpt mountains, plains, coast live", WorldGenEditorUi.Success))
+            {
+                activeSection = Section.Terrain;
+            }
+            EditorGUILayout.EndHorizontal();
+            WorldGenEditorUi.EndPanel();
+
             WorldGenEditorUi.BeginPanel("Map Size — Small & Fast", "Start here for prototypes and zone-scale worlds. Fewer tiles = faster iteration.");
             EditorGUILayout.BeginHorizontal();
             if (WorldGenEditorUi.DrawPresetCard("Prototype", WorldGenStudioPresets.MapSizeHints[0], WorldGenEditorUi.Success))
@@ -321,6 +339,20 @@ namespace AaaWorldGen.Editor
                 DrawProperty("clearRootsBeforeSpawn");
                 WorldGenEditorUi.EndPanel();
             }
+        }
+
+        private void DrawLocationSection()
+        {
+            WorldGenLocationWizard.Draw(
+                config,
+                generator,
+                ref statusLine,
+                result =>
+                {
+                    activeSection = Section.Results;
+                    WorldGenTerrainPreview.Invalidate();
+                    Repaint();
+                });
         }
 
         private void DrawTerrainSection()

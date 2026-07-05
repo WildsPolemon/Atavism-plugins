@@ -49,6 +49,9 @@ namespace AaaWorldGen
         [Header("Sectors")]
         public SectorGenerationSettings sectorSettings = new SectorGenerationSettings();
 
+        [Header("Location Wizard")]
+        public LocationKitSettings locationKit = new LocationKitSettings();
+
         [Header("Spawn Parents")]
         public Transform cityRoot;
         public Transform caveRoot;
@@ -462,6 +465,31 @@ namespace AaaWorldGen
         public int maxResourcesPerSector = 1800;
         public int maxNpcSpawnsPerSector = 96;
         public int maxMobZonesPerSector = 48;
+    }
+
+    [Serializable]
+    public sealed class LocationKitSettings
+    {
+        public string locationName = "Boss Zone";
+        public bool spawnPoiMarkers = true;
+        public Transform poiRoot;
+        public int roadHintSteps = 6;
+
+        [Tooltip("Synty forest props — assigned to meadow/forest/jungle resource pools.")]
+        public string forestKitFolder;
+        [Tooltip("Synty ruins props — assigned to volcanic/alpine caves and ruins POI.")]
+        public string ruinsKitFolder;
+        [Tooltip("Synty road pieces — first prefab becomes road marker; rest for manual polish.")]
+        public string roadKitFolder;
+
+        public Texture2D grassDiffuse;
+        public Texture2D grassNormal;
+        public Texture2D stoneDiffuse;
+        public Texture2D stoneNormal;
+
+        public Vector2 spawnHub01 = new Vector2(0.18f, 0.20f);
+        public Vector2 ruins01 = new Vector2(0.52f, 0.48f);
+        public Vector2 bossArena01 = new Vector2(0.82f, 0.76f);
     }
 
     [Serializable]

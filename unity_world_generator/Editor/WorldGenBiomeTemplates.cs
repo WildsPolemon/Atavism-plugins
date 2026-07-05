@@ -39,8 +39,127 @@ namespace AaaWorldGen.Editor
                 return;
             }
 
-            string[] guids = AssetDatabase.FindAssets("t:Prefab", new[] { path });
+            if (string.IsNullOrEmpty(biomeIdFilter))
+            {
+                AssignPrefabFolderPath(config, path);
+            }
+            else
+            {
+                AssignPrefabFolderPath(config, path, biomeIdFilter);
+            }
+        }
+
+        internal static void AssignPrefabFolderPath(WorldGeneratorConfig config, string folderPath, params string[] biomeIds)
+        {
+            if (config == null || string.IsNullOrEmpty(folderPath))
+            {
+                return;
+            }
+
+            List<GameObject> prefabs = LoadPrefabsFromFolder(folderPath);
+            if (prefabs.Count == 0)
+            {
+                EditorUtility.DisplayDialog("Biome Prefabs", "No prefabs found in selected folder.", "OK");
+                return;
+            }
+
+            Undo.RecordObject(config, "Assign biome prefabs");
+            bool filterAll = biomeIds == null || biomeIds.Length == 0;
+            for (int i = 0; i < config.biomes.Count; i++)
+            {
+                BiomeDefinition biome = config.biomes[i];
+                if (!filterAll && !MatchesBiomeId(biome.biomeId, biomeIds))
+                {
+                    continue;
+                }
+
+                biome.resourcePrefabs = prefabs.ToArray();
+            }
+
+            EditorUtility.SetDirty(config);
+            WorldGenLivePreview.NotifyConfigChanged(config);
+        }
+
+        internal static void AssignCavePrefabsFromFolder(WorldGeneratorConfig config, string folderPath, params string[] biomeIds)
+        {
+            if (config == null || string.IsNullOrEmpty(folderPath))
+            {
+                return;
+            }
+
+            List<GameObject> prefabs = LoadPrefabsFromFolder(folderPath);
+            if (prefabs.Count == 0)
+            {
+                return;
+            }
+
+            Undo.RecordObject(config, "Assign cave prefabs");
+            bool filterAll = biomeIds == null || biomeIds.Length == 0;
+            for (int i = 0; i < config.biomes.Count; i++)
+            {
+                BiomeDefinition biome = config.biomes[i];
+                if (!filterAll && !MatchesBiomeId(biome.biomeId, biomeIds))
+                {
+                    continue;
+                }
+
+                biome.caveEntrancePrefabs = prefabs.ToArray();
+                if (biome.resourcePrefabs == null || biome.resourcePrefabs.Length == 0)
+                {
+                    biome.resourcePrefabs = prefabs.ToArray();
+                }
+            }
+
+            EditorUtility.SetDirty(config);
+            WorldGenLivePreview.NotifyConfigChanged(config);
+        }
+
+        internal static void AssignGrassStoneTextures(
+            WorldGeneratorConfig config,
+            Texture2D grassDiffuse,
+            Texture2D grassNormal,
+            Texture2D stoneDiffuse,
+            Texture2D stoneNormal)
+        {
+            if (config == null)
+            {
+                return;
+            }
+
+            Undo.RecordObject(config, "Assign grass/stone textures");
+            if (grassDiffuse != null)
+            {
+                config.terrainGeneration.defaultTerrainDiffuse = grassDiffuse;
+                config.terrainGeneration.defaultTerrainNormal = grassNormal;
+                ApplyTextureToBiomes(config, grassDiffuse, grassNormal, "meadow", "forest", "jungle", "savanna", "swamp", "coastal");
+            }
+
+            if (stoneDiffuse != null)
+            {
+                ApplyTextureToBiomes(config, stoneDiffuse, stoneNormal, "alpine", "volcanic", "desert", "tundra");
+            }
+
+            if (config.locationKit != null)
+            {
+                config.locationKit.grassDiffuse = grassDiffuse;
+                config.locationKit.grassNormal = grassNormal;
+                config.locationKit.stoneDiffuse = stoneDiffuse;
+                config.locationKit.stoneNormal = stoneNormal;
+            }
+
+            EditorUtility.SetDirty(config);
+            WorldGenLivePreview.NotifyConfigChanged(config);
+        }
+
+        internal static List<GameObject> LoadPrefabsFromFolder(string folderPath)
+        {
             List<GameObject> prefabs = new List<GameObject>();
+            if (string.IsNullOrEmpty(folderPath))
+            {
+                return prefabs;
+            }
+
+            string[] guids = AssetDatabase.FindAssets("t:Prefab", new[] { folderPath });
             for (int i = 0; i < guids.Length; i++)
             {
                 string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
@@ -51,27 +170,44 @@ namespace AaaWorldGen.Editor
                 }
             }
 
-            if (prefabs.Count == 0)
-            {
-                EditorUtility.DisplayDialog("Biome Prefabs", "No prefabs found in selected folder.", "OK");
-                return;
-            }
+            return prefabs;
+        }
 
-            Undo.RecordObject(config, "Assign biome prefabs");
+        private static void ApplyTextureToBiomes(
+            WorldGeneratorConfig config,
+            Texture2D diffuse,
+            Texture2D normal,
+            params string[] biomeIds)
+        {
             for (int i = 0; i < config.biomes.Count; i++)
             {
                 BiomeDefinition biome = config.biomes[i];
-                if (!string.IsNullOrEmpty(biomeIdFilter) &&
-                    !biome.biomeId.Equals(biomeIdFilter, System.StringComparison.OrdinalIgnoreCase))
+                if (!MatchesBiomeId(biome.biomeId, biomeIds))
                 {
                     continue;
                 }
 
-                biome.resourcePrefabs = prefabs.ToArray();
+                biome.terrainDiffuse = diffuse;
+                biome.terrainNormal = normal;
+            }
+        }
+
+        private static bool MatchesBiomeId(string biomeId, string[] filters)
+        {
+            if (string.IsNullOrEmpty(biomeId) || filters == null)
+            {
+                return false;
             }
 
-            EditorUtility.SetDirty(config);
-            WorldGenLivePreview.NotifyConfigChanged(config);
+            for (int i = 0; i < filters.Length; i++)
+            {
+                if (biomeId.Equals(filters[i], System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         internal static void AssignTerrainTextureToAllBiomes(WorldGeneratorConfig config, Texture2D diffuse, Texture2D normal = null)

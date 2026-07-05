@@ -36,9 +36,15 @@ This module provides a Unity-ready procedural world generation pipeline for larg
    - POLYGON Nature Biomes Season Two
    - Tune `biomeClimate` values for stronger biome contrast and smoother natural transitions.
 5. Add `WorldGenerator` component to an empty scene object and assign config.
-6. Open **Tools > World Generation > Open Generator Dashboard**.
-7. Click **Generate World** in dashboard — layout runs first, then terrain bakes incrementally in the editor (progress bar, cancellable).
-8. **Terrain Only** and **Generate World** use incremental-v3 baking in the editor (footer shows `bake incremental-v3`).
+6. Open **Window > World Generation > AAA Generator Dashboard** (WorldGen Studio).
+7. **Location Wizard** tab — one-click zone flow:
+   - Map size **Zone** (~3 km)
+   - **Alpine Peaks** or **Heroic WoW** terrain + mountain tweak slider
+   - **10-Biome Rich World** + grass/stone terrain textures
+   - Synty kit folders: Forest, Ruins, Road to Boss
+   - **BUILD ZONE LOCATION** — generates world + spawns POI markers (`POI_SpawnHub`, `POI_Ruins`, `POI_BossArena`) and road hints for hand polish
+8. Click **GENERATE WORLD** for manual pipeline — layout runs first, then terrain bakes incrementally (progress bar, cancellable).
+9. Footer shows bake engine version (e.g. `bake studio-v5.2`).
 9. Terrain tiles appear under `TerrainRoot` (auto-created on the generator). Tune `terrainGeneration` in config:
    - `enableTerrainGeneration` — on by default
    - `terrainTileSizeMeters` — tile size (512 recommended for large worlds)

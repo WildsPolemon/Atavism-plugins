@@ -71,6 +71,7 @@ namespace AaaWorldGen.Editor
             if (target.terrainGeneration == null) { target.terrainGeneration = new TerrainGenerationSettings(); }
             if (target.biomeClimate == null) { target.biomeClimate = new BiomeClimateSettings(); }
             if (target.biomes == null) { target.biomes = new List<BiomeDefinition>(); }
+            if (target.locationKit == null) { target.locationKit = new LocationKitSettings(); }
         }
 
         private static void ApplyBalancedMmo(WorldGeneratorConfig config)
