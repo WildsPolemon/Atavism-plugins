@@ -397,11 +397,12 @@ namespace AaaWorldGen
                     return false;
                 }
 
-                Terrain terrain = CreateTerrainFromHeights(
-                    session.config,
-                    session.settings,
-                    session.terrainRoot,
-                    tile);
+                    Terrain terrain = CreateTerrainFromHeights(
+                        session.config,
+                        session.settings,
+                        session.terrainRoot,
+                        tile,
+                        session.sampleBiome);
                 if (terrain != null)
                 {
                     session.Result.terrains.Add(terrain);
