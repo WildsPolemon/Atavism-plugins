@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { FolderOpen, ScanBarcode, User, Mail, Lock, QrCode } from 'lucide-react';
+import { FolderOpen, ScanBarcode, Mail, Lock, QrCode } from 'lucide-react';
 import { api, getToken, setToken } from './api';
 import { fmt } from './utils';
 import { printReceipt, readScaleWeight } from './utils/hardware';
@@ -18,7 +18,6 @@ import ProductAddModal from './components/ProductAddModal';
 import ShiftsModal from './components/ShiftsModal';
 import XZReportModal from './components/XZReportModal';
 import DebtReturnModal from './components/DebtReturnModal';
-import CloseShiftModal from './components/CloseShiftModal';
 import RegisterSelectModal from './components/RegisterSelectModal';
 import OpenShiftModal from './components/OpenShiftModal';
 
@@ -59,7 +58,8 @@ export default function App() {
   const [debtOpen, setDebtOpen] = useState(false);
   const [debtors, setDebtors] = useState([]);
   const [closeShiftOpen, setCloseShiftOpen] = useState(false);
-  const [registerSelectOpen, setRegisterSelectOpen] = useState(false);
+  const [journalReturnMode, setJournalReturnMode] = useState(false);
+  const [returnSale, setReturnSale] = useState(null);
   const [openShiftModal, setOpenShiftModal] = useState(null);
   const [myRegisters, setMyRegisters] = useState([]);
   const [err, setErr] = useState('');
@@ -242,14 +242,36 @@ export default function App() {
     if (id === 'comment') setCommentOpen(true);
   };
 
+  const loadSales = async (filters = {}) => {
+    const { status = '', ...rest } = filters;
+    setSales((await api.sales(status, rest)).sales || []);
+  };
+
+  const printSaleReceipt = (sale) => {
+    const lines = [
+      settings.company_name || 'StarNet Core',
+      settings.receipt_address || '',
+      `Чек #${sale.id} · ${sale.created_at}`,
+      ...(sale.items || []).map((i) => `${i.name} x${i.quantity} = ${fmt(i.price * i.quantity)}`),
+      `РАЗОМ: ${fmt(sale.total)}`,
+      settings.receipt_footer || '',
+    ];
+    printReceipt(settings, lines).catch(() => window.print());
+  };
+
+  const handleReturn = async (id, items) => {
+    await api.returnSale(id, items);
+    await loadSales();
+  };
+
   const menuAction = async (id) => {
     if (id === 'logout') { setToken(null); setUser(null); }
     if (id === 'close-shift') {
       const r = await api.xzReport('Z');
       setXzReport(r); setCloseShiftOpen(true);
     }
-    if (id === 'journal') { setSales((await api.sales()).sales || []); setJournalOpen(true); }
-    if (id === 'return') { setSales((await api.sales('completed')).sales || []); setJournalOpen(true); }
+    if (id === 'journal') { await loadSales(); setJournalReturnMode(false); setJournalOpen(true); }
+    if (id === 'return') { await loadSales({ status: 'completed' }); setJournalReturnMode(true); setJournalOpen(true); }
     if (id === 'hold' && cart.length) { await api.holdSale({ items: cart.map((i) => ({ product_id: i.product_id, quantity: i.qty, price: i.price })) }); setCart([]); }
     if (id === 'held') { setHeld((await api.heldSales()).sales || []); }
     if (id === 'settings') setSettingsOpen(true);
@@ -323,8 +345,11 @@ export default function App() {
         <button type="button" onClick={() => setBarcodeOpen(true)} className="hidden h-10 w-10 items-center justify-center rounded-lg border border-ainur-border text-ainur-blue hover:bg-blue-50 sm:flex">
           <ScanBarcode className="h-5 w-5" />
         </button>
-        <button type="button" className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200">
-          <User className="h-4 w-4 text-ainur-muted" />
+        <button type="button" onClick={() => setCustomerOpen(true)} className="hidden items-center gap-1 rounded-lg bg-ainur-orange px-3 py-2 text-sm font-medium text-white sm:flex">
+          Клієнт <span className="rounded bg-white/20 px-1 text-[10px]">C</span>
+        </button>
+        <button type="button" onClick={() => setMenuOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-full bg-ainur-orange text-white font-bold">
+          {(user?.name || 'K')[0]}
         </button>
       </header>
 
@@ -342,7 +367,7 @@ export default function App() {
         />
       </div>
 
-      <FooterBar storeName={settings.company_name || 'StarNet Core'} shift={shift} onMenu={() => setMenuOpen(true)}
+      <FooterBar storeName={settings.company_name || 'StarNet Core'} shift={shift} user={user} onMenu={() => setMenuOpen(true)}
         onXReport={async () => { const r = await api.xzReport('X'); setXzReport(r); setXzType('X'); setXzOpen(true); }} />
 
       {menuOpen && <SideMenu user={user} onClose={() => setMenuOpen(false)} onAction={menuAction} />}
@@ -354,7 +379,8 @@ export default function App() {
         onSelect={(c) => { setCustomer(c); setCustomerOpen(false); setNewCustomerOpen(false); }}
         onCreate={async (data) => { const c = await api.createCustomer(data); setCustomer(c); setCustomerOpen(false); setNewCustomerOpen(false); }}
         onClose={() => { setCustomerOpen(false); setNewCustomerOpen(false); }} />}
-      {journalOpen && <ReceiptJournal sales={sales} onClose={() => setJournalOpen(false)} onReturn={async (id) => { await api.returnSale(id); setSales((await api.sales()).sales || []); }} />}
+      {journalOpen && <ReceiptJournal sales={sales} onClose={() => setJournalOpen(false)}
+        onFilter={loadSales} onPrint={printSaleReceipt} onReturn={handleReturn} returnMode={journalReturnMode} />}
       {settingsOpen && <PosSettings settings={settings} onClose={() => setSettingsOpen(false)} onSave={async (s) => { const r = await api.updateSettings(s); setSettings(r.settings || s); setSettingsOpen(false); loadCatalog(); }} />}
       {barcodeOpen && <BarcodeModal onScan={scanBarcode} onClose={() => setBarcodeOpen(false)} />}
       {productAddOpen !== null && <ProductAddModal barcode={productAddOpen} categories={categories} onClose={() => setProductAddOpen(null)} onSave={createProduct} />}

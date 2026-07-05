@@ -27,8 +27,15 @@ export const api = {
   holdSale: (data) => req('/api/pos/sale', { method: 'POST', body: JSON.stringify({ ...data, status: 'held', payment_cash: 0, payment_card: 0 }) }),
   sale: (data) => req('/api/pos/sale', { method: 'POST', body: JSON.stringify(data) }),
   deleteHeld: (id) => req(`/api/pos/sales/${id}/held`, { method: 'DELETE' }),
-  sales: (status) => req(`/api/pos/sales${status ? `?status=${status}` : ''}`),
-  returnSale: (id) => req(`/api/pos/sales/${id}/return`, { method: 'POST' }),
+  sales: (status, filters = {}) => {
+    const q = new URLSearchParams();
+    if (status) q.set('status', status);
+    if (filters.date) q.set('date', filters.date);
+    if (filters.search) q.set('search', filters.search);
+    return req(`/api/pos/sales${q.toString() ? `?${q}` : ''}`);
+  },
+  saleDetail: (id) => req(`/api/pos/sales/${id}`),
+  returnSale: (id, items) => req(`/api/pos/sales/${id}/return`, { method: 'POST', body: JSON.stringify(items ? { items } : {}) }),
   xzReport: (type = 'X') => req(`/api/pos/xz-report?type=${type}`),
   shifts: (status) => req(`/api/pos/shifts${status ? `?status=${status}` : ''}`),
   debtors: () => req('/api/crm/customers/debtors'),

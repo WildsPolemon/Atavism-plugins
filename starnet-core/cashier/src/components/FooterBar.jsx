@@ -1,7 +1,7 @@
 import { Menu, Wifi, Cloud, FileBarChart } from 'lucide-react';
 import { nowUk } from '../utils';
 
-export default function FooterBar({ storeName, shift, onMenu, onXReport }) {
+export default function FooterBar({ storeName, shift, user, onMenu, onXReport }) {
   return (
     <footer className="flex h-footer shrink-0 items-center justify-between border-t border-ainur-border bg-white px-4 text-sm">
       <button type="button" onClick={onMenu} className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium hover:bg-gray-100">
@@ -10,6 +10,7 @@ export default function FooterBar({ storeName, shift, onMenu, onXReport }) {
 
       <span className="hidden text-ainur-muted md:block">
         {storeName} / {shift ? `Зміна #${shift.id}` : 'Зміна не відкрита'}
+        {user?.name && <span className="text-ainur-text"> · {user.name}</span>}
       </span>
 
       <div className="flex items-center gap-3 text-ainur-muted">

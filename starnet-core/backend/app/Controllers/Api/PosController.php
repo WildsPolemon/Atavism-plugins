@@ -258,12 +258,57 @@ class PosController extends BaseApiController
     public function sales()
     {
         $status = $this->request->getGet('status') ?? '';
-        $b = db_connect()->table('sales s')
-            ->select('s.*, u.name as cashier')
+        $date = $this->request->getGet('date');
+        $search = trim($this->request->getGet('search') ?? '');
+        $db = db_connect();
+        $b = $db->table('sales s')
+            ->select('s.*, u.name as cashier, c.name as customer_name, r.name as register_name, st.name as store_name')
             ->join('users u', 'u.id = s.user_id', 'left')
-            ->orderBy('s.created_at', 'DESC')->limit(50);
+            ->join('customers c', 'c.id = s.customer_id', 'left')
+            ->join('shifts sh', 'sh.id = s.shift_id', 'left')
+            ->join('cash_registers r', 'r.id = sh.register_id', 'left')
+            ->join('stores st', 'st.id = r.store_id', 'left')
+            ->orderBy('s.created_at', 'DESC')->limit(100);
         if ($status) $b->where('s.status', $status);
-        return $this->ok(['sales' => $b->get()->getResultArray()]);
+        if ($date) $b->where('DATE(s.created_at)', $date);
+        if ($search !== '') {
+            if (ctype_digit($search)) {
+                $b->where('s.id', (int) $search);
+            } else {
+                $b->groupStart()
+                    ->like('c.name', $search)
+                    ->orLike('c.phone', $search)
+                    ->groupEnd();
+            }
+        }
+        $sales = $b->get()->getResultArray();
+        foreach ($sales as &$sale) {
+            $sale['items'] = $db->table('sale_items si')
+                ->select('si.*, p.name')
+                ->join('products p', 'p.id = si.product_id', 'left')
+                ->where('sale_id', $sale['id'])->get()->getResultArray();
+            $sale['items_count'] = count($sale['items']);
+        }
+        return $this->ok(['sales' => $sales]);
+    }
+
+    public function saleDetail(int $id)
+    {
+        $db = db_connect();
+        $sale = $db->table('sales s')
+            ->select('s.*, u.name as cashier, c.name as customer_name, c.phone as customer_phone, r.name as register_name, st.name as store_name')
+            ->join('users u', 'u.id = s.user_id', 'left')
+            ->join('customers c', 'c.id = s.customer_id', 'left')
+            ->join('shifts sh', 'sh.id = s.shift_id', 'left')
+            ->join('cash_registers r', 'r.id = sh.register_id', 'left')
+            ->join('stores st', 'st.id = r.store_id', 'left')
+            ->where('s.id', $id)->get()->getRowArray();
+        if (!$sale) return $this->err('Чек не знайдено', 404);
+        $sale['items'] = $db->table('sale_items si')
+            ->select('si.*, p.name, p.unit')
+            ->join('products p', 'p.id = si.product_id', 'left')
+            ->where('sale_id', $id)->get()->getResultArray();
+        return $this->ok($sale);
     }
 
     public function heldSales()
@@ -298,35 +343,68 @@ class PosController extends BaseApiController
             return $this->err('Чек не знайдено', 400);
         }
 
+        $body = $this->request->getJSON(true) ?? [];
+        $partial = $body['items'] ?? null;
+
         $db = db_connect();
         $items = $db->table('sale_items')->where('sale_id', $id)->get()->getResultArray();
         $wh = (int) ($db->table('warehouses')->limit(1)->get()->getRow('id') ?? 0);
         $stock = new StockService();
 
-        foreach ($items as $it) {
-            if ($wh) {
-                $stock->adjust($wh, (int) $it['product_id'], (float) $it['quantity']);
+        $returnMap = [];
+        if (is_array($partial) && $partial) {
+            foreach ($partial as $pi) {
+                $pid = (int) ($pi['product_id'] ?? 0);
+                $qty = (float) ($pi['quantity'] ?? 0);
+                if ($pid && $qty > 0) $returnMap[$pid] = ($returnMap[$pid] ?? 0) + $qty;
             }
         }
 
+        $cashBack = 0;
+        $cardBack = 0;
+        $deferredBack = 0;
+        $returnedTotal = 0;
+
+        foreach ($items as $it) {
+            $qty = (float) $it['quantity'];
+            if ($returnMap) {
+                if (empty($returnMap[$it['product_id']])) continue;
+                $qty = min($qty, $returnMap[$it['product_id']]);
+                $returnMap[$it['product_id']] -= $qty;
+            }
+            if ($wh) $stock->adjust($wh, (int) $it['product_id'], $qty);
+            $lineRatio = $qty / max(0.001, (float) $it['quantity']);
+            $returnedTotal += (float) $it['total'] * $lineRatio;
+        }
+
+        if ($returnMap && array_sum($returnMap) > 0.001) {
+            return $this->err('Невірна кількість для повернення');
+        }
+
+        $saleTotal = (float) $sale['total'];
+        $ratio = $returnMap || $partial ? ($saleTotal > 0 ? min(1, $returnedTotal / $saleTotal) : 0) : 1;
+        $cashBack = (float) $sale['payment_cash'] * $ratio;
+        $cardBack = (float) $sale['payment_card'] * $ratio;
+        $deferredBack = (float) ($sale['payment_deferred'] ?? 0) * $ratio;
+
         if ($sale['shift_id']) {
             $db->table('shifts')->where('id', $sale['shift_id'])->update([
-                'cash_sales' => max(0, (float) $db->table('shifts')->where('id', $sale['shift_id'])->get()->getRow('cash_sales') - (float) $sale['payment_cash']),
-                'card_sales' => max(0, (float) $db->table('shifts')->where('id', $sale['shift_id'])->get()->getRow('card_sales') - (float) $sale['payment_card']),
+                'cash_sales' => max(0, (float) $db->table('shifts')->where('id', $sale['shift_id'])->get()->getRow('cash_sales') - $cashBack),
+                'card_sales' => max(0, (float) $db->table('shifts')->where('id', $sale['shift_id'])->get()->getRow('card_sales') - $cardBack),
             ]);
         }
 
-        if (!empty($sale['customer_id']) && (float) ($sale['payment_deferred'] ?? 0) > 0) {
+        if (!empty($sale['customer_id']) && $deferredBack > 0) {
             $cust = $db->table('customers')->where('id', $sale['customer_id'])->get()->getRowArray();
             if ($cust) {
                 $db->table('customers')->where('id', $sale['customer_id'])->update([
-                    'debt' => max(0, (float) $cust['debt'] - (float) $sale['payment_deferred']),
+                    'debt' => max(0, (float) $cust['debt'] - $deferredBack),
                 ]);
             }
         }
 
         model(SaleModel::class)->update($id, ['status' => 'returned']);
-        return $this->ok(['ok' => true]);
+        return $this->ok(['ok' => true, 'returned' => $returnedTotal, 'cash' => $cashBack, 'card' => $cardBack]);
     }
 
     public function receiptSettings()

@@ -45,6 +45,7 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
         $routes->post('pos/products', 'Api\ProductController::create');
         $routes->get('pos/sales', 'Api\PosController::sales');
         $routes->get('pos/sales/held', 'Api\PosController::heldSales');
+        $routes->get('pos/sales/(:num)', 'Api\PosController::saleDetail/$1');
         $routes->post('pos/sale', 'Api\PosController::sale');
         $routes->post('pos/sales/(:num)/return', 'Api\PosController::returnSale/$1');
         $routes->get('pos/xz-report', 'Api\PosController::xzReport');

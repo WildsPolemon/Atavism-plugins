@@ -107,7 +107,7 @@ export default function PaymentScreen({ total, customer, settings = {}, printDef
             <div className="flex-1">
               <p className="font-medium">{customer?.name || 'Клієнт'}</p>
             </div>
-            <button type="button" onClick={onChangeCustomer} className="text-xs font-medium text-ainur-blue hover:underline">ЗМІНИВШИ</button>
+            <button type="button" onClick={onChangeCustomer} className="text-xs font-medium text-ainur-blue hover:underline">ЗМІНЮВАТИ</button>
           </div>
 
           <div className="mb-6 grid max-w-lg grid-cols-3 gap-3">
@@ -149,6 +149,11 @@ export default function PaymentScreen({ total, customer, settings = {}, printDef
           )}
 
           {err && <p className="mb-4 text-sm text-red-600">{err}</p>}
+          {tab === 'cash' && accepted > total && (
+            <p className="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+              Решта: <strong>{fmt(accepted - total)}</strong>
+            </p>
+          )}
           <button type="button" onClick={confirm}
             className="mt-auto w-full max-w-lg rounded-lg bg-ainur-blue py-4 text-lg font-bold uppercase text-white hover:bg-ainur-blue-dark">
             ПРИЙНЯТИ {fmt(total).replace(' грн.', 'ГРН.')}
