@@ -5,8 +5,14 @@ import {
 } from 'lucide-react';
 import { api, fmtUah, downloadExport } from '../api';
 
-const COUNTRIES = ['Україна', 'Польща', 'Німеччина', 'Туреччина', 'Китай', 'США', 'Італія', 'Франція'];
-const UNITS = ['шт', 'кг', 'г', 'л', 'мл', 'уп', 'пак', 'м', 'м²'];
+const COUNTRIES = ['Україна', 'Польща', 'Німеччина', 'Туреччина', 'Китай', 'США', 'Італія', 'Франція', 'Іспанія', 'Чехія'];
+const UNITS = ['шт', 'кг', 'г', 'л', 'мл', 'уп', 'пак', 'м', 'м²', 'порція'];
+const TAX_PRESETS = [
+  { v: '0', l: 'Без податку' },
+  { v: '20', l: 'ПДВ 20%' },
+  { v: '7', l: 'ПДВ 7%' },
+  { v: '5', l: 'ПДВ 5%' },
+];
 
 const emptyForm = () => ({
   type: 'product',
@@ -16,8 +22,11 @@ const emptyForm = () => ({
   purchase_price: '', markup_percent: '', retail_price: '', sale_price: '',
   cost_price: '', free_price: false, discount_percent: '', tax_percent: '0',
   supplier_id: '', min_stock: '', expiry_date: '',
-  initial_stock: 0, warehouse_stocks: {}, estore_visible: true,
-  image_url: '', image_urls: ['', '', ''],
+  enter_initial_stock: true, initial_stock: 0, warehouse_stocks: {},
+  estore_visible: true, store_prices: {},
+  has_modifications: false, mod_properties: [{ name: '', values: '' }],
+  images: ['', '', '', ''],
+  newCatInline: '',
 });
 
 export default function Products() {
@@ -26,6 +35,7 @@ export default function Products() {
   const [groups, setGroups] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
+  const [stores, setStores] = useState([]);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterCat, setFilterCat] = useState('');
@@ -53,7 +63,12 @@ export default function Products() {
     group_id: filterGroup,
   }).then(setData);
 
-  useEffect(() => { loadCats(); api.suppliers().then((r) => setSuppliers(r.suppliers || [])); api.warehouses().then((r) => setWarehouses(r.warehouses || [])); }, []);
+  useEffect(() => {
+    loadCats();
+    api.suppliers().then((r) => setSuppliers(r.suppliers || []));
+    api.warehouses().then((r) => setWarehouses(r.warehouses || []));
+    api.stores().then((r) => setStores(r.stores || []));
+  }, []);
   useEffect(() => { load(); }, [search, filterType, filterCat, filterGroup]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -74,7 +89,7 @@ export default function Products() {
       setForm((f) => ({
         ...f, barcode: code,
         name: r.name || f.name,
-        image_url: r.image_url || f.image_url,
+        images: [r.image_url || f.images[0], f.images[1], f.images[2], f.images[3]],
         retail_price: r.retail_price || f.retail_price,
       }));
       setLookupMsg(r.source === 'openfoodfacts' ? '✓ Open Food Facts' : r.source === 'local' ? '✓ В базі' : '');
@@ -92,6 +107,9 @@ export default function Products() {
   const openEdit = (p) => {
     setEditId(p.id);
     const imgs = p.image_urls ? (typeof p.image_urls === 'string' ? JSON.parse(p.image_urls) : p.image_urls) : [];
+    const allImgs = [p.image_url || imgs[0] || '', imgs[1] || '', imgs[2] || '', imgs[3] || ''];
+    const mods = p.modifications ? (typeof p.modifications === 'string' ? JSON.parse(p.modifications) : p.modifications) : [];
+    const storePrices = p.store_prices ? (typeof p.store_prices === 'string' ? JSON.parse(p.store_prices) : p.store_prices) : {};
     setForm({
       type: p.type || 'product',
       name: p.name, barcode: p.barcode || '', sku: p.sku || '', product_code: p.product_code || '',
@@ -104,10 +122,13 @@ export default function Products() {
       cost_price: p.cost_price ?? '', free_price: !!p.free_price,
       discount_percent: p.discount_percent ?? '', tax_percent: String(p.tax_percent ?? 0),
       supplier_id: p.supplier_id || '', min_stock: p.min_stock ?? '',
-      expiry_date: p.expiry_date || '', initial_stock: 0, warehouse_stocks: {},
+      expiry_date: p.expiry_date || '', enter_initial_stock: false, initial_stock: 0, warehouse_stocks: {},
       estore_visible: p.estore_visible !== 0,
-      image_url: p.image_url || '',
-      image_urls: [imgs[0] || '', imgs[1] || '', imgs[2] || ''],
+      store_prices: storePrices || {},
+      has_modifications: !!p.has_modifications,
+      mod_properties: mods.length ? mods : [{ name: '', values: '' }],
+      images: allImgs,
+      newCatInline: '',
     });
     setFormTab('general');
     setShowForm(true);
@@ -122,7 +143,7 @@ export default function Products() {
 
   async function save(e) {
     e.preventDefault();
-    const imgs = [form.image_url, ...form.image_urls].filter(Boolean);
+    const imgs = form.images.filter(Boolean);
     const payload = {
       ...form,
       group_id: form.group_id ? +form.group_id : null,
@@ -139,11 +160,18 @@ export default function Products() {
       is_weighted: form.is_weighted ? 1 : 0,
       free_price: form.free_price ? 1 : 0,
       estore_visible: form.estore_visible ? 1 : 0,
+      has_modifications: form.has_modifications ? 1 : 0,
       image_url: imgs[0] || null,
       image_urls: imgs.slice(0, 4),
-      initial_stock: +form.initial_stock || 0,
-      warehouse_stocks: form.warehouse_stocks,
+      modifications: form.has_modifications ? form.mod_properties.filter((m) => m.name) : [],
+      store_prices: form.store_prices,
+      initial_stock: form.enter_initial_stock ? (+form.initial_stock || 0) : 0,
+      warehouse_stocks: form.enter_initial_stock ? form.warehouse_stocks : {},
     };
+    delete payload.images;
+    delete payload.newCatInline;
+    delete payload.enter_initial_stock;
+    delete payload.mod_properties;
     if (editId) await api.updateProduct(editId, payload);
     else await api.createProduct(payload);
     setShowForm(false);
@@ -167,15 +195,25 @@ export default function Products() {
   };
 
   const genBarcode = async () => {
-    if (!editId) {
-      const code = '200' + Date.now().toString().slice(-10);
-      set('barcode', code);
-      return;
-    }
-    const r = await api.generateBarcode(editId);
-    set('barcode', r.barcode);
-    set('product_code', r.product_code);
+    const code = form.product_code || ('P' + Date.now().toString().slice(-6));
+    if (!form.product_code) set('product_code', code);
+    const barcode = '200' + String(Date.now()).slice(-10);
+    set('barcode', barcode);
   };
+
+  const addInlineCategory = async () => {
+    const name = form.newCatInline.trim();
+    if (!name) return;
+    const r = await api.createCategory({ name, is_group: 0 });
+    await loadCats();
+    setForm((f) => ({ ...f, category_ids: [...f.category_ids, r.id], newCatInline: '' }));
+  };
+
+  const setImage = (i, v) => setForm((f) => {
+    const images = [...f.images];
+    images[i] = v;
+    return { ...f, images };
+  });
 
   const FORM_TABS = [
     { id: 'general', label: 'Загальне' },
@@ -326,7 +364,7 @@ export default function Products() {
       {/* Product form modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 p-4 pt-6">
-          <form onSubmit={save} className="glass w-full max-w-3xl overflow-hidden">
+          <form onSubmit={save} className="glass w-full max-w-4xl overflow-hidden">
             <div className="border-b border-ainur-border bg-white px-6 py-4">
               <h3 className="text-lg font-bold">{editId ? 'Редагувати' : 'Створити'} — {typeLabel(form.type)}</h3>
               {/* Type selector */}
@@ -353,98 +391,105 @@ export default function Products() {
               </div>
             </div>
 
-            <div className="max-h-[60vh] overflow-y-auto p-6">
+            <div className="max-h-[65vh] overflow-y-auto p-6">
               {formTab === 'general' && (
                 <>
+                  <h4 className="mb-4 text-sm font-semibold text-ainur-blue">Загальна інформація</h4>
                   <div className="mb-4 grid grid-cols-2 gap-3">
                     <Field label="Найменування *" className="col-span-2">
-                      <input required value={form.name} onChange={(e) => set('name', e.target.value)} className="inp" />
+                      <input required value={form.name} onChange={(e) => set('name', e.target.value)} className="inp" placeholder="Назва товару" />
                     </Field>
                     <Field label="Код товару">
-                      <input value={form.product_code} onChange={(e) => set('product_code', e.target.value)} placeholder="Авто P000001" className="inp font-mono" />
+                      <input value={form.product_code} onChange={(e) => set('product_code', e.target.value)} placeholder="Генерується автоматично" className="inp font-mono" />
                     </Field>
-                    <Field label="Артикул (SKU)">
-                      <input value={form.sku} onChange={(e) => set('sku', e.target.value)} className="inp" />
+                    <Field label="Артикул">
+                      <input value={form.sku} onChange={(e) => set('sku', e.target.value)} className="inp" placeholder="SKU" />
                     </Field>
                     <Field label="PLU код">
-                      <input value={form.plu} onChange={(e) => set('plu', e.target.value)} className="inp" />
+                      <input value={form.plu} onChange={(e) => set('plu', e.target.value)} className="inp" placeholder="Для ваг / каси" />
                     </Field>
                     <Field label="Штрихкод">
                       <div className="flex gap-2">
                         <div className="relative flex-1">
-                          <input value={form.barcode} onChange={(e) => onBarcodeChange(e.target.value)} className="inp font-mono" placeholder="Скануйте..." />
+                          <input value={form.barcode} onChange={(e) => onBarcodeChange(e.target.value)} className="inp font-mono" placeholder="Скануйте або згенеруйте" />
                           {lookupLoading && <Loader2 className="absolute right-2 top-2 h-4 w-4 animate-spin text-ainur-blue" />}
                         </div>
-                        <button type="button" onClick={genBarcode} className="rounded-lg border border-ainur-border px-3 text-xs hover:bg-gray-50">
-                          <Barcode className="h-4 w-4" />
+                        <button type="button" onClick={genBarcode} className="shrink-0 rounded-lg border border-ainur-border px-3 py-2 text-xs hover:bg-gray-50">
+                          <Barcode className="h-4 w-4 inline mr-1" />Згенерувати
                         </button>
                       </div>
                       {lookupMsg && <p className="mt-1 text-xs text-green-600">{lookupMsg}</p>}
                     </Field>
                   </div>
 
-                  <Field label="Зображення (до 4 URL)">
-                    <div className="mb-2 flex gap-2">
-                      {[form.image_url, ...form.image_urls].slice(0, 4).map((url, i) => (
-                        <div key={i} className="h-16 w-16 shrink-0 overflow-hidden rounded border bg-ainur-bg">
-                          {url ? <img src={url} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-ainur-muted">+</div>}
+                  <Field label="Зображення (до 4)">
+                    <div className="mb-3 grid grid-cols-4 gap-2">
+                      {form.images.map((url, i) => (
+                        <div key={i} className="text-center">
+                          <div className="mb-1 flex h-20 items-center justify-center overflow-hidden rounded-lg border border-ainur-border bg-ainur-bg">
+                            {url ? <img src={url} alt="" className="h-full w-full object-cover" /> : <span className="text-2xl text-ainur-muted">+</span>}
+                          </div>
+                          <input value={url} onChange={(e) => setImage(i, e.target.value)} placeholder={`Фото ${i + 1}`} className="inp text-xs" />
                         </div>
                       ))}
                     </div>
-                    <input value={form.image_url} onChange={(e) => set('image_url', e.target.value)} placeholder="URL головного зображення" className="inp mb-2" />
                   </Field>
 
-                  <Field label="Категорії (мітки)">
-                    <div className="flex flex-wrap gap-2">
+                  <Field label="Категорії">
+                    <div className="mb-2 flex flex-wrap gap-2">
                       {tags.map((c) => (
                         <button key={c.id} type="button" onClick={() => toggleCategory(c.id)}
-                          className={`rounded-full px-3 py-1 text-xs ${form.category_ids.includes(c.id) ? 'bg-ainur-orange text-white' : 'bg-orange-50 text-ainur-orange'}`}>
+                          className={`rounded-full px-3 py-1 text-xs ${form.category_ids.includes(c.id) ? 'bg-ainur-orange text-white' : 'bg-orange-50 text-ainur-orange border border-orange-200'}`}>
                           {c.name}
                         </button>
                       ))}
-                      {!tags.length && <span className="text-xs text-ainur-muted">Створіть категорії вище</span>}
+                    </div>
+                    <div className="flex gap-2">
+                      <input value={form.newCatInline} onChange={(e) => set('newCatInline', e.target.value)} placeholder="Нова категорія..." className="inp flex-1" />
+                      <button type="button" onClick={addInlineCategory} className="rounded-lg bg-ainur-orange px-3 py-2 text-xs font-medium text-white">+ Додати</button>
                     </div>
                   </Field>
 
-                  <div className="mb-4 grid grid-cols-3 gap-3">
+                  <div className="mb-4 mt-4 grid grid-cols-3 gap-3">
                     <Field label="Одиниця виміру">
                       <input list="units" value={form.unit} onChange={(e) => set('unit', e.target.value)} className="inp" />
                       <datalist id="units">{UNITS.map((u) => <option key={u} value={u} />)}</datalist>
                     </Field>
-                    <Field label="Упаковка (к-сть)">
+                    <Field label="Упаковка (к-сть в упаковці)">
                       <input type="number" step="0.001" value={form.packaging_qty} onChange={(e) => set('packaging_qty', e.target.value)} className="inp" />
                     </Field>
-                    <Field label="Країна">
+                    <Field label="Країна-виробник">
                       <select value={form.country} onChange={(e) => set('country', e.target.value)} className="inp">
-                        <option value="">—</option>
+                        <option value="">Оберіть країну</option>
                         {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </Field>
                   </div>
 
-                  <label className="mb-3 flex items-center gap-2 text-sm">
+                  <label className="mb-4 flex items-center gap-2 rounded-lg border border-ainur-border p-3 text-sm">
                     <input type="checkbox" checked={form.is_weighted} onChange={(e) => set('is_weighted', e.target.checked)} />
-                    Ваговий товар (касир вводить кількість / зчитує з ваг)
+                    <span><strong>Ваговий товар</strong> — касир вводить кількість або зчитує з ваг</span>
                   </label>
 
-                  <Field label="Опис (для вітрини)">
-                    <textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} className="inp resize-none" />
+                  <Field label="Опис (для інтернет-вітрини)">
+                    <textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} className="inp resize-none" placeholder="Опис товару..." />
                   </Field>
                 </>
               )}
 
               {formTab === 'prices' && (
                 <>
+                  <h4 className="mb-4 text-sm font-semibold text-ainur-blue">Ціни</h4>
                   <div className="mb-4 grid grid-cols-3 gap-3">
                     <Field label="Ціна закупівлі">
                       <input type="number" step="0.01" value={form.purchase_price}
                         onChange={(e) => { set('purchase_price', e.target.value); set('retail_price', calcRetail(e.target.value, form.markup_percent)); }}
-                        className="inp" />
+                        className="inp" placeholder="0.00" />
                     </Field>
-                    <Field label="Націнка %">
+                    <Field label="Націнка, %">
                       <input type="number" step="0.01" value={form.markup_percent}
                         onChange={(e) => { set('markup_percent', e.target.value); set('retail_price', calcRetail(form.purchase_price, e.target.value)); }}
-                        className="inp" />
+                        className="inp" placeholder="%" />
                     </Field>
                     <Field label="Ціна продажу *">
                       <input required type="number" step="0.01" value={form.retail_price} onChange={(e) => set('retail_price', e.target.value)} className="inp font-semibold text-ainur-blue" />
@@ -455,18 +500,40 @@ export default function Products() {
                     <Field label="Собівартість">
                       <input type="number" step="0.01" value={form.cost_price} onChange={(e) => set('cost_price', e.target.value)} className="inp" />
                     </Field>
-                    <Field label="Знижка %">
+                    <Field label="Знижка, %">
                       <input type="number" step="0.01" value={form.discount_percent} onChange={(e) => set('discount_percent', e.target.value)} className="inp" />
                     </Field>
-                    <Field label="Податок %">
-                      <input type="number" step="0.01" value={form.tax_percent} onChange={(e) => set('tax_percent', e.target.value)} className="inp" />
-                    </Field>
                   </div>
-                  <label className="mb-3 flex items-center gap-2 text-sm">
+
+                  <Field label="Податки">
+                    <select value={form.tax_percent} onChange={(e) => set('tax_percent', e.target.value)} className="inp mb-4 max-w-xs">
+                      {TAX_PRESETS.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}
+                    </select>
+                  </Field>
+
+                  <label className="mb-3 flex items-center gap-2 rounded-lg border border-ainur-border p-3 text-sm">
                     <input type="checkbox" checked={form.free_price} onChange={(e) => set('free_price', e.target.checked)} />
-                    Товар за вільною ціною (касир може змінювати ціну на касі)
+                    <span><strong>Товар за вільною ціною</strong> — касир може змінювати ціну на касі</span>
                   </label>
-                  <label className="flex items-center gap-2 text-sm">
+
+                  {stores.length > 0 && (
+                    <>
+                      <h4 className="mb-2 mt-4 text-sm font-semibold text-ainur-blue">Різні ціни в магазинах</h4>
+                      <p className="mb-3 text-xs text-ainur-muted">Залиште порожнім — використовується базова ціна продажу</p>
+                      {stores.map((st) => (
+                        <div key={st.id} className="mb-2 flex items-center gap-3">
+                          <span className="w-44 text-sm">{st.name}</span>
+                          <input type="number" step="0.01" placeholder={form.retail_price || 'Базова ціна'}
+                            value={form.store_prices[st.id] ?? ''}
+                            onChange={(e) => set('store_prices', { ...form.store_prices, [st.id]: e.target.value })}
+                            className="inp max-w-[140px]" />
+                          <span className="text-xs text-ainur-muted">грн</span>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  <label className="mt-4 flex items-center gap-2 text-sm">
                     <input type="checkbox" checked={form.estore_visible} onChange={(e) => set('estore_visible', e.target.checked)} />
                     Показувати на інтернет-вітрині
                   </label>
@@ -475,46 +542,85 @@ export default function Products() {
 
               {formTab === 'warehouse' && form.type !== 'service' && (
                 <>
+                  <h4 className="mb-4 text-sm font-semibold text-ainur-blue">Склад</h4>
                   <div className="mb-4 grid grid-cols-2 gap-3">
-                    <Field label="Група (папка на касі)">
+                    <Field label="Група">
                       <select value={form.group_id} onChange={(e) => set('group_id', e.target.value)} className="inp">
-                        <option value="">—</option>
+                        <option value="">— Оберіть групу —</option>
                         {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
                       </select>
                     </Field>
                     <Field label="Постачальник">
                       <select value={form.supplier_id} onChange={(e) => set('supplier_id', e.target.value)} className="inp">
-                        <option value="">—</option>
+                        <option value="">— Оберіть постачальника —</option>
                         {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
                     </Field>
                     <Field label="Мінімальний залишок">
-                      <input type="number" step="0.001" value={form.min_stock} onChange={(e) => set('min_stock', e.target.value)} className="inp" />
+                      <input type="number" step="0.001" value={form.min_stock} onChange={(e) => set('min_stock', e.target.value)} className="inp" placeholder="Сповіщення при нестачі" />
                     </Field>
                     <Field label="Термін придатності">
                       <input type="date" value={form.expiry_date} onChange={(e) => set('expiry_date', e.target.value)} className="inp" />
                     </Field>
                   </div>
 
-                  <h4 className="mb-2 text-sm font-medium text-ainur-blue">Початкові залишки по складах</h4>
-                  {warehouses.length ? warehouses.map((w) => (
-                    <div key={w.id} className="mb-2 flex items-center gap-3">
-                      <span className="w-40 text-sm text-ainur-muted">{w.name}</span>
-                      <input type="number" step="0.001" placeholder="0"
-                        value={form.warehouse_stocks[w.id] ?? (warehouses.length === 1 ? form.initial_stock : '')}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          if (warehouses.length === 1) set('initial_stock', v);
-                          set('warehouse_stocks', { ...form.warehouse_stocks, [w.id]: v });
-                        }}
-                        className="inp max-w-[140px]" />
+                  <label className="mb-4 flex items-center gap-2 rounded-lg border border-ainur-border p-3 text-sm">
+                    <input type="checkbox" checked={form.has_modifications} onChange={(e) => set('has_modifications', e.target.checked)} />
+                    <span><strong>Товар із модифікаціями</strong> (розмір, колір тощо)</span>
+                  </label>
+
+                  {form.has_modifications && (
+                    <div className="mb-4 rounded-lg border border-ainur-border p-4">
+                      <p className="mb-2 text-xs text-ainur-muted">Властивість та значення (через кому або Enter)</p>
+                      {form.mod_properties.map((m, idx) => (
+                        <div key={idx} className="mb-2 grid grid-cols-2 gap-2">
+                          <input value={m.name} placeholder="Властивість (напр. Колір)"
+                            onChange={(e) => {
+                              const mod_properties = [...form.mod_properties];
+                              mod_properties[idx] = { ...mod_properties[idx], name: e.target.value };
+                              set('mod_properties', mod_properties);
+                            }} className="inp" />
+                          <input value={m.values} placeholder="Значення: S, M, L"
+                            onChange={(e) => {
+                              const mod_properties = [...form.mod_properties];
+                              mod_properties[idx] = { ...mod_properties[idx], values: e.target.value };
+                              set('mod_properties', mod_properties);
+                            }} className="inp" />
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => set('mod_properties', [...form.mod_properties, { name: '', values: '' }])}
+                        className="text-xs text-ainur-blue hover:underline">+ Додати властивість</button>
                     </div>
-                  )) : (
-                    <Field label="Початковий залишок">
-                      <input type="number" step="0.001" value={form.initial_stock} onChange={(e) => set('initial_stock', e.target.value)} className="inp max-w-[140px]" />
-                    </Field>
                   )}
-                  <p className="mt-2 text-xs text-ainur-muted">Вкажіть ціну закупівлі для коректного розрахунку собівартості при оприбуткуванні.</p>
+
+                  <label className="mb-3 flex items-center gap-2 text-sm font-medium">
+                    <input type="checkbox" checked={form.enter_initial_stock} onChange={(e) => set('enter_initial_stock', e.target.checked)} />
+                    Ввести початкові залишки
+                  </label>
+
+                  {form.enter_initial_stock && (
+                    <div className="mb-4 rounded-lg bg-ainur-bg p-4">
+                      <p className="mb-2 text-xs text-ainur-muted">Вкажіть ціну закупівлі для коректної собівартості при оприбуткуванні</p>
+                      {warehouses.length ? warehouses.map((w) => (
+                        <div key={w.id} className="mb-2 flex items-center gap-3">
+                          <span className="w-44 text-sm">{w.name}</span>
+                          <input type="number" step="0.001" placeholder="0"
+                            value={form.warehouse_stocks[w.id] ?? (warehouses.length === 1 ? form.initial_stock : '')}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              if (warehouses.length === 1) set('initial_stock', v);
+                              set('warehouse_stocks', { ...form.warehouse_stocks, [w.id]: v });
+                            }}
+                            className="inp max-w-[140px]" />
+                          <span className="text-xs text-ainur-muted">{form.unit}</span>
+                        </div>
+                      )) : (
+                        <Field label="Початковий залишок">
+                          <input type="number" step="0.001" value={form.initial_stock} onChange={(e) => set('initial_stock', e.target.value)} className="inp max-w-[140px]" />
+                        </Field>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
 

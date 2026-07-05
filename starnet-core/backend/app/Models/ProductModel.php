@@ -13,7 +13,8 @@ class ProductModel extends Model
         'type', 'unit', 'is_weighted', 'plu', 'purchase_price', 'retail_price', 'sale_price',
         'cost_price', 'markup_percent', 'tax_percent', 'discount_percent', 'min_stock',
         'expiry_date', 'free_price', 'packaging_qty', 'country', 'supplier_id',
-        'image_url', 'image_urls', 'estore_visible', 'active', 'created_at', 'updated_at',
+        'image_url', 'image_urls', 'estore_visible', 'store_prices', 'modifications', 'has_modifications',
+        'active', 'created_at', 'updated_at',
     ];
     protected $useTimestamps = false;
 }

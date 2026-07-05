@@ -140,6 +140,9 @@ class ProductController extends BaseApiController
             'image_url' => $body['image_url'] ?? null,
             'image_urls' => isset($body['image_urls']) ? json_encode($body['image_urls']) : null,
             'estore_visible' => isset($body['estore_visible']) ? (int) $body['estore_visible'] : 1,
+            'store_prices' => isset($body['store_prices']) ? json_encode($body['store_prices']) : null,
+            'has_modifications' => !empty($body['has_modifications']) ? 1 : 0,
+            'modifications' => isset($body['modifications']) ? json_encode($body['modifications']) : null,
             'active' => 1,
             'created_at' => $now,
             'updated_at' => $now,
@@ -167,6 +170,15 @@ class ProductController extends BaseApiController
         }
         if (isset($body['image_urls']) && is_array($body['image_urls'])) {
             $body['image_urls'] = json_encode($body['image_urls']);
+        }
+        if (isset($body['store_prices']) && is_array($body['store_prices'])) {
+            $body['store_prices'] = json_encode($body['store_prices']);
+        }
+        if (isset($body['modifications']) && is_array($body['modifications'])) {
+            $body['modifications'] = json_encode($body['modifications']);
+        }
+        if (isset($body['has_modifications'])) {
+            $body['has_modifications'] = $body['has_modifications'] ? 1 : 0;
         }
         if (isset($body['purchase_price'], $body['markup_percent']) && empty($body['retail_price'])) {
             $purchase = (float) $body['purchase_price'];
@@ -239,6 +251,11 @@ class ProductController extends BaseApiController
             ->join('categories c', 'c.id = pc.category_id')
             ->where('pc.product_id', $id)
             ->get()->getResultArray();
+        foreach (['image_urls', 'store_prices', 'modifications'] as $jsonField) {
+            if (!empty($p[$jsonField]) && is_string($p[$jsonField])) {
+                $p[$jsonField] = json_decode($p[$jsonField], true);
+            }
+        }
         return $p;
     }
 }
