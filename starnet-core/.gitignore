@@ -1,4 +1,6 @@
 release/starnet-core/
+release/build/
+release/upload-test/
 node_modules/
 package.json
 package-lock.json
