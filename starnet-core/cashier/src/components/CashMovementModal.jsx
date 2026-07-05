@@ -55,7 +55,7 @@ export default function CashMovementModal({ type, shift, onClose, onSubmit }) {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           className="mt-1 w-full rounded-lg border border-ainur-border px-3 py-2 text-sm"
-          placeholder={isOut ? 'Інкасація, здача в сейф…' : 'Розмінна, внесення…'}
+          placeholder={isOut ? 'Інкасація в середині зміни…' : 'Розмінна, внесення…'}
         />
         <div className="mt-6 flex gap-3">
           <button type="button" onClick={onClose} className="flex-1 rounded-lg border border-ainur-border py-2.5 text-sm">Скасувати</button>

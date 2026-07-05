@@ -25,8 +25,8 @@ export default function ShiftReportPrint({ report, settings, cashier, type = 'X'
         <p className="flex justify-between font-bold"><span>Очікувана в касі</span><span>{fmt(shift?.expected_cash)}</span></p>
         {type === 'Z' && (
           <>
-            <p className="flex justify-between"><span>Фактична готівка</span><span>{fmt(shift?.closing_cash)}</span></p>
-            <p className="flex justify-between font-bold"><span>Різниця</span><span>{fmt(shift?.variance)}</span></p>
+            <p className="flex justify-between"><span>Розмінна (залишок)</span><span>{fmt(shift?.closing_cash)}</span></p>
+            <p className="flex justify-between font-bold"><span>Різниця перерахунку</span><span>{fmt(shift?.variance)}</span></p>
           </>
         )}
         {(movements || []).length > 0 && (

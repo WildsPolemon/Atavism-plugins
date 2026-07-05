@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { fmt } from '../utils';
 
-export default function OpenShiftModal({ onClose, onSubmit }) {
-  const [cash, setCash] = useState('0');
+export default function OpenShiftModal({ defaultCash, onClose, onSubmit }) {
+  const [cash, setCash] = useState(defaultCash != null ? String(defaultCash) : '0');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -23,7 +23,11 @@ export default function OpenShiftModal({ onClose, onSubmit }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <form onSubmit={submit} className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
         <h3 className="text-lg font-semibold">Відкрити зміну</h3>
-        <p className="mt-1 text-sm text-ainur-muted">Вкажіть готівку в касі на початок зміни (розмінна)</p>
+        <p className="mt-1 text-sm text-ainur-muted">
+          {defaultCash != null
+            ? `Розмінна з попередньої зміни: ${fmt(defaultCash)}`
+            : 'Вкажіть готівку в касі на початок зміни (розмінна)'}
+        </p>
         {err && <p className="mt-3 rounded bg-red-50 px-3 py-2 text-sm text-red-600">{err}</p>}
         <label className="mt-4 block text-sm text-ainur-muted">Початкова готівка, ₴</label>
         <input

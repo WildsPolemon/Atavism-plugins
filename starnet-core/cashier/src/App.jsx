@@ -18,6 +18,8 @@ import ProductAddModal from './components/ProductAddModal';
 import OpenShiftModal from './components/OpenShiftModal';
 import CloseShiftModal from './components/CloseShiftModal';
 import CashMovementModal from './components/CashMovementModal';
+import CashMovementsModal from './components/CashMovementsModal';
+import XReportModal from './components/XReportModal';
 import ShiftsHistoryModal from './components/ShiftsHistoryModal';
 import ShiftReportPrint from './components/ShiftReportPrint';
 
@@ -51,8 +53,11 @@ export default function App() {
   const [commentOpen, setCommentOpen] = useState(false);
   const [saleComment, setSaleComment] = useState('');
   const [openShiftOpen, setOpenShiftOpen] = useState(false);
+  const [defaultOpeningCash, setDefaultOpeningCash] = useState(null);
   const [closeShiftOpen, setCloseShiftOpen] = useState(false);
   const [cashMoveType, setCashMoveType] = useState(null);
+  const [cashMovementsOpen, setCashMovementsOpen] = useState(false);
+  const [xReportOpen, setXReportOpen] = useState(false);
   const [shiftsOpen, setShiftsOpen] = useState(false);
   const [shiftReport, setShiftReport] = useState(null);
   const [err, setErr] = useState('');
@@ -224,13 +229,8 @@ export default function App() {
       if (cart.length) { setErr('Спочатку завершіть або скасуйте чек'); return; }
       setCloseShiftOpen(true);
     }
-    if (id === 'x-report') {
-      try {
-        const r = await api.xzReport('X');
-        setShiftReport(r);
-        setTimeout(() => window.print(), 200);
-      } catch (ex) { setErr(ex.message); }
-    }
+    if (id === 'x-report') setXReportOpen(true);
+    if (id === 'cash-movements') setCashMovementsOpen(true);
     if (id === 'cash-in') setCashMoveType('in');
     if (id === 'cash-out') setCashMoveType('out');
     if (id === 'shifts') setShiftsOpen(true);
@@ -351,10 +351,12 @@ export default function App() {
       {err && <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 cursor-pointer rounded-lg bg-red-600 px-4 py-2 text-sm text-white" onClick={() => setErr('')}>{err}</div>}
       {openShiftOpen && (
         <OpenShiftModal
-          onClose={() => setOpenShiftOpen(false)}
+          defaultCash={defaultOpeningCash}
+          onClose={() => { setOpenShiftOpen(false); setDefaultOpeningCash(null); }}
           onSubmit={async (cash) => {
             const r = await api.openShift(cash);
             setShift(r.shift || r);
+            setDefaultOpeningCash(null);
           }}
         />
       )}
@@ -363,7 +365,13 @@ export default function App() {
           shift={shift}
           settings={settings}
           cashier={user?.name}
-          onClose={() => setCloseShiftOpen(false)}
+          onClose={(result) => {
+            setCloseShiftOpen(false);
+            if (result?.cash_remainder != null) {
+              setDefaultOpeningCash(result.cash_remainder);
+              setOpenShiftOpen(true);
+            }
+          }}
           onPreview={(type) => api.xzReport(type)}
           onCloseShift={async (data) => {
             const result = await api.closeShift(data);
@@ -371,6 +379,24 @@ export default function App() {
             setShiftReport(result);
             return result;
           }}
+        />
+      )}
+      {xReportOpen && shift && (
+        <XReportModal
+          shift={shift}
+          settings={settings}
+          cashier={user?.name}
+          onClose={() => setXReportOpen(false)}
+          onLoad={(type) => api.xzReport(type)}
+        />
+      )}
+      {cashMovementsOpen && shift && (
+        <CashMovementsModal
+          shift={shift}
+          onClose={() => setCashMovementsOpen(false)}
+          onLoad={() => api.shiftMovements()}
+          onCashIn={() => setCashMoveType('in')}
+          onCashOut={() => setCashMoveType('out')}
         />
       )}
       {cashMoveType && shift && (

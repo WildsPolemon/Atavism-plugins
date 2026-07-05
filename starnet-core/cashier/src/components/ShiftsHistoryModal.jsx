@@ -66,10 +66,23 @@ export default function ShiftsHistoryModal({ onClose, onLoad, onReport }) {
                 <div className="flex justify-between"><span>Готівка</span><span>{fmt(detail.sales?.cash)}</span></div>
                 <div className="flex justify-between"><span>Картка</span><span>{fmt(detail.sales?.card)}</span></div>
                 <div className="flex justify-between font-semibold"><span>Очікувана готівка</span><span>{fmt(detail.shift?.expected_cash)}</span></div>
+                {(detail.movements || []).length > 0 && (
+                  <div className="pt-2 border-t border-ainur-border">
+                    <p className="font-medium mb-1">Рух готівки</p>
+                    {detail.movements.map((m) => (
+                      <div key={m.id} className="flex justify-between text-xs py-0.5">
+                        <span className={m.type === 'in' ? 'text-green-600' : 'text-red-600'}>
+                          {m.type === 'in' ? 'Внесення' : 'Вилучення'}
+                        </span>
+                        <span>{fmt(m.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {detail.type === 'Z' && (
                   <>
-                    <div className="flex justify-between"><span>Фактична</span><span>{fmt(detail.shift?.closing_cash)}</span></div>
-                    <div className="flex justify-between"><span>Різниця</span><span>{fmt(detail.shift?.variance)}</span></div>
+                    <div className="flex justify-between"><span>Розмінна (залишок)</span><span>{fmt(detail.shift?.closing_cash)}</span></div>
+                    <div className="flex justify-between"><span>Різниця перерахунку</span><span>{fmt(detail.shift?.variance)}</span></div>
                   </>
                 )}
               </div>

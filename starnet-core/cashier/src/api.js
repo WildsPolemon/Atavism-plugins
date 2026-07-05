@@ -21,6 +21,8 @@ export const api = {
   openShift: (cash) => req('/api/pos/shift/open', { method: 'POST', body: JSON.stringify({ opening_cash: cash }) }),
   closeShift: (data) => req('/api/pos/shift/close', { method: 'POST', body: JSON.stringify(data) }),
   cashMovement: (type, amount, note = '') => req('/api/pos/shift/cash', { method: 'POST', body: JSON.stringify({ type, amount, note }) }),
+  shiftMovements: () => req('/api/pos/shift/movements'),
+  lastClosedShift: () => req('/api/pos/shift/last-closed'),
   products: (categoryId) => req(`/api/pos/products${categoryId ? `?category_id=${categoryId}` : ''}`),
   categories: () => req('/api/products/categories'),
   searchProducts: (q) => req(`/api/pos/search?q=${encodeURIComponent(q)}`),

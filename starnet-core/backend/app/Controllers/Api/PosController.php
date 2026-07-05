@@ -124,6 +124,32 @@ class PosController extends BaseApiController
         return $this->ok(['shift' => $this->enrichShift($fresh)]);
     }
 
+    public function shiftMovements()
+    {
+        $jwt = service('jwtauth')->userFromRequest();
+        $shift = $this->openShift((int) $jwt['sub']);
+        if (!$shift) {
+            return $this->err('Немає відкритої зміни');
+        }
+        $movements = db_connect()->table('shift_cash_movements')
+            ->where('shift_id', $shift['id'])
+            ->orderBy('created_at', 'DESC')
+            ->get()->getResultArray();
+        return $this->ok(['shift' => $this->enrichShift($shift), 'movements' => $movements]);
+    }
+
+    public function lastClosedShift()
+    {
+        $jwt = service('jwtauth')->userFromRequest();
+        $row = db_connect()->table('shifts')
+            ->where('user_id', $jwt['sub'])
+            ->where('status', 'closed')
+            ->orderBy('closed_at', 'DESC')
+            ->limit(1)
+            ->get()->getRowArray();
+        return $this->ok(['shift' => $row ? $this->enrichShift($row) : null]);
+    }
+
     public function closeShiftAction()
     {
         $jwt = service('jwtauth')->userFromRequest();
@@ -132,42 +158,63 @@ class PosController extends BaseApiController
             return $this->err('Немає відкритої зміни');
         }
         $body = $this->request->getJSON(true) ?? [];
-        $closingCash = (float) ($body['closing_cash'] ?? 0);
+        $counted = (float) ($body['counted_cash'] ?? $body['closing_cash'] ?? 0);
+        $remainder = (float) ($body['cash_remainder'] ?? $body['tomorrow_float'] ?? 0);
         $withdrawal = (float) ($body['cash_withdrawal'] ?? 0);
         $note = trim($body['note'] ?? '');
+
+        if ($counted < 0) {
+            return $this->err('Вкажіть фактичну готівку в касі');
+        }
+        if ($remainder < 0) {
+            return $this->err('Розмінна не може бути від\'ємною');
+        }
+        if ($remainder > $counted + 0.01) {
+            return $this->err('Розмінна не може перевищувати перераховану готівку');
+        }
 
         $shift = $this->enrichShift($shift);
         $expected = (float) $shift['expected_cash'];
 
+        if ($withdrawal <= 0) {
+            $withdrawal = max(0, round($counted - $remainder, 2));
+        }
+        if (abs(($counted - $remainder) - $withdrawal) > 0.02) {
+            return $this->err('Вилучення має дорівнювати перерахунку мінус розмінна');
+        }
+
+        $variance = round($counted - $expected, 2);
+
         if ($withdrawal > 0) {
-            if ($withdrawal > $expected + 0.01) {
-                return $this->err('Сума вилучення більша за готівку в касі');
-            }
             db_connect()->table('shift_cash_movements')->insert([
                 'shift_id' => $shift['id'],
                 'user_id' => $jwt['sub'],
                 'type' => 'out',
                 'amount' => $withdrawal,
-                'note' => $note !== '' ? 'Закриття: ' . $note : 'Вилучення при закритті зміни',
+                'note' => $note !== ''
+                    ? 'Переказ на рахунок магазину: ' . $note
+                    : 'Переказ на рахунок магазину (закриття зміни)',
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
             $shift = $this->enrichShift(db_connect()->table('shifts')->where('id', $shift['id'])->get()->getRowArray());
-            $expected = (float) $shift['expected_cash'];
         }
 
-        $variance = $closingCash - $expected;
         db_connect()->table('shifts')->where('id', $shift['id'])->update([
             'status' => 'closed',
             'closed_at' => date('Y-m-d H:i:s'),
-            'closing_cash' => $closingCash,
-            'expected_cash' => $expected,
+            'closing_cash' => $remainder,
+            'expected_cash' => $remainder,
             'variance' => $variance,
             'cash_in_total' => $shift['cash_in_total'],
             'cash_out_total' => $shift['cash_out_total'],
         ]);
 
         $closed = db_connect()->table('shifts')->where('id', $shift['id'])->get()->getRowArray();
-        return $this->ok($this->shiftReportPayload($closed, 'Z'));
+        $payload = $this->shiftReportPayload($closed, 'Z');
+        $payload['counted_cash'] = $counted;
+        $payload['cash_withdrawal'] = $withdrawal;
+        $payload['cash_remainder'] = $remainder;
+        return $this->ok($payload);
     }
 
     public function products()
