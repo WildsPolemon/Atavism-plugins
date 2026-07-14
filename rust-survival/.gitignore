@@ -1,0 +1,22 @@
+# Node server
+server/node_modules/
+
+# Unity
+rust-survival/unity-client/[Ll]ibrary/
+rust-survival/unity-client/[Tt]emp/
+rust-survival/unity-client/[Oo]bj/
+rust-survival/unity-client/[Bb]uild/
+rust-survival/unity-client/[Bb]uilds/
+rust-survival/unity-client/[Ll]ogs/
+rust-survival/unity-client/[Uu]ser[Ss]ettings/
+rust-survival/unity-client/.vs/
+rust-survival/unity-client/*.csproj
+rust-survival/unity-client/*.sln
+rust-survival/unity-client/*.user
+rust-survival/unity-client/*.pidb
+rust-survival/unity-client/*.booproj
+rust-survival/unity-client/*.svd
+rust-survival/unity-client/*.pdb
+rust-survival/unity-client/*.mdb
+rust-survival/unity-client/*.opendb
+rust-survival/unity-client/*.VC.db

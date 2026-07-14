@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "messages": {
+    "C2S_JOIN": { "name": "string", "worldSeed": "number?" },
+    "C2S_MOVE": { "x": "number", "y": "number", "z": "number", "yaw": "number" },
+    "C2S_GATHER": { "nodeId": "number" },
+    "C2S_PLACE_BUILDING": { "type": "string", "x": "number", "y": "number", "z": "number", "yaw": "number" },
+    "C2S_ATTACK": { "targetId": "number" },
+    "S2C_WELCOME": { "playerId": "number", "worldSeed": "number", "spawn": "vec3" },
+    "S2C_WORLD": { "nodes": "ResourceNode[]", "buildings": "Building[]" },
+    "S2C_PLAYERS": { "players": "PlayerState[]" },
+    "S2C_INVENTORY": { "slots": "ItemStack[]", "hotbar": "number" },
+    "S2C_EVENT": { "type": "string", "data": "object" },
+    "S2C_ERROR": { "message": "string" }
+  }
+}

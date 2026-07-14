@@ -1,0 +1,17 @@
+{
+  "name": "RUSt.Server",
+  "rootNamespace": "",
+  "references": [
+    "AaaWorldGen",
+    "Unity.InputSystem"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
