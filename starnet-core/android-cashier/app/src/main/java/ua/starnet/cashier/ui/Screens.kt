@@ -102,8 +102,8 @@ fun StarNetNavHost() {
 
 @Composable
 fun LoginScreen(onLogin: (String, String) -> Unit, loading: Boolean, error: String?) {
-    var email by remember { mutableStateOf("cashier@starnetcore.local") }
-    var pass by remember { mutableStateOf("cashier123") }
+    var email by remember { mutableStateOf("") }
+    var pass by remember { mutableStateOf("") }
     var server by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) { server = Prefs.getBaseUrl() }

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">Вхід</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: Inter, sans-serif; }
+    #toast { transition: opacity .25s, transform .25s; }
+    #toast.hidden { opacity: 0; transform: translateY(-8px); pointer-events: none; }
+  </style>
+</head>
+<body class="min-h-screen bg-[#0a0d14] text-white flex items-center justify-center p-6">
+  <div id="toast" class="hidden fixed top-6 left-1/2 z-50 -translate-x-1/2 max-w-md rounded-xl border border-emerald-500/30 bg-emerald-950/90 px-5 py-3 text-sm text-emerald-300 shadow-lg"></div>
+
+  <div class="w-full max-w-md">
+    <div class="mb-8 text-center">
+      <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500 text-2xl font-bold">S</div>
+      <h1 id="site-title" class="text-2xl font-bold">StarNet Core</h1>
+      <p class="mt-1 text-sm text-slate-400">Особистий кабінет</p>
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+      <div class="mb-4 flex gap-2">
+        <button id="tab-login" type="button" class="flex-1 rounded-lg bg-indigo-600 py-2 text-sm font-semibold">Вхід</button>
+        <button id="tab-register" type="button" class="flex-1 rounded-lg border border-white/10 py-2 text-sm text-slate-300">Реєстрація</button>
+      </div>
+
+      <form id="form-login" class="space-y-3">
+        <input id="login-user" type="text" placeholder="Логін" autocomplete="username"
+          class="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-indigo-500" />
+        <input id="login-pass" type="password" placeholder="Пароль" autocomplete="current-password"
+          class="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-indigo-500" />
+        <p id="login-err" class="hidden text-sm text-rose-400"></p>
+        <button type="submit" class="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold hover:bg-indigo-500">Увійти</button>
+      </form>
+
+      <form id="form-register" class="hidden space-y-3">
+        <input id="reg-user" type="text" placeholder="Логін" autocomplete="username"
+          class="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-indigo-500" />
+        <input id="reg-pass" type="password" placeholder="Пароль (мін. 4)" autocomplete="new-password"
+          class="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-indigo-500" />
+        <p id="reg-err" class="hidden text-sm text-rose-400"></p>
+        <button type="submit" class="w-full rounded-xl bg-violet-600 py-3 text-sm font-semibold hover:bg-violet-500">Зареєструватись</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API = (() => {
+      const u = new URL(location.href);
+      if (u.port === '5173' || u.port === '8080') return 'http://localhost:8080';
+      return u.origin.replace(/\/portal\/?$/, '');
+    })();
+
+    let portalConfig = { site_name: 'StarNet Core', welcome_message: 'Ласкаво просимо до {site_name}! Стартовий бонус нараховано.' };
+
+    function applyTemplate(template, vars) {
+      let out = template;
+      for (const [k, v] of Object.entries(vars)) out = out.split('{' + k + '}').join(v);
+      return out;
+    }
+
+    function showToast(text) {
+      const el = document.getElementById('toast');
+      el.textContent = text;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 5000);
+    }
+
+    function showErr(id, msg) {
+      const el = document.getElementById(id);
+      if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    async function loadConfig() {
+      try {
+        portalConfig = await fetch(API + '/api/portal/config').then((x) => x.json());
+        const name = portalConfig.site_name || 'StarNet Core';
+        document.getElementById('site-title').textContent = name;
+        document.getElementById('page-title').textContent = name + ' — Вхід';
+      } catch (_) { /* offline defaults */ }
+    }
+
+    document.getElementById('tab-login').onclick = () => {
+      document.getElementById('form-login').classList.remove('hidden');
+      document.getElementById('form-register').classList.add('hidden');
+      document.getElementById('tab-login').className = 'flex-1 rounded-lg bg-indigo-600 py-2 text-sm font-semibold';
+      document.getElementById('tab-register').className = 'flex-1 rounded-lg border border-white/10 py-2 text-sm text-slate-300';
+    };
+    document.getElementById('tab-register').onclick = () => {
+      document.getElementById('form-register').classList.remove('hidden');
+      document.getElementById('form-login').classList.add('hidden');
+      document.getElementById('tab-register').className = 'flex-1 rounded-lg bg-violet-600 py-2 text-sm font-semibold';
+      document.getElementById('tab-login').className = 'flex-1 rounded-lg border border-white/10 py-2 text-sm text-slate-300';
+    };
+
+    document.getElementById('form-login').onsubmit = async (e) => {
+      e.preventDefault();
+      showErr('login-err', '');
+      const username = document.getElementById('login-user').value.trim();
+      const password = document.getElementById('login-pass').value;
+      try {
+        const r = await fetch(API + '/api/portal/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        }).then((x) => x.json());
+        if (r.error) throw new Error(r.error);
+        localStorage.setItem('portal_token', r.token);
+        location.href = '../cashier/';
+      } catch (ex) { showErr('login-err', ex.message); }
+    };
+
+    document.getElementById('form-register').onsubmit = async (e) => {
+      e.preventDefault();
+      showErr('reg-err', '');
+      const username = document.getElementById('reg-user').value.trim();
+      const password = document.getElementById('reg-pass').value;
+      try {
+        const r = await fetch(API + '/api/portal/register', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        }).then((x) => x.json());
+        if (r.error) throw new Error(r.error);
+        localStorage.setItem('portal_token', r.token);
+        const siteName = portalConfig.site_name || 'StarNet Core';
+        const welcome = r.welcome || applyTemplate(portalConfig.welcome_message, { site_name: siteName });
+        showToast(welcome);
+        setTimeout(() => { location.href = '../cashier/'; }, 1500);
+      } catch (ex) { showErr('reg-err', ex.message); }
+    };
+
+    loadConfig();
+  </script>
+</body>
+</html>

@@ -353,12 +353,12 @@ export default function App() {
           {err && <p className="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-600">{err}</p>}
           <div className="relative mb-3">
             <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input name="email" type="email" defaultValue="cashier@starnetcore.local" placeholder="Email або телефон"
+            <input name="email" type="email" placeholder="Email або телефон"
               className="w-full rounded border border-ainur-border py-3 pl-10 pr-4 text-sm" />
           </div>
           <div className="relative mb-2">
             <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input name="password" type="password" defaultValue="cashier123" placeholder="Пароль"
+            <input name="password" type="password" placeholder="Пароль"
               className="w-full rounded border border-ainur-border py-3 pl-10 pr-4 text-sm" />
           </div>
           <p className="mb-6 text-right text-xs text-ainur-muted">Я забув пароль</p>

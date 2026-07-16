@@ -34,6 +34,23 @@ class StarnetSeeder extends Seeder
             ]);
         }
 
+        foreach ([
+            ['admin', 'admin123', 'admin'],
+            ['wanderer', 'player123', 'player'],
+        ] as [$login, $pwd, $role]) {
+            $email = $login . '@portal.local';
+            if (!$this->db->table('users')->where('email', $email)->countAllResults()) {
+                $this->db->table('users')->insert([
+                    'name' => $login,
+                    'email' => $email,
+                    'password_hash' => password_hash($pwd, PASSWORD_DEFAULT),
+                    'role' => $role,
+                    'active' => 1,
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
+        }
+
         if ($this->db->table('stores')->countAllResults() === 0) {
             $this->db->table('stores')->insert(['name' => 'Магазин №1', 'address' => 'Київ', 'phone' => '+380', 'active' => 1]);
         }
@@ -76,6 +93,9 @@ class StarnetSeeder extends Seeder
 
         $defaults = [
             'company_name' => 'StarNet Core',
+            'site_name' => 'StarNet Core',
+            'portal_welcome_message' => 'Ласкаво просимо до {site_name}! Стартовий бонус нараховано.',
+            'portal_welcome_bonus' => '100',
             'receipt_logo' => '',
             'receipt_footer' => 'Дякуємо за покупку!',
             'receipt_address' => 'м. Київ, вул. Прикладна 1',
@@ -120,6 +140,9 @@ class StarnetSeeder extends Seeder
         }
 
         $this->db->table('settings')->where('key', 'company_name')->update(['value' => 'StarNet Core']);
+        if (!$this->db->table('settings')->where('key', 'site_name')->countAllResults()) {
+            $this->db->table('settings')->insert(['key' => 'site_name', 'value' => 'StarNet Core']);
+        }
 
         $storeId = (int) ($this->db->table('stores')->limit(1)->get()->getRow('id') ?? 0);
         $cashierId = (int) ($this->db->table('users')->where('email', 'cashier@starnetcore.local')->get()->getRow('id') ?? 0);

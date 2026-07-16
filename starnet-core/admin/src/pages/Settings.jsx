@@ -3,7 +3,7 @@ import { api } from '../api';
 
 export default function Settings() {
   const [form, setForm] = useState({
-    company_name: '', receipt_footer: '', receipt_logo: '', site_url: '', receipt_address: '',
+    company_name: '', site_name: '', receipt_footer: '', receipt_logo: '', site_url: '', receipt_address: '',
     country: 'UA', prro_enabled: '0', checkbox_license_key: '', checkbox_login: '', checkbox_password: '',
     checkbox_api_url: 'https://api.checkbox.ua/api/v1', pos_fiscal_default: '0',
   });
@@ -42,6 +42,10 @@ export default function Settings() {
         <div>
           <label className="text-xs text-ainur-muted">Назва компанії</label>
           <input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className="mt-1 w-full rounded-lg border border-ainur-border px-4 py-2 text-sm" />
+        </div>
+        <div>
+          <label className="text-xs text-ainur-muted">Назва сайту (портал, привітання)</label>
+          <input value={form.site_name || ''} onChange={(e) => setForm({ ...form, site_name: e.target.value })} placeholder="StarNet Core" className="mt-1 w-full rounded-lg border border-ainur-border px-4 py-2 text-sm" />
         </div>
         <div>
           <label className="text-xs text-ainur-muted">Адреса на чеку</label>

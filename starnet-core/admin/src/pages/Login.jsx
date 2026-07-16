@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { api, setToken } from '../api';
 
 export default function Login() {
-  const [email, setEmail] = useState('admin@starnetcore.local');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
   const nav = useNavigate();
 

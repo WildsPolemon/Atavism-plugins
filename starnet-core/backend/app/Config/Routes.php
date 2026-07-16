@@ -9,6 +9,10 @@ $routes->group('api', ['filter' => 'apcors'], static function ($routes) {
     $routes->post('auth/login', 'Api\AuthController::login');
     $routes->get('auth/me', 'Api\AuthController::me', ['filter' => 'apiauth']);
 
+    $routes->get('portal/config', 'Api\PortalController::config');
+    $routes->post('portal/register', 'Api\PortalController::register');
+    $routes->post('portal/login', 'Api\PortalController::login');
+
     $routes->get('estore/catalog', 'Api\EstoreController::catalog');
     $routes->post('estore/order', 'Api\EstoreController::order');
     $routes->get('pos/receipt-settings', 'Api\PosController::receiptSettings');
