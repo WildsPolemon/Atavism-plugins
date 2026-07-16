@@ -58,9 +58,17 @@
     let portalConfig = { site_name: 'StarNet Core', welcome_message: 'Ласкаво просимо до {site_name}! Стартовий бонус нараховано.' };
 
     function applyTemplate(template, vars) {
-      let out = template;
-      for (const [k, v] of Object.entries(vars)) out = out.split('{' + k + '}').join(v);
+      let out = template || '';
+      for (const [k, v] of Object.entries(vars)) {
+        out = out.split('{' + k + '}').join(v);
+        out = out.split('{{' + k + '}}').join(v);
+      }
       return out;
+    }
+
+    function resolveWelcome(msg, siteName) {
+      const name = siteName || portalConfig.site_name || 'StarNet Core';
+      return applyTemplate(msg || portalConfig.welcome_message_resolved || portalConfig.welcome_message, { site_name: name });
     }
 
     function showToast(text) {
@@ -127,8 +135,7 @@
         }).then((x) => x.json());
         if (r.error) throw new Error(r.error);
         localStorage.setItem('portal_token', r.token);
-        const siteName = portalConfig.site_name || 'StarNet Core';
-        const welcome = r.welcome || applyTemplate(portalConfig.welcome_message, { site_name: siteName });
+        const welcome = resolveWelcome(r.welcome, portalConfig.site_name);
         showToast(welcome);
         setTimeout(() => { location.href = '../cashier/'; }, 1500);
       } catch (ex) { showErr('reg-err', ex.message); }

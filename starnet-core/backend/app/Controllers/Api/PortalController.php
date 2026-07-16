@@ -16,6 +16,10 @@ class PortalController extends BaseApiController
             'site_name' => $siteName,
             'welcome_message' => $settings['portal_welcome_message']
                 ?? 'Ласкаво просимо до {site_name}! Стартовий бонус нараховано.',
+            'welcome_message_resolved' => TextTemplate::apply(
+                $settings['portal_welcome_message'] ?? 'Ласкаво просимо до {site_name}! Стартовий бонус нараховано.',
+                ['site_name' => $siteName]
+            ),
             'welcome_bonus' => (float) ($settings['portal_welcome_bonus'] ?? 100),
         ]);
     }
