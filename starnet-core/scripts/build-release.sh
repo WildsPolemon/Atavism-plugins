@@ -39,6 +39,7 @@ cp -r "$ROOT/install" "$BUILD/install"
 cp -r "$ROOT/admin/dist" "$BUILD/admin"
 cp -r "$ROOT/cashier/dist" "$BUILD/cashier"
 cp -r "$ROOT/estore" "$BUILD/estore"
+cp -r "$ROOT/portal" "$BUILD/portal"
 
 cat > "$BUILD/index.html" << 'EOF'
 <!DOCTYPE html>
@@ -64,10 +65,9 @@ StarNet Core — установка
    URL сайта: https://ваш-домен/
 
 4. Готово:
-   /admin/   — админ
-   /cashier/ — касса
-
-Логины: admin@starnetcore.local / admin123
+   /admin/   — адмін
+   /cashier/ — каса
+   /portal/  — вхід / реєстрація
 EOF
 
 echo "==> ZIP"

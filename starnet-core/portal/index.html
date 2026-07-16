@@ -68,7 +68,9 @@
 
     function resolveWelcome(msg, siteName) {
       const name = siteName || portalConfig.site_name || 'StarNet Core';
-      return applyTemplate(msg || portalConfig.welcome_message_resolved || portalConfig.welcome_message, { site_name: name });
+      const raw = msg || portalConfig.welcome_message_resolved || portalConfig.welcome_message || '';
+      let text = applyTemplate(raw, { site_name: name });
+      return text.replace(/\{site_name\}/g, name);
     }
 
     function showToast(text) {
@@ -129,6 +131,7 @@
       const username = document.getElementById('reg-user').value.trim();
       const password = document.getElementById('reg-pass').value;
       try {
+        await configReady;
         const r = await fetch(API + '/api/portal/register', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),
@@ -141,7 +144,7 @@
       } catch (ex) { showErr('reg-err', ex.message); }
     };
 
-    loadConfig();
+    const configReady = loadConfig();
   </script>
 </body>
 </html>
