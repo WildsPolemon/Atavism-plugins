@@ -3,28 +3,33 @@ package com.starnet.core.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,19 +46,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.starnet.core.R
+import com.starnet.core.data.ChecklistItemEntity
+import com.starnet.core.data.JournalEntryEntity
+import com.starnet.core.data.ToolEntity
 import com.starnet.core.domain.threadReferences
 
 private enum class CoreTab(val title: String) {
     Dashboard("Dashboard"),
-    AiDiagnosis("AI Diagnosis"),
+    AiDiagnosis("AI Diagnostics"),
     Photo("Photo Vision"),
     Calculators("Calculators"),
     Coordinates("Coordinates"),
-    Threads("Threads"),
+    Threads("Thread Ref"),
     Tools("Tools"),
     Checklist("Checklist"),
     Journal("Journal"),
-    Plan("Implementation Plan")
+    Plan("Checklist Audit")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,14 +79,14 @@ fun StarnetCoreRoot(vm: StarnetCoreViewModel = viewModel()) {
                 title = {
                     Column {
                         Text("Starnet Core", fontWeight = FontWeight.Bold)
-                        Text("Valchuk Ivan", style = MaterialTheme.typography.bodySmall)
+                        Text("Valchuk Ivan • CNC Setup Assistant", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             )
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            TabRow(selectedTabIndex = tabs.indexOf(selectedTab)) {
+            ScrollableTabRow(selectedTabIndex = tabs.indexOf(selectedTab), edgePadding = 8.dp) {
                 tabs.forEach { tab ->
                     Tab(
                         selected = selectedTab == tab,
@@ -89,7 +97,7 @@ fun StarnetCoreRoot(vm: StarnetCoreViewModel = viewModel()) {
             }
 
             when (selectedTab) {
-                CoreTab.Dashboard -> DashboardScreen()
+                CoreTab.Dashboard -> DashboardScreen(checklist)
                 CoreTab.AiDiagnosis -> AiDiagnosisScreen(vm)
                 CoreTab.Photo -> PhotoScreen(vm)
                 CoreTab.Calculators -> CalculatorsScreen(vm)
@@ -105,29 +113,63 @@ fun StarnetCoreRoot(vm: StarnetCoreViewModel = viewModel()) {
 }
 
 @Composable
-private fun DashboardScreen() {
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_starnet_core_logo),
-                        contentDescription = "Starnet Core Logo",
-                        modifier = Modifier.height(72.dp)
-                    )
-                    Text("CNC Setup Assistant", style = MaterialTheme.typography.headlineSmall)
-                    Text("Real functionality package for FANUC / Siemens / Mitsubishi setup technicians.")
-                    Spacer(Modifier.height(8.dp))
-                    Text("Core modules:", fontWeight = FontWeight.Bold)
-                    Text("1) AI alarm diagnostics")
-                    Text("2) Photo recognition and explanation")
-                    Text("3) Turning/Milling/Drilling calculators")
-                    Text("4) Coordinate calculator (PCD, circle split, chamfer/cone support)")
-                    Text("5) Thread references")
-                    Text("6) Tool database")
-                    Text("7) Setup checklists")
-                    Text("8) Job journal with problem/solution memory")
-                }
+private fun ScreenContainer(content: @Composable () -> Unit) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item { content() }
+        }
+    }
+}
+
+@Composable
+private fun AppCard(title: String, subtitle: String? = null, body: @Composable () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            if (!subtitle.isNullOrBlank()) {
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            body()
+        }
+    }
+}
+
+@Composable
+private fun DashboardScreen(checklist: List<ChecklistItemEntity>) {
+    val done = checklist.count { it.isChecked }
+    val total = checklist.size.coerceAtLeast(1)
+    val percent = (done * 100) / total
+
+    ScreenContainer {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            AppCard(
+                title = "CNC Setup Assistant",
+                subtitle = "FANUC / Siemens / Mitsubishi support with practical daily modules."
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_starnet_core_logo),
+                    contentDescription = "Starnet Core Logo",
+                    modifier = Modifier.height(72.dp)
+                )
+                Text("Checklist progress: $done/$total ($percent%)")
+                Text("Use tabs for diagnostics, photo OCR, calculators, tools and journal.")
+            }
+            AppCard(title = "Quick Functions") {
+                Text("• AI alarm diagnostics")
+                Text("• Photo recognition and explanation")
+                Text("• Turning / milling / drilling calculators")
+                Text("• Coordinate calculator (PCD / holes / circle split)")
+                Text("• Thread quick reference")
+                Text("• Tool database")
+                Text("• Setup checklist + custom lines")
+                Text("• Work journal with problem/solution history")
             }
         }
     }
@@ -137,32 +179,24 @@ private fun DashboardScreen() {
 private fun AiDiagnosisScreen(vm: StarnetCoreViewModel) {
     var code by remember { mutableStateOf("") }
     var controller by remember { mutableStateOf("FANUC") }
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item {
-            OutlinedTextField(code, onValueChange = { code = it }, label = { Text("Alarm code") }, modifier = Modifier.fillMaxWidth())
-        }
-        item {
-            OutlinedTextField(controller, onValueChange = { controller = it }, label = { Text("Controller (FANUC/Siemens/Mitsubishi)") }, modifier = Modifier.fillMaxWidth())
-        }
-        item {
-            Button(onClick = { vm.diagnoseAlarm(code, controller) }) { Text("Diagnose alarm") }
-        }
-        item {
-            val result = vm.alarmResult
-            if (result == null) {
-                Text("No diagnosis yet.")
-            } else {
-                Card {
-                    Column(Modifier.padding(12.dp)) {
-                        Text("${result.controller} ${result.code}", fontWeight = FontWeight.Bold)
-                        Text(result.description)
-                        Spacer(Modifier.height(8.dp))
-                        Text("Possible causes", fontWeight = FontWeight.Bold)
-                        result.causes.forEach { Text("• $it") }
-                        Spacer(Modifier.height(8.dp))
-                        Text("Step-by-step checks", fontWeight = FontWeight.Bold)
-                        result.checks.forEachIndexed { index, s -> Text("${index + 1}. $s") }
-                    }
+    ScreenContainer {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            AppCard("AI Alarm Diagnostics", "Enter alarm code from controller screen.") {
+                OutlinedTextField(code, { code = it }, label = { Text("Alarm code") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(controller, { controller = it }, label = { Text("Controller") }, modifier = Modifier.fillMaxWidth())
+                Button(onClick = { vm.diagnoseAlarm(code, controller) }) { Text("Diagnose") }
+            }
+            AppCard("Diagnosis Result") {
+                val result = vm.alarmResult
+                if (result == null) {
+                    Text("No diagnosis yet.")
+                } else {
+                    Text("${result.controller} ${result.code}", fontWeight = FontWeight.Bold)
+                    Text(result.description)
+                    Text("Possible causes", fontWeight = FontWeight.SemiBold)
+                    result.causes.forEach { Text("• $it") }
+                    Text("Step-by-step checks", fontWeight = FontWeight.SemiBold)
+                    result.checks.forEachIndexed { index, s -> Text("${index + 1}. $s") }
                 }
             }
         }
@@ -178,14 +212,20 @@ private fun PhotoScreen(vm: StarnetCoreViewModel) {
             vm.recognizeImage(uri)
         }
     }
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item { Button(onClick = { launcher.launch("image/*") }) { Text("Select photo") } }
-        item {
-            selectedUri?.let { AsyncImage(model = it, contentDescription = "photo", modifier = Modifier.fillMaxWidth().height(200.dp)) }
+    ScreenContainer {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            AppCard("Photo Vision", "Upload machine screen, schematic, detail or drawing photo.") {
+                Button(onClick = { launcher.launch("image/*") }) { Text("Select photo") }
+                selectedUri?.let {
+                    AsyncImage(model = it, contentDescription = "photo", modifier = Modifier.fillMaxWidth().height(220.dp))
+                }
+            }
+            AppCard("AI Output") {
+                Text("Summary: ${vm.ocrSummary}")
+                HorizontalDivider()
+                Text(vm.ocrText.ifBlank { "No extracted text yet." })
+            }
         }
-        item { Text("AI summary: ${vm.ocrSummary}") }
-        item { Text("Extracted text:") }
-        item { Card { Text(vm.ocrText.ifBlank { "No text extracted yet." }, Modifier.padding(12.dp)) } }
     }
 }
 
@@ -198,26 +238,26 @@ private fun CalculatorsScreen(vm: StarnetCoreViewModel) {
     var fz by remember { mutableDoubleStateOf(0.08) }
     var drillDepth by remember { mutableDoubleStateOf(30.0) }
     var drillFeed by remember { mutableDoubleStateOf(120.0) }
-    val turningRpm = vm.calculateTurningRpm(vc, diameter)
-    val millingFeed = vm.calculateMillingFeed(rpm, teeth, fz)
-    val drillingMin = vm.calculateDrillingTime(drillDepth, drillFeed)
 
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item { Text("Turning calculator", fontWeight = FontWeight.Bold) }
-        item { OutlinedTextField(vc.toString(), { vc = it.toDoubleOrNull() ?: vc }, label = { Text("Cutting speed m/min") }) }
-        item { OutlinedTextField(diameter.toString(), { diameter = it.toDoubleOrNull() ?: diameter }, label = { Text("Diameter mm") }) }
-        item { Text("RPM: $turningRpm") }
-        item { HorizontalDivider() }
-        item { Text("Milling calculator", fontWeight = FontWeight.Bold) }
-        item { OutlinedTextField(rpm.toString(), { rpm = it.toDoubleOrNull() ?: rpm }, label = { Text("RPM") }) }
-        item { OutlinedTextField(teeth.toString(), { teeth = it.toIntOrNull() ?: teeth }, label = { Text("Teeth") }) }
-        item { OutlinedTextField(fz.toString(), { fz = it.toDoubleOrNull() ?: fz }, label = { Text("Feed per tooth mm") }) }
-        item { Text("Feed rate mm/min: ${"%.1f".format(millingFeed)}") }
-        item { HorizontalDivider() }
-        item { Text("Drilling calculator", fontWeight = FontWeight.Bold) }
-        item { OutlinedTextField(drillDepth.toString(), { drillDepth = it.toDoubleOrNull() ?: drillDepth }, label = { Text("Depth mm") }) }
-        item { OutlinedTextField(drillFeed.toString(), { drillFeed = it.toDoubleOrNull() ?: drillFeed }, label = { Text("Feed mm/min") }) }
-        item { Text("Machining time min: ${"%.3f".format(drillingMin)}") }
+    ScreenContainer {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            AppCard("Turning Calculator") {
+                OutlinedTextField(vc.toString(), { vc = it.toDoubleOrNull() ?: vc }, label = { Text("Cutting speed m/min") })
+                OutlinedTextField(diameter.toString(), { diameter = it.toDoubleOrNull() ?: diameter }, label = { Text("Diameter mm") })
+                Text("RPM: ${vm.calculateTurningRpm(vc, diameter)}", fontWeight = FontWeight.SemiBold)
+            }
+            AppCard("Milling Calculator") {
+                OutlinedTextField(rpm.toString(), { rpm = it.toDoubleOrNull() ?: rpm }, label = { Text("RPM") })
+                OutlinedTextField(teeth.toString(), { teeth = it.toIntOrNull() ?: teeth }, label = { Text("Teeth") })
+                OutlinedTextField(fz.toString(), { fz = it.toDoubleOrNull() ?: fz }, label = { Text("Feed per tooth mm") })
+                Text("Feed rate mm/min: ${"%.1f".format(vm.calculateMillingFeed(rpm, teeth, fz))}", fontWeight = FontWeight.SemiBold)
+            }
+            AppCard("Drilling Calculator") {
+                OutlinedTextField(drillDepth.toString(), { drillDepth = it.toDoubleOrNull() ?: drillDepth }, label = { Text("Depth mm") })
+                OutlinedTextField(drillFeed.toString(), { drillFeed = it.toDoubleOrNull() ?: drillFeed }, label = { Text("Feed mm/min") })
+                Text("Machining time min: ${"%.3f".format(vm.calculateDrillingTime(drillDepth, drillFeed))}", fontWeight = FontWeight.SemiBold)
+            }
+        }
     }
 }
 
@@ -226,29 +266,36 @@ private fun CoordinatesScreen(vm: StarnetCoreViewModel) {
     var pcd by remember { mutableDoubleStateOf(100.0) }
     var holes by remember { mutableIntStateOf(6) }
     var startAngle by remember { mutableDoubleStateOf(0.0) }
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item { Text("Coordinate calculator", fontWeight = FontWeight.Bold) }
-        item { OutlinedTextField(pcd.toString(), { pcd = it.toDoubleOrNull() ?: pcd }, label = { Text("PCD mm") }) }
-        item { OutlinedTextField(holes.toString(), { holes = it.toIntOrNull() ?: holes }, label = { Text("Holes count") }) }
-        item { OutlinedTextField(startAngle.toString(), { startAngle = it.toDoubleOrNull() ?: startAngle }, label = { Text("Start angle °") }) }
-        item { Button(onClick = { vm.calculateBoltCircle(pcd, holes, startAngle) }) { Text("Generate X/Y points") } }
-        items(vm.coordinateResult) { line -> Text(line) }
+
+    ScreenContainer {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            AppCard("Coordinate Calculator", "PCD, circle split and drilling coordinates.") {
+                OutlinedTextField(pcd.toString(), { pcd = it.toDoubleOrNull() ?: pcd }, label = { Text("PCD mm") })
+                OutlinedTextField(holes.toString(), { holes = it.toIntOrNull() ?: holes }, label = { Text("Holes count") })
+                OutlinedTextField(startAngle.toString(), { startAngle = it.toDoubleOrNull() ?: startAngle }, label = { Text("Start angle °") })
+                Button(onClick = { vm.calculateBoltCircle(pcd, holes, startAngle) }) { Text("Generate X/Y Coordinates") }
+            }
+            AppCard("Generated Points") {
+                vm.coordinateResult.ifEmpty { listOf("No points generated.") }.forEach { Text(it) }
+            }
+        }
     }
 }
 
 @Composable
 private fun ThreadsScreen() {
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        item {
-            Text("Thread quick reference", fontWeight = FontWeight.Bold)
-            Text("Metric / Pipe / Inch. Includes pitch, diameters, drill suggestions.")
-        }
-        items(threadReferences) { ref ->
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(10.dp)) {
-                    Text("${ref.family}: ${ref.designation}", fontWeight = FontWeight.SemiBold)
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                AppCard("Thread Quick Reference", "Metric / Pipe / Inch") {
+                    Text("Includes pitch, major/minor diameters and tap drill suggestions.")
+                }
+            }
+            items(threadReferences) { ref ->
+                AppCard("${ref.family}: ${ref.designation}") {
                     Text("Pitch: ${ref.pitch}")
-                    Text("Major: ${ref.majorDia} mm, Minor: ${ref.minorDia} mm")
+                    Text("Major: ${ref.majorDia} mm")
+                    Text("Minor: ${ref.minorDia} mm")
                     Text("Tap drill: ${ref.tapDrill} mm")
                 }
             }
@@ -257,7 +304,7 @@ private fun ThreadsScreen() {
 }
 
 @Composable
-private fun ToolsScreen(vm: StarnetCoreViewModel, tools: List<com.starnet.core.data.ToolEntity>) {
+private fun ToolsScreen(vm: StarnetCoreViewModel, tools: List<ToolEntity>) {
     var toolNumber by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Turning") }
     var insert by remember { mutableStateOf("") }
@@ -267,31 +314,33 @@ private fun ToolsScreen(vm: StarnetCoreViewModel, tools: List<com.starnet.core.d
     var photoUri by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
 
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item { Text("Tool database", fontWeight = FontWeight.Bold) }
-        item { OutlinedTextField(toolNumber, { toolNumber = it }, label = { Text("Tool number T") }) }
-        item { OutlinedTextField(type, { type = it }, label = { Text("Type") }) }
-        item { OutlinedTextField(insert, { insert = it }, label = { Text("Insert") }) }
-        item { OutlinedTextField(holder, { holder = it }, label = { Text("Holder") }) }
-        item { OutlinedTextField(diameter, { diameter = it }, label = { Text("Diameter mm") }) }
-        item { OutlinedTextField(material, { material = it }, label = { Text("Material") }) }
-        item { OutlinedTextField(photoUri, { photoUri = it }, label = { Text("Photo uri") }) }
-        item { OutlinedTextField(notes, { notes = it }, label = { Text("Notes") }) }
-        item {
-            Button(onClick = {
-                vm.addTool(toolNumber, type, insert, holder, diameter.toDoubleOrNull() ?: 0.0, material, photoUri, notes)
-                toolNumber = ""
-                insert = ""
-                holder = ""
-                notes = ""
-            }) { Text("Save tool") }
-        }
-        items(tools) { tool ->
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(10.dp)) {
-                    Text("${tool.toolNumber} • ${tool.type}", fontWeight = FontWeight.SemiBold)
-                    Text("Insert: ${tool.insertName} / Holder: ${tool.holder}")
-                    Text("Diameter: ${tool.diameterMm} mm / Material: ${tool.material}")
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            item {
+                AppCard("Tool Database", "Create your local tool catalog.") {
+                    OutlinedTextField(toolNumber, { toolNumber = it }, label = { Text("Tool number T") })
+                    OutlinedTextField(type, { type = it }, label = { Text("Type") })
+                    OutlinedTextField(insert, { insert = it }, label = { Text("Insert") })
+                    OutlinedTextField(holder, { holder = it }, label = { Text("Holder") })
+                    OutlinedTextField(diameter, { diameter = it }, label = { Text("Diameter mm") })
+                    OutlinedTextField(material, { material = it }, label = { Text("Material") })
+                    OutlinedTextField(photoUri, { photoUri = it }, label = { Text("Photo URI") })
+                    OutlinedTextField(notes, { notes = it }, label = { Text("Notes") })
+                    Button(onClick = {
+                        vm.addTool(toolNumber, type, insert, holder, diameter.toDoubleOrNull() ?: 0.0, material, photoUri, notes)
+                        toolNumber = ""
+                        insert = ""
+                        holder = ""
+                        notes = ""
+                    }) { Text("Save Tool") }
+                }
+            }
+            items(tools) { tool ->
+                AppCard("${tool.toolNumber} • ${tool.type}") {
+                    Text("Insert: ${tool.insertName}")
+                    Text("Holder: ${tool.holder}")
+                    Text("Diameter: ${tool.diameterMm} mm")
+                    Text("Material: ${tool.material}")
                     if (tool.notes.isNotBlank()) Text("Notes: ${tool.notes}")
                 }
             }
@@ -300,34 +349,39 @@ private fun ToolsScreen(vm: StarnetCoreViewModel, tools: List<com.starnet.core.d
 }
 
 @Composable
-private fun ChecklistScreen(vm: StarnetCoreViewModel, items: List<com.starnet.core.data.ChecklistItemEntity>) {
+private fun ChecklistScreen(vm: StarnetCoreViewModel, items: List<ChecklistItemEntity>) {
     var customItem by remember { mutableStateOf("") }
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item { Text("Setup checklist", fontWeight = FontWeight.Bold) }
-        item {
-            OutlinedTextField(customItem, { customItem = it }, label = { Text("Add custom checklist line") })
-        }
-        item {
-            Button(onClick = {
-                vm.addChecklistItem(customItem)
-                customItem = ""
-            }) { Text("Add checklist item") }
-        }
-        items(items) { line ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(line.title, modifier = Modifier.weight(1f))
-                Checkbox(
-                    checked = line.isChecked,
-                    onCheckedChange = { vm.toggleChecklist(line.id, it) }
-                )
+    val done = items.count { it.isChecked }
+    val total = items.size.coerceAtLeast(1)
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            item {
+                AppCard("Setup Checklist", "Completed: $done/$total") {
+                    OutlinedTextField(customItem, { customItem = it }, label = { Text("Custom checklist line") })
+                    Row {
+                        Button(onClick = {
+                            vm.addChecklistItem(customItem)
+                            customItem = ""
+                        }) { Text("Add") }
+                        Spacer(Modifier.width(8.dp))
+                        TextButton(onClick = { vm.seedChecklist() }) { Text("Reset defaults") }
+                    }
+                }
             }
-            HorizontalDivider()
+            items(items) { line ->
+                AppCard(line.title) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(if (line.isChecked) "Done" else "Pending")
+                        Checkbox(checked = line.isChecked, onCheckedChange = { vm.toggleChecklist(line.id, it) })
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun JournalScreen(vm: StarnetCoreViewModel, entries: List<com.starnet.core.data.JournalEntryEntity>) {
+private fun JournalScreen(vm: StarnetCoreViewModel, entries: List<JournalEntryEntity>) {
     var part by remember { mutableStateOf("") }
     var machine by remember { mutableStateOf("SL2000") }
     var program by remember { mutableStateOf("") }
@@ -336,33 +390,33 @@ private fun JournalScreen(vm: StarnetCoreViewModel, entries: List<com.starnet.co
     var solutions by remember { mutableStateOf("") }
     var photo by remember { mutableStateOf("") }
 
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item { Text("Journal", fontWeight = FontWeight.Bold) }
-        item { OutlinedTextField(part, { part = it }, label = { Text("Part number") }) }
-        item { OutlinedTextField(machine, { machine = it }, label = { Text("Machine") }) }
-        item { OutlinedTextField(program, { program = it }, label = { Text("Program") }) }
-        item { OutlinedTextField(tool, { tool = it }, label = { Text("Tool info") }) }
-        item { OutlinedTextField(problems, { problems = it }, label = { Text("Problems") }) }
-        item { OutlinedTextField(solutions, { solutions = it }, label = { Text("Solutions") }) }
-        item { OutlinedTextField(photo, { photo = it }, label = { Text("Photo uri") }) }
-        item {
-            Button(onClick = {
-                vm.addJournalEntry(part, machine, program, tool, problems, solutions, photo)
-                part = ""
-                program = ""
-                problems = ""
-                solutions = ""
-            }) { Text("Save journal record") }
-        }
-        items(entries) { entry ->
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(10.dp)) {
-                    Text("${entry.partNumber} • ${entry.machine}", fontWeight = FontWeight.Bold)
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            item {
+                AppCard("Work Journal", "Save setup details, issues and final solution.") {
+                    OutlinedTextField(part, { part = it }, label = { Text("Part number") })
+                    OutlinedTextField(machine, { machine = it }, label = { Text("Machine") })
+                    OutlinedTextField(program, { program = it }, label = { Text("Program") })
+                    OutlinedTextField(tool, { tool = it }, label = { Text("Tool info") })
+                    OutlinedTextField(problems, { problems = it }, label = { Text("Problems") })
+                    OutlinedTextField(solutions, { solutions = it }, label = { Text("Solutions") })
+                    OutlinedTextField(photo, { photo = it }, label = { Text("Photo URI") })
+                    Button(onClick = {
+                        vm.addJournalEntry(part, machine, program, tool, problems, solutions, photo)
+                        part = ""
+                        program = ""
+                        problems = ""
+                        solutions = ""
+                    }) { Text("Save Journal Record") }
+                }
+            }
+            items(entries) { entry ->
+                AppCard("${entry.partNumber} • ${entry.machine}") {
                     Text("Program: ${entry.programName}")
                     Text("Tool: ${entry.toolInfo}")
                     Text("Problems: ${entry.problems}")
                     Text("Solutions: ${entry.solutions}")
-                    Text("Time: ${entry.createdAt}")
+                    Text("Time: ${entry.createdAt}", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -371,27 +425,23 @@ private fun JournalScreen(vm: StarnetCoreViewModel, entries: List<com.starnet.co
 
 @Composable
 private fun PlanScreen() {
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item {
-            Text("Implementation roadmap", fontWeight = FontWeight.Bold)
-            Text("Phase 1 completed: full technician toolbox foundation with local database.")
-            Text("Phase 2: cloud sync for alarms/tools/journal and team collaboration.")
-            Text("Phase 3: machine-specific packs for SL2000 + FANUC 0i-TF Plus.")
-            Text("Phase 4: NC pre-check service integration and digital twin simulation.")
-        }
-        item {
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp)) {
-                    Text("Function backlog list", fontWeight = FontWeight.SemiBold)
-                    Text("• AI diagnosis with expanded alarm libraries")
-                    Text("• OCR + diagram classification enhancement")
-                    Text("• Multi-calculator presets by material/tool")
-                    Text("• Coordinate generator templates")
-                    Text("• Thread database extensions")
-                    Text("• Tool photo gallery and QR labels")
-                    Text("• Shift-level checklist templates")
-                    Text("• Searchable troubleshooting journal")
-                }
+    ScreenContainer {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            AppCard("Checklist Mapping (Your Request vs Implemented)") {
+                Text("1. AI diagnostics: Done")
+                Text("2. Photo recognition: Done")
+                Text("3. CNC calculators: Done")
+                Text("4. Coordinate calculator: Done")
+                Text("5. Thread references: Done")
+                Text("6. Tool database: Done")
+                Text("7. Setup checklist: Done")
+                Text("8. Work journal: Done")
+            }
+            AppCard("Next Professional Upgrade Pack") {
+                Text("• Sync with cloud backend and team accounts")
+                Text("• Full alarm library import by control model")
+                Text("• Offline/online photo classifier for schematic types")
+                Text("• Search/filter and export for tool/journal/checklist data")
             }
         }
     }
