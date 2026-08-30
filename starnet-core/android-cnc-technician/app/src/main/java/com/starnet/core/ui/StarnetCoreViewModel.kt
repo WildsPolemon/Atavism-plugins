@@ -19,6 +19,7 @@ import com.starnet.core.data.StarnetCoreDatabase
 import com.starnet.core.data.ToolEntity
 import com.starnet.core.domain.AlarmKnowledge
 import com.starnet.core.domain.AlarmParser
+import com.starnet.core.domain.UkrainianTranslator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -46,11 +47,14 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     var selectedModelFamily by mutableStateOf("0i-TF")
     var lastParserPattern by mutableStateOf("n/a")
     var kbSyncStatus by mutableStateOf("Seed not loaded")
+    var kbAlarmCount by mutableStateOf(0)
+    var useUkrainian by mutableStateOf(true)
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
             repository.ensureSeedLoaded()
             kbSyncStatus = "Knowledge base loaded from local seed."
+            kbAlarmCount = dao.alarmCount()
             if (checklist.value.isEmpty()) {
                 seedChecklist()
             }
@@ -70,8 +74,12 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
             } else {
                 "Sync failed: ${result.exceptionOrNull()?.message}"
             }
+            kbAlarmCount = dao.alarmCount()
         }
     }
+
+    fun tr(en: String, uk: String): String = if (useUkrainian) uk else en
+    fun toUkr(source: String): String = UkrainianTranslator.toUkrainian(source)
 
     fun seedChecklist() {
         viewModelScope.launch {

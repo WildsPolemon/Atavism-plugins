@@ -81,6 +81,10 @@ fun StarnetCoreRoot(vm: StarnetCoreViewModel = viewModel()) {
                         Text("Starnet Core", fontWeight = FontWeight.Bold)
                         Text("Valchuk Ivan • CNC Setup Assistant", style = MaterialTheme.typography.bodySmall)
                     }
+                },
+                actions = {
+                    TextButton(onClick = { vm.useUkrainian = true }) { Text("UKR") }
+                    TextButton(onClick = { vm.useUkrainian = false }) { Text("ENG") }
                 }
             )
         }
@@ -183,35 +187,57 @@ private fun AiDiagnosisScreen(vm: StarnetCoreViewModel) {
     var syncUrl by remember { mutableStateOf("https://kb.starnetcore.com/") }
     ScreenContainer {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            AppCard("AI Alarm Diagnostics", "Enter alarm code from controller screen.") {
-                OutlinedTextField(code, { code = it }, label = { Text("Alarm code") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(controller, { controller = it }, label = { Text("Controller") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(modelFamily, { modelFamily = it }, label = { Text("Model family (0i-TF/31i/828D/M80)") }, modifier = Modifier.fillMaxWidth())
+            AppCard(
+                vm.tr("AI Alarm Diagnostics", "AI-діагностика аварій"),
+                vm.tr("Enter alarm code from controller screen.", "Введіть код помилки з екрана ЧПУ.")
+            ) {
+                OutlinedTextField(code, { code = it }, label = { Text(vm.tr("Alarm code", "Код помилки")) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(controller, { controller = it }, label = { Text(vm.tr("Controller", "Контролер")) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    modelFamily,
+                    { modelFamily = it },
+                    label = { Text(vm.tr("Model family (0i-TF/31i/828D/M80)", "Серія моделі (0i-TF/31i/828D/M80)")) },
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = {
                         vm.selectedController = controller
                         vm.selectedModelFamily = modelFamily
                         vm.diagnoseAlarm(code, controller, modelFamily)
-                    }) { Text("Diagnose") }
-                    Button(onClick = { vm.detectAlarmFromRecognizedText() }) { Text("Parse OCR Alarm") }
+                    }) { Text(vm.tr("Diagnose", "Діагностувати")) }
+                    Button(onClick = { vm.detectAlarmFromRecognizedText() }) { Text(vm.tr("Parse OCR Alarm", "Розпізнати alarm з OCR")) }
                 }
                 HorizontalDivider()
-                OutlinedTextField(syncUrl, { syncUrl = it }, label = { Text("Knowledge base sync URL") }, modifier = Modifier.fillMaxWidth())
-                Button(onClick = { vm.syncKnowledgeBase(syncUrl) }) { Text("Sync Knowledge Base") }
-                Text("KB status: ${vm.kbSyncStatus}", style = MaterialTheme.typography.bodySmall)
-                Text("Parser signature: ${vm.lastParserPattern}", style = MaterialTheme.typography.bodySmall)
+                OutlinedTextField(
+                    syncUrl,
+                    { syncUrl = it },
+                    label = { Text(vm.tr("Knowledge base sync URL", "URL синхронізації бази знань")) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Button(onClick = { vm.syncKnowledgeBase(syncUrl) }) { Text(vm.tr("Sync Knowledge Base", "Синхронізувати базу знань")) }
+                Text(
+                    vm.tr("KB status", "Статус БЗ") + ": " + (if (vm.useUkrainian) vm.toUkr(vm.kbSyncStatus) else vm.kbSyncStatus),
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    vm.tr("Loaded alarm codes", "Завантажено кодів помилок") + ": ${vm.kbAlarmCount}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(vm.tr("Parser signature", "Сигнатура парсера") + ": ${vm.lastParserPattern}", style = MaterialTheme.typography.bodySmall)
             }
-            AppCard("Diagnosis Result") {
+            AppCard(vm.tr("Diagnosis Result", "Результат діагностики")) {
                 val result = vm.alarmResult
                 if (result == null) {
-                    Text("No diagnosis yet.")
+                    Text(vm.tr("No diagnosis yet.", "Діагностика ще не виконана."))
                 } else {
                     Text("${result.controller} ${result.code}", fontWeight = FontWeight.Bold)
-                    Text(result.description)
-                    Text("Possible causes", fontWeight = FontWeight.SemiBold)
-                    result.causes.forEach { Text("• $it") }
-                    Text("Step-by-step checks", fontWeight = FontWeight.SemiBold)
-                    result.checks.forEachIndexed { index, s -> Text("${index + 1}. $s") }
+                    Text(if (vm.useUkrainian) vm.toUkr(result.description) else result.description)
+                    Text(vm.tr("Possible causes", "Можливі причини"), fontWeight = FontWeight.SemiBold)
+                    result.causes.forEach { Text("• " + if (vm.useUkrainian) vm.toUkr(it) else it) }
+                    Text(vm.tr("Step-by-step checks", "Покрокова перевірка"), fontWeight = FontWeight.SemiBold)
+                    result.checks.forEachIndexed { index, s ->
+                        Text("${index + 1}. " + if (vm.useUkrainian) vm.toUkr(s) else s)
+                    }
                 }
             }
         }
@@ -229,18 +255,28 @@ private fun PhotoScreen(vm: StarnetCoreViewModel) {
     }
     ScreenContainer {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            AppCard("Photo Vision", "Upload machine screen, schematic, detail or drawing photo.") {
-                Button(onClick = { launcher.launch("image/*") }) { Text("Select photo") }
+            AppCard(
+                vm.tr("Photo Vision", "Розпізнавання фото"),
+                vm.tr("Upload machine screen, schematic, detail or drawing photo.", "Завантажте фото екрана, схеми, деталі або креслення.")
+            ) {
+                Button(onClick = { launcher.launch("image/*") }) { Text(vm.tr("Select photo", "Вибрати фото")) }
                 selectedUri?.let {
                     AsyncImage(model = it, contentDescription = "photo", modifier = Modifier.fillMaxWidth().height(220.dp))
                 }
             }
-            AppCard("AI Output") {
-                Text("Summary: ${vm.ocrSummary}")
+            AppCard(vm.tr("AI Output", "Результат AI")) {
+                val summary = if (vm.useUkrainian) vm.toUkr(vm.ocrSummary) else vm.ocrSummary
+                Text(vm.tr("Summary", "Підсумок") + ": $summary")
                 HorizontalDivider()
-                Text(vm.ocrText.ifBlank { "No extracted text yet." })
+                Text(vm.ocrText.ifBlank { vm.tr("No extracted text yet.", "Текст ще не розпізнано.") })
                 Spacer(Modifier.height(6.dp))
-                Text("Detected alarm parsing works with controller=${vm.selectedController}, model=${vm.selectedModelFamily}.", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    vm.tr(
+                        "Detected alarm parsing works with controller=${vm.selectedController}, model=${vm.selectedModelFamily}.",
+                        "Парсер alarm працює для controller=${vm.selectedController}, model=${vm.selectedModelFamily}."
+                    ),
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }
