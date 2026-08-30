@@ -10,7 +10,7 @@ export interface ToolRecord {
   available: boolean;
 }
 
-export const toolDatabase: ToolRecord[] = [
+const toolDatabase: ToolRecord[] = [
   {
     id: "T0101",
     station: "T0101",
@@ -78,6 +78,20 @@ export const toolDatabase: ToolRecord[] = [
     available: true
   }
 ];
+
+export function listTools(): ToolRecord[] {
+  return toolDatabase.map((tool) => ({ ...tool }));
+}
+
+export function addOrEnableTool(tool: ToolRecord): ToolRecord {
+  const index = toolDatabase.findIndex((item) => item.id === tool.id || item.station === tool.station);
+  if (index >= 0) {
+    toolDatabase[index] = { ...tool };
+    return { ...toolDatabase[index] };
+  }
+  toolDatabase.push({ ...tool });
+  return { ...tool };
+}
 
 export function selectTool(
   operationType: string,

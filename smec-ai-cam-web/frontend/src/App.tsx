@@ -25,6 +25,24 @@ interface Operation {
   passes: number;
 }
 
+interface MissingTool {
+  operationType: string;
+  operationName: string;
+  recommendedLabel: string;
+}
+
+interface ToolPayload {
+  id: string;
+  station: string;
+  label: string;
+  operationTypes: string[];
+  minDiameter: number;
+  maxDiameter: number;
+  maxDoc: number;
+  noseRadius: number;
+  available: boolean;
+}
+
 interface Feature {
   name: string;
   value: string;
@@ -58,6 +76,7 @@ interface JobState {
   finalProgram?: FinalProgram;
   warnings: string[];
   errors: string[];
+  missingTools: MissingTool[];
 }
 
 const apiBase = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
@@ -75,6 +94,7 @@ function App() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [job, setJob] = useState<JobState | null>(null);
   const [loading, setLoading] = useState(false);
+  const [addingTool, setAddingTool] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isFinal = job?.status === "completed" || job?.status === "manual_review_required";
@@ -131,6 +151,63 @@ function App() {
     }
     const data = (await response.json()) as { jobId: string };
     setJobId(data.jobId);
+  }
+
+  function suggestedToolFor(operationType: string, label: string): ToolPayload {
+    if (operationType === "grooving") {
+      return {
+        id: "T0909",
+        station: "T0909",
+        label,
+        operationTypes: ["grooving"],
+        minDiameter: 6,
+        maxDiameter: 120,
+        maxDoc: 2,
+        noseRadius: 0.2,
+        available: true
+      };
+    }
+    if (operationType === "threading") {
+      return {
+        id: "T0808",
+        station: "T0808",
+        label,
+        operationTypes: ["threading"],
+        minDiameter: 10,
+        maxDiameter: 120,
+        maxDoc: 0.5,
+        noseRadius: 0.2,
+        available: true
+      };
+    }
+    return {
+      id: "T0707",
+      station: "T0707",
+      label,
+      operationTypes: [operationType],
+      minDiameter: 0,
+      maxDiameter: 200,
+      maxDoc: 3,
+      noseRadius: 0.4,
+      available: true
+    };
+  }
+
+  async function addMissingToolsAndRetry(): Promise<void> {
+    if (!jobId || !job || job.missingTools.length === 0) {
+      return;
+    }
+    setAddingTool(true);
+    for (const missing of job.missingTools) {
+      const payload = suggestedToolFor(missing.operationType, missing.recommendedLabel);
+      await fetch(`${apiBase}/api/tools`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    }
+    await fetch(`${apiBase}/api/auto-cnc/jobs/${jobId}/retry`, { method: "POST" });
+    setAddingTool(false);
   }
 
   function downloadNc(): void {
@@ -209,7 +286,7 @@ function App() {
         )}
 
         <button className="primary-btn" type="button" onClick={onGenerate} disabled={loading}>
-          {loading ? "Submitting..." : "GENERATE CNC PROGRAM"}
+          {loading ? "Submitting..." : "AUTO CNC"}
         </button>
         {error && <p className="error">{error}</p>}
       </section>
@@ -259,6 +336,21 @@ function App() {
                     <li key={`${warning}-${idx}`}>{warning}</li>
                   ))}
                 </ul>
+              </>
+            )}
+            {job.missingTools.length > 0 && (
+              <>
+                <h4>TOOL REQUIRED</h4>
+                <ul>
+                  {job.missingTools.map((tool, idx) => (
+                    <li key={`${tool.operationType}-${idx}`}>
+                      {tool.operationName}: {tool.recommendedLabel}
+                    </li>
+                  ))}
+                </ul>
+                <button type="button" onClick={addMissingToolsAndRetry} disabled={addingTool}>
+                  {addingTool ? "Adding tools..." : "ADD TOOL & RETRY AUTO CNC"}
+                </button>
               </>
             )}
           </article>

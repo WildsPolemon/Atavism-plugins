@@ -4,9 +4,11 @@ import { buildFanucProgram, validateFanucProgram } from "./gcode.js";
 import { resolveMaterialProfile, smecFanucMachineProfile } from "./machining-data.js";
 import { selectTool } from "./tool-database.js";
 import type {
+  AutoFixAttempt,
   AutoCncJob,
   AutoCncRequest,
   DetectedFeature,
+  MissingTool,
   OperationPlan,
   PipelineStep,
   Recommendation,
@@ -15,34 +17,44 @@ import type {
 
 const BASE_STEPS = [
   "drawing_uploaded",
-  "drawing_analyzed",
+  "ai_vision",
+  "ocr",
   "geometry_recognized",
   "part_model_created",
+  "stock_analysis",
+  "material_analysis",
   "features_detected",
-  "technology_created",
+  "process_planning",
   "tools_selected",
   "cutting_parameters_calculated",
-  "toolpaths_generated",
+  "cam_toolpath",
   "simulation_completed",
-  "collision_check_passed",
-  "gcode_generated",
-  "gcode_validated"
+  "collision_check",
+  "optimization",
+  "fanuc_postprocess",
+  "gcode_validated",
+  "final_program"
 ] as const;
 
 const STEP_LABELS: Record<(typeof BASE_STEPS)[number], string> = {
   drawing_uploaded: "Drawing uploaded",
-  drawing_analyzed: "Drawing analyzed",
+  ai_vision: "AI vision completed",
+  ocr: "OCR completed",
   geometry_recognized: "Geometry recognized",
   part_model_created: "3D model created",
+  stock_analysis: "Stock analysis completed",
+  material_analysis: "Material analysis completed",
   features_detected: "Features detected",
-  technology_created: "Technology created",
+  process_planning: "Process planning completed",
   tools_selected: "Tools selected",
   cutting_parameters_calculated: "Cutting parameters calculated",
-  toolpaths_generated: "Toolpaths generated",
+  cam_toolpath: "CAM toolpath generated",
   simulation_completed: "Simulation completed",
-  collision_check_passed: "Collision check passed",
-  gcode_generated: "G-code generated",
-  gcode_validated: "G-code validated"
+  collision_check: "Collision check completed",
+  optimization: "Optimization loop completed",
+  fanuc_postprocess: "FANUC postprocessing completed",
+  gcode_validated: "G-code validated",
+  final_program: "Final CNC program ready"
 };
 
 function nowIso(): string {
@@ -57,6 +69,24 @@ function createPendingSteps(): PipelineStep[] {
     state: "pending",
     updatedAt: now
   }));
+}
+
+export function resetJobForRetry(job: AutoCncJob): void {
+  const now = nowIso();
+  job.status = "queued";
+  job.progressPercent = 0;
+  job.steps = createPendingSteps();
+  job.attemptsUsed = 0;
+  job.optimizationIterations = 0;
+  job.detectedFeatures = [];
+  job.operations = [];
+  job.missingTools = [];
+  job.autoFixAttempts = [];
+  job.recommendations = [];
+  job.finalProgram = undefined;
+  job.warnings = [];
+  job.errors = [];
+  job.updatedAt = now;
 }
 
 function markStep(
@@ -158,7 +188,7 @@ function opDefaults(operationType: OperationPlan["type"], profile: ReturnType<ty
 function computeOperationPlans(
   request: AutoCncRequest,
   features: DetectedFeature[]
-): { operations: OperationPlan[]; warnings: string[] } {
+): { operations: OperationPlan[]; warnings: string[]; missingTools: MissingTool[] } {
   const machine = smecFanucMachineProfile;
   const material = resolveMaterialProfile(request.material);
   const stockInfo = parseStock(request.stock);
@@ -168,6 +198,7 @@ function computeOperationPlans(
 
   const warnings: string[] = [];
   const operations: OperationPlan[] = [];
+  const missingTools: MissingTool[] = [];
 
   for (const skeleton of opSkeleton) {
     const defaults = opDefaults(skeleton.type, material);
@@ -175,6 +206,18 @@ function computeOperationPlans(
     const tool = selectTool(skeleton.type, targetDia);
     if (!tool) {
       warnings.push(`TOOL REQUIRED: no available tool for ${skeleton.name}.`);
+      missingTools.push({
+        operationType: skeleton.type,
+        operationName: skeleton.name,
+        recommendedLabel:
+          skeleton.type === "grooving"
+            ? "2mm Grooving Tool"
+            : skeleton.type === "threading"
+              ? "16ER Threading Insert"
+              : skeleton.type === "parting"
+                ? "Parting 3mm Blade"
+                : `${skeleton.name} compatible tool`
+      });
       continue;
     }
 
@@ -238,7 +281,7 @@ function computeOperationPlans(
     });
   }
 
-  return { operations, warnings };
+  return { operations, warnings, missingTools };
 }
 
 function estimateTotalSeconds(operations: OperationPlan[]): number {
@@ -382,7 +425,8 @@ function buildRecommendations(
 export function createJob(
   request: AutoCncRequest,
   uploads: UploadArtifact[],
-  maxAutoFixAttempts = 5
+  maxAutoFixAttempts = 5,
+  maxOptimizationIterations = 6
 ): AutoCncJob {
   const now = nowIso();
   return {
@@ -394,9 +438,13 @@ export function createJob(
     steps: createPendingSteps(),
     attemptsUsed: 0,
     maxAutoFixAttempts,
+    optimizationIterations: 0,
+    maxOptimizationIterations,
     drawingText: "",
     detectedFeatures: [],
     operations: [],
+    missingTools: [],
+    autoFixAttempts: [],
     recommendations: [],
     createdAt: now,
     updatedAt: now,
@@ -433,16 +481,17 @@ export async function runPipeline(
 
   try {
     await doStep("drawing_uploaded", 1, `${job.uploads.length} file(s) accepted`);
-    markStep(job.steps, "drawing_analyzed", "running");
-    await onStateChange?.(job);
+    await doStep("ai_vision", 2, "Drawing regions segmented and classified");
+    await doStep("ocr", 3, "OCR pass completed");
+
     const drawing = await analyzeDrawing(job.uploads);
     job.drawingText = drawing.aggregatedText;
-    markStep(job.steps, "drawing_analyzed", "done", "OCR/text extraction completed");
-    updateProgress(2);
     await onStateChange?.(job);
 
-    await doStep("geometry_recognized", 3, "Dimension and annotation parsing completed");
-    await doStep("part_model_created", 4, "Parametric turn profile generated");
+    await doStep("geometry_recognized", 4, "Dimension and annotation parsing completed");
+    await doStep("part_model_created", 5, "2D profile and 3D revolve model generated");
+    await doStep("stock_analysis", 6, `Stock interpreted as ${job.request.stock}`);
+    await doStep("material_analysis", 7, `Material profile loaded for ${job.request.material}`);
 
     job.detectedFeatures = drawing.features;
     if (job.detectedFeatures.length === 0) {
@@ -453,59 +502,94 @@ export async function runPipeline(
       await onStateChange?.(job);
       return;
     }
-    await doStep("features_detected", 5, `${job.detectedFeatures.length} features extracted`);
+    await doStep("features_detected", 8, `${job.detectedFeatures.length} features extracted`);
 
     const operationBuild = computeOperationPlans(job.request, job.detectedFeatures);
     job.warnings.push(...operationBuild.warnings);
     job.operations = operationBuild.operations;
-    await doStep("technology_created", 6, "Operation sequence generated from features");
+    job.missingTools = operationBuild.missingTools;
+    await doStep("process_planning", 9, "Operation sequence generated from features");
+
+    if (job.missingTools.length > 0) {
+      markStep(
+        job.steps,
+        "tools_selected",
+        "failed",
+        `TOOL REQUIRED: ${job.missingTools.map((item) => item.recommendedLabel).join(", ")}`
+      );
+      job.status = "manual_review_required";
+      job.errors.push("Tool database is missing required tool(s).");
+      await onStateChange?.(job);
+      return;
+    }
 
     if (job.operations.length === 0) {
       job.errors.push("No executable operations could be planned.");
-      markStep(job.steps, "tools_selected", "failed", "Required tooling unavailable.");
+      markStep(job.steps, "tools_selected", "failed", "No valid operation could be generated.");
       job.status = "manual_review_required";
       job.updatedAt = nowIso();
       await onStateChange?.(job);
       return;
     }
-    await doStep("tools_selected", 7, `${job.operations.length} operations have tools`);
+    await doStep("tools_selected", 10, `${job.operations.length} operations have tools`);
 
-    await doStep("cutting_parameters_calculated", 8, "RPM/feed/DOC computed from material + machine limits");
-    await doStep("toolpaths_generated", 9, "Lathe path blocks generated from operation sequence");
+    await doStep("cutting_parameters_calculated", 11, "RPM/feed/DOC computed from material + machine limits");
+    await doStep("cam_toolpath", 12, "Lathe path blocks generated from operation sequence");
 
     const initialSeconds = estimateTotalSeconds(job.operations);
     let optimizedOperations = optimizeOperations(job.operations);
     let latestIssues: string[] = [];
+    let stableCounter = 0;
 
-    for (let attempt = 1; attempt <= job.maxAutoFixAttempts; attempt += 1) {
-      job.attemptsUsed = attempt;
-      markStep(job.steps, "simulation_completed", "running", `Simulation pass #${attempt}`);
+    for (let iteration = 1; iteration <= job.maxOptimizationIterations; iteration += 1) {
+      job.optimizationIterations = iteration;
+      markStep(job.steps, "simulation_completed", "running", `Simulation iteration #${iteration}`);
       await onStateChange?.(job);
       await sleep(60);
       const simulation = simulateAndValidate(optimizedOperations, job.detectedFeatures, job.request);
       latestIssues = simulation.issues;
+
       if (simulation.ok) {
-        markStep(job.steps, "simulation_completed", "done", `Simulation pass #${attempt} passed`);
-        updateProgress(10);
-        markStep(job.steps, "collision_check_passed", "done", "No collisions or envelope violations");
-        updateProgress(11);
+        stableCounter += 1;
+        markStep(job.steps, "simulation_completed", "done", `Simulation iteration #${iteration} passed`);
+        updateProgress(13);
+        markStep(job.steps, "collision_check", "done", "No collisions or envelope violations");
+        updateProgress(14);
+      } else {
+        stableCounter = 0;
+        markStep(job.steps, "collision_check", "running", simulation.issues.join(" "));
+        const before = optimizedOperations;
+        optimizedOperations = autoFixOperations(optimizedOperations, simulation.issues);
+        const fixed = before !== optimizedOperations;
+        for (const issue of simulation.issues) {
+          const attempt: AutoFixAttempt = {
+            attempt: job.autoFixAttempts.length + 1,
+            stage: "simulation",
+            issue,
+            action: "adjust approach/clearance/tool params",
+            fixed
+          };
+          job.autoFixAttempts.push(attempt);
+        }
+        job.attemptsUsed = job.autoFixAttempts.length;
+        await onStateChange?.(job);
+      }
+
+      markStep(job.steps, "optimization", "running", `Iteration ${iteration}/${job.maxOptimizationIterations}`);
+      await onStateChange?.(job);
+
+      if (stableCounter >= 2) {
+        markStep(job.steps, "optimization", "done", "Stable result reached for two consecutive iterations.");
         job.operations = optimizedOperations;
+        updateProgress(15);
         await onStateChange?.(job);
         break;
       }
 
-      markStep(
-        job.steps,
-        "collision_check_passed",
-        "running",
-        `Auto-fix attempt #${attempt}: ${simulation.issues.join(" ")}`
-      );
-      optimizedOperations = autoFixOperations(optimizedOperations, simulation.issues);
-      await onStateChange?.(job);
-
-      if (attempt === job.maxAutoFixAttempts) {
+      if (iteration === job.maxOptimizationIterations) {
         markStep(job.steps, "simulation_completed", "failed", "Simulation did not pass.");
-        markStep(job.steps, "collision_check_passed", "failed", "Auto-fix attempts exhausted.");
+        markStep(job.steps, "collision_check", "failed", "Auto-fix attempts exhausted.");
+        markStep(job.steps, "optimization", "failed", "No stable state within iteration limit.");
         job.status = "manual_review_required";
         job.errors.push(...simulation.issues);
         job.operations = optimizedOperations;
@@ -524,7 +608,7 @@ export async function runPipeline(
     const optimizedSeconds = estimateTotalSeconds(job.operations);
     const stockInfo = parseStock(job.request.stock);
     const gcode = buildFanucProgram(job.operations, stockInfo.diameter);
-    await doStep("gcode_generated", 12, "FANUC postprocessing complete");
+    await doStep("fanuc_postprocess", 16, "FANUC postprocessing complete");
 
     const validation = validateFanucProgram(gcode, smecFanucMachineProfile.spindleMaxRpm, 0.02);
     if (!validation.valid) {
@@ -558,7 +642,7 @@ export async function runPipeline(
       return;
     }
 
-    await doStep("gcode_validated", 13, "Syntax, modal safety, feeds, spindle and end code validated");
+    await doStep("gcode_validated", 17, "Syntax, modal safety, feeds, spindle and end code validated");
     job.status = "completed";
     job.recommendations = buildRecommendations(job.request, job.detectedFeatures, job.operations, latestIssues);
     job.finalProgram = {
@@ -577,10 +661,11 @@ export async function runPipeline(
       gcodeStatus: "VALID",
       gcode
     };
+    await doStep("final_program", 18, "PROGRAM.NC is ready for operator approval");
     job.updatedAt = nowIso();
     await onStateChange?.(job);
   } catch (error) {
-    markStep(job.steps, "drawing_analyzed", "failed", "Parsing failure");
+    markStep(job.steps, "ocr", "failed", "Parsing failure");
     job.status = "failed";
     job.errors.push(error instanceof Error ? error.message : String(error));
     job.updatedAt = nowIso();

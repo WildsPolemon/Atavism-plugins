@@ -67,6 +67,20 @@ export interface Recommendation {
   impact: string;
 }
 
+export interface MissingTool {
+  operationType: OperationPlan["type"];
+  operationName: string;
+  recommendedLabel: string;
+}
+
+export interface AutoFixAttempt {
+  attempt: number;
+  stage: string;
+  issue: string;
+  action: string;
+  fixed: boolean;
+}
+
 export interface FinalProgram {
   machine: string;
   controller: string;
@@ -100,9 +114,13 @@ export interface AutoCncJob {
   steps: PipelineStep[];
   attemptsUsed: number;
   maxAutoFixAttempts: number;
+  optimizationIterations: number;
+  maxOptimizationIterations: number;
   drawingText: string;
   detectedFeatures: DetectedFeature[];
   operations: OperationPlan[];
+  missingTools: MissingTool[];
+  autoFixAttempts: AutoFixAttempt[];
   recommendations: Recommendation[];
   createdAt: string;
   updatedAt: string;

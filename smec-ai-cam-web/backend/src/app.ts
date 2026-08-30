@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import { z } from "zod";
-import { createJob, runPipeline } from "./pipeline.js";
+import { createJob, resetJobForRetry, runPipeline } from "./pipeline.js";
+import { addOrEnableTool, listTools } from "./tool-database.js";
 import type { JobStore } from "./store.js";
 import type { UploadArtifact, UploadKind } from "./types.js";
 
@@ -16,6 +17,18 @@ const requestSchema = z.object({
   rpmLimit: z.coerce.number().optional(),
   feedLimit: z.coerce.number().optional(),
   customDoc: z.coerce.number().optional()
+});
+
+const toolSchema = z.object({
+  id: z.string().min(2),
+  station: z.string().regex(/^T\d{4}$/),
+  label: z.string().min(3),
+  operationTypes: z.array(z.string()).min(1),
+  minDiameter: z.coerce.number().min(0),
+  maxDiameter: z.coerce.number().min(0),
+  maxDoc: z.coerce.number().positive(),
+  noseRadius: z.coerce.number().min(0),
+  available: z.coerce.boolean().default(true)
 });
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -52,6 +65,22 @@ export function createApp(jobStore: JobStore) {
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, service: "smec-ai-cam-backend" });
+  });
+
+  app.get("/api/tools", (_req, res) => {
+    res.json({ tools: listTools() });
+  });
+
+  app.post("/api/tools", (req, res) => {
+    const parsed = toolSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: "Invalid tool payload.",
+        issues: parsed.error.issues
+      });
+    }
+    const tool = addOrEnableTool(parsed.data);
+    return res.status(201).json({ tool });
   });
 
   app.post("/api/auto-cnc/jobs", upload.array("files", 8), async (req, res) => {
@@ -121,6 +150,23 @@ export function createApp(jobStore: JobStore) {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="${job.id}.nc"`);
     return res.send(job.finalProgram.gcode);
+  });
+
+  app.post("/api/auto-cnc/jobs/:id/retry", async (req, res) => {
+    const job = await jobStore.get(req.params.id);
+    if (!job) {
+      return res.status(404).json({ error: "Job not found." });
+    }
+    if (job.status === "running") {
+      return res.status(409).json({ error: "Job is already running." });
+    }
+
+    resetJobForRetry(job);
+    await jobStore.set(job);
+    void runPipeline(job, async (updatedJob) => {
+      await jobStore.set(updatedJob);
+    });
+    return res.status(202).json({ jobId: job.id, status: job.status });
   });
 
   return app;
