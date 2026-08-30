@@ -18,21 +18,27 @@ object AlarmParser {
 
     private fun parseFanuc(model: String, text: String): ParsedAlarm? {
         val patterns = mutableListOf(
-            Regex("""P/S\s*([0-9]{3})"""),
-            Regex("""SV\s*([0-9]{3,4})"""),
-            Regex("""ALARM\s*([0-9]{3})"""),
-            Regex("""\b([0-9]{3})\b""")
+            Regex("""\b(PS|SV|SP|OT|OH|DS|PW|SW|SR|BG)\s*[-:/]?\s*([0-9]{3,4})\b"""),
+            Regex("""P/S\s*([0-9]{3,4})"""),
+            Regex("""SERVO\s*([0-9]{3,4})"""),
+            Regex("""ALARM\s*([0-9]{3,4})"""),
+            Regex("""\b([0-9]{3,4})\b""")
         )
         if (model.contains("31I")) {
-            patterns.add(0, Regex("""SERVO\s*([0-9]{3,4})"""))
+            patterns.add(1, Regex("""APC\s*([0-9]{3,4})"""))
         }
         for (regex in patterns) {
             val m = regex.find(text) ?: continue
-            val g = m.groupValues[1]
             val code = when {
-                regex.pattern.startsWith("P/S") -> "P/S $g"
-                regex.pattern.startsWith("SV") || regex.pattern.startsWith("SERVO") -> "SV$g"
-                else -> g
+                regex.pattern.startsWith("\\b(PS|SV|SP|OT|OH|DS|PW|SW|SR|BG)") -> {
+                    val prefix = m.groupValues[1]
+                    val digits = m.groupValues[2].padStart(4, '0')
+                    "$prefix$digits"
+                }
+                regex.pattern.startsWith("P/S") -> "PS${m.groupValues[1].padStart(4, '0')}"
+                regex.pattern.startsWith("APC") -> "DS${m.groupValues[1].padStart(4, '0')}"
+                regex.pattern.startsWith("SERVO") -> "SV${m.groupValues[1].padStart(4, '0')}"
+                else -> m.groupValues[1].padStart(4, '0')
             }
             return ParsedAlarm(code = code, matchedPattern = regex.pattern)
         }

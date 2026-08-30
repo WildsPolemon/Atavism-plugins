@@ -162,7 +162,7 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun diagnoseAlarm(code: String, controller: String, modelFamily: String) {
-        val normalizedCode = code.trim().uppercase()
+        val normalizedCode = normalizeAlarmCode(code.trim().uppercase(), controller.trim().uppercase())
         val normalizedController = controller.trim().uppercase()
         val normalizedModel = modelFamily.trim().uppercase()
         viewModelScope.launch(Dispatchers.IO) {
@@ -180,8 +180,27 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
         }
         lastParserPattern = parsed.matchedPattern
         viewModelScope.launch(Dispatchers.IO) {
-            alarmResult = repository.findAlarm(selectedController, selectedModelFamily, parsed.code)
+            alarmResult = repository.findAlarm(
+                selectedController,
+                selectedModelFamily,
+                normalizeAlarmCode(parsed.code, selectedController)
+            )
         }
+    }
+
+    private fun normalizeAlarmCode(raw: String, controller: String): String {
+        if (controller != "FANUC") return raw
+        val token = raw.replace("\\s+".toRegex(), "")
+        val prefixed = Regex("""^(PS|SV|SP|OT|OH|DS|PW|SW|SR|BG|APC)([0-9]{3,4})$""").find(token)
+        if (prefixed != null) {
+            val prefix = prefixed.groupValues[1]
+            val digits = prefixed.groupValues[2].padStart(4, '0')
+            return if (prefix == "APC") "DS$digits" else "$prefix$digits"
+        }
+        val ps = Regex("""^P/S([0-9]{3,4})$""").find(token)
+        if (ps != null) return "PS${ps.groupValues[1].padStart(4, '0')}"
+        val plain = Regex("""^([0-9]{3,4})$""").find(token)
+        return plain?.groupValues?.get(1)?.padStart(4, '0') ?: token
     }
 
     fun calculateBoltCircle(pcd: Double, holes: Int, startAngle: Double = 0.0) {
