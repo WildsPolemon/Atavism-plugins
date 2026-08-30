@@ -1,10 +1,11 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
+import { MemoryJobStore } from "./store.js";
 
 describe("AUTO CNC API", () => {
   it("creates job and eventually returns completed status", async () => {
-    const app = createApp();
+    const app = createApp(new MemoryJobStore());
     const dxf = [
       "0",
       "SECTION",

@@ -405,9 +405,13 @@ export function createJob(
   };
 }
 
-export async function runPipeline(job: AutoCncJob): Promise<void> {
+export async function runPipeline(
+  job: AutoCncJob,
+  onStateChange?: (job: AutoCncJob) => Promise<void>
+): Promise<void> {
   job.status = "running";
   job.updatedAt = nowIso();
+  await onStateChange?.(job);
 
   const updateProgress = (completed: number) => {
     job.progressPercent = Math.round((completed / BASE_STEPS.length) * 100);
@@ -420,18 +424,22 @@ export async function runPipeline(job: AutoCncJob): Promise<void> {
     details?: string
   ) => {
     markStep(job.steps, stepId, "running");
+    await onStateChange?.(job);
     await sleep(60);
     markStep(job.steps, stepId, "done", details);
     updateProgress(doneCount);
+    await onStateChange?.(job);
   };
 
   try {
     await doStep("drawing_uploaded", 1, `${job.uploads.length} file(s) accepted`);
     markStep(job.steps, "drawing_analyzed", "running");
+    await onStateChange?.(job);
     const drawing = await analyzeDrawing(job.uploads);
     job.drawingText = drawing.aggregatedText;
     markStep(job.steps, "drawing_analyzed", "done", "OCR/text extraction completed");
     updateProgress(2);
+    await onStateChange?.(job);
 
     await doStep("geometry_recognized", 3, "Dimension and annotation parsing completed");
     await doStep("part_model_created", 4, "Parametric turn profile generated");
@@ -442,6 +450,7 @@ export async function runPipeline(job: AutoCncJob): Promise<void> {
       markStep(job.steps, "features_detected", "failed", "Feature extraction returned empty result.");
       job.status = "manual_review_required";
       job.updatedAt = nowIso();
+      await onStateChange?.(job);
       return;
     }
     await doStep("features_detected", 5, `${job.detectedFeatures.length} features extracted`);
@@ -456,6 +465,7 @@ export async function runPipeline(job: AutoCncJob): Promise<void> {
       markStep(job.steps, "tools_selected", "failed", "Required tooling unavailable.");
       job.status = "manual_review_required";
       job.updatedAt = nowIso();
+      await onStateChange?.(job);
       return;
     }
     await doStep("tools_selected", 7, `${job.operations.length} operations have tools`);
@@ -470,6 +480,7 @@ export async function runPipeline(job: AutoCncJob): Promise<void> {
     for (let attempt = 1; attempt <= job.maxAutoFixAttempts; attempt += 1) {
       job.attemptsUsed = attempt;
       markStep(job.steps, "simulation_completed", "running", `Simulation pass #${attempt}`);
+      await onStateChange?.(job);
       await sleep(60);
       const simulation = simulateAndValidate(optimizedOperations, job.detectedFeatures, job.request);
       latestIssues = simulation.issues;
@@ -479,6 +490,7 @@ export async function runPipeline(job: AutoCncJob): Promise<void> {
         markStep(job.steps, "collision_check_passed", "done", "No collisions or envelope violations");
         updateProgress(11);
         job.operations = optimizedOperations;
+        await onStateChange?.(job);
         break;
       }
 
@@ -489,6 +501,7 @@ export async function runPipeline(job: AutoCncJob): Promise<void> {
         `Auto-fix attempt #${attempt}: ${simulation.issues.join(" ")}`
       );
       optimizedOperations = autoFixOperations(optimizedOperations, simulation.issues);
+      await onStateChange?.(job);
 
       if (attempt === job.maxAutoFixAttempts) {
         markStep(job.steps, "simulation_completed", "failed", "Simulation did not pass.");
@@ -503,6 +516,7 @@ export async function runPipeline(job: AutoCncJob): Promise<void> {
           simulation.issues
         );
         job.updatedAt = nowIso();
+        await onStateChange?.(job);
         return;
       }
     }
@@ -540,6 +554,7 @@ export async function runPipeline(job: AutoCncJob): Promise<void> {
         gcode
       };
       job.updatedAt = nowIso();
+      await onStateChange?.(job);
       return;
     }
 
@@ -563,10 +578,12 @@ export async function runPipeline(job: AutoCncJob): Promise<void> {
       gcode
     };
     job.updatedAt = nowIso();
+    await onStateChange?.(job);
   } catch (error) {
     markStep(job.steps, "drawing_analyzed", "failed", "Parsing failure");
     job.status = "failed";
     job.errors.push(error instanceof Error ? error.message : String(error));
     job.updatedAt = nowIso();
+    await onStateChange?.(job);
   }
 }

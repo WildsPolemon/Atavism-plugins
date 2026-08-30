@@ -34,6 +34,23 @@ npm run dev
 Frontend expects backend at `http://localhost:4000` by default.
 Set `VITE_API_BASE_URL` to override.
 
+## MySQL Job Storage
+
+By default, backend uses in-memory storage.
+
+To enable MySQL persistence:
+
+```bash
+export JOB_STORE_DRIVER=mysql
+export MYSQL_URL="mysql://user:password@127.0.0.1:3306/smec_ai_cam"
+```
+
+Schema is auto-created at startup. You can also apply:
+
+```bash
+mysql -u <user> -p smec_ai_cam < backend/sql/mysql_schema.sql
+```
+
 ## Safety
 
 The app supports automated analysis and program generation, but requires operator approval before running NC code on a real machine.

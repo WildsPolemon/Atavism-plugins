@@ -3,7 +3,7 @@ import cors from "cors";
 import multer from "multer";
 import { z } from "zod";
 import { createJob, runPipeline } from "./pipeline.js";
-import { jobStore } from "./store.js";
+import type { JobStore } from "./store.js";
 import type { UploadArtifact, UploadKind } from "./types.js";
 
 const requestSchema = z.object({
@@ -45,7 +45,7 @@ function parseOperationOrder(value?: string): string[] | undefined {
   return items.length > 0 ? items : undefined;
 }
 
-export function createApp() {
+export function createApp(jobStore: JobStore) {
   const app = express();
   app.use(cors());
   app.use(express.json());
@@ -93,26 +93,28 @@ export function createApp() {
       },
       uploads
     );
-    jobStore.set(job);
+    await jobStore.set(job);
 
     // Fire-and-forget async pipeline.
-    void runPipeline(job);
+    void runPipeline(job, async (updatedJob) => {
+      await jobStore.set(updatedJob);
+    });
     return res.status(201).json({
       jobId: job.id,
       status: job.status
     });
   });
 
-  app.get("/api/auto-cnc/jobs/:id", (req, res) => {
-    const job = jobStore.get(req.params.id);
+  app.get("/api/auto-cnc/jobs/:id", async (req, res) => {
+    const job = await jobStore.get(req.params.id);
     if (!job) {
       return res.status(404).json({ error: "Job not found." });
     }
     return res.json(job);
   });
 
-  app.get("/api/auto-cnc/jobs/:id/download", (req, res) => {
-    const job = jobStore.get(req.params.id);
+  app.get("/api/auto-cnc/jobs/:id/download", async (req, res) => {
+    const job = await jobStore.get(req.params.id);
     if (!job || !job.finalProgram) {
       return res.status(404).json({ error: "Program is not ready." });
     }
