@@ -643,7 +643,6 @@ export async function runPipeline(
     }
 
     await doStep("gcode_validated", 17, "Syntax, modal safety, feeds, spindle and end code validated");
-    job.status = "completed";
     job.recommendations = buildRecommendations(job.request, job.detectedFeatures, job.operations, latestIssues);
     job.finalProgram = {
       machine: "SMEC",
@@ -662,6 +661,7 @@ export async function runPipeline(
       gcode
     };
     await doStep("final_program", 18, "PROGRAM.NC is ready for operator approval");
+    job.status = "completed";
     job.updatedAt = nowIso();
     await onStateChange?.(job);
   } catch (error) {
