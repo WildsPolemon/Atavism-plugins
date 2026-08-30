@@ -223,6 +223,14 @@ private fun AiDiagnosisScreen(vm: StarnetCoreViewModel) {
                     vm.tr("Loaded alarm codes", "Завантажено кодів помилок") + ": ${vm.kbAlarmCount}",
                     style = MaterialTheme.typography.bodySmall
                 )
+                Text(
+                    vm.tr("Detected FANUC model", "Визначена модель FANUC") + ": ${vm.detectedFanucModel}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    vm.tr("Detected alarm type", "Визначений тип аварії") + ": ${vm.detectedFanucAlarmType}",
+                    style = MaterialTheme.typography.bodySmall
+                )
                 Text(vm.tr("Parser signature", "Сигнатура парсера") + ": ${vm.lastParserPattern}", style = MaterialTheme.typography.bodySmall)
             }
             AppCard(vm.tr("Diagnosis Result", "Результат діагностики")) {
@@ -270,6 +278,18 @@ private fun PhotoScreen(vm: StarnetCoreViewModel) {
                 HorizontalDivider()
                 Text(vm.ocrText.ifBlank { vm.tr("No extracted text yet.", "Текст ще не розпізнано.") })
                 Spacer(Modifier.height(6.dp))
+                Text(
+                    vm.tr("Detected model", "Визначена модель") + ": ${vm.detectedFanucModel}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    vm.tr("Detected alarm type", "Визначений тип аварії") + ": ${vm.detectedFanucAlarmType}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    vm.tr("Detected alarm code", "Визначений код аварії") + ": ${vm.detectedAlarmCode}",
+                    style = MaterialTheme.typography.bodySmall
+                )
                 Text(
                     vm.tr(
                         "Detected alarm parsing works with controller=${vm.selectedController}, model=${vm.selectedModelFamily}.",

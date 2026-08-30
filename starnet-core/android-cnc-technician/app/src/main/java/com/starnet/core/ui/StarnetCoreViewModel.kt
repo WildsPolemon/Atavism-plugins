@@ -19,6 +19,7 @@ import com.starnet.core.data.StarnetCoreDatabase
 import com.starnet.core.data.ToolEntity
 import com.starnet.core.domain.AlarmKnowledge
 import com.starnet.core.domain.AlarmParser
+import com.starnet.core.domain.FanucScreenAnalyzer
 import com.starnet.core.domain.UkrainianTranslator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
@@ -49,6 +50,9 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     var kbSyncStatus by mutableStateOf("Seed not loaded")
     var kbAlarmCount by mutableStateOf(0)
     var useUkrainian by mutableStateOf(true)
+    var detectedFanucModel by mutableStateOf("n/a")
+    var detectedFanucAlarmType by mutableStateOf("n/a")
+    var detectedAlarmCode by mutableStateOf("n/a")
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
@@ -180,15 +184,20 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
         }
         lastParserPattern = parsed.matchedPattern
         viewModelScope.launch(Dispatchers.IO) {
+            val modelForLookup = if (selectedController.uppercase() == "FANUC" && detectedFanucModel != "n/a") {
+                detectedFanucModel
+            } else {
+                selectedModelFamily
+            }
             alarmResult = repository.findAlarm(
                 selectedController,
-                selectedModelFamily,
-                normalizeAlarmCode(parsed.code, selectedController)
+                modelForLookup,
+                normalizeAlarmCode(parsed.code, selectedController, detectedFanucAlarmType)
             )
         }
     }
 
-    private fun normalizeAlarmCode(raw: String, controller: String): String {
+    private fun normalizeAlarmCode(raw: String, controller: String, fanucTypeHint: String? = null): String {
         if (controller != "FANUC") return raw
         val token = raw.replace("\\s+".toRegex(), "")
         val prefixed = Regex("""^(PS|SV|SP|OT|OH|DS|PW|SW|SR|BG|APC)([0-9]{3,4})$""").find(token)
@@ -200,7 +209,17 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
         val ps = Regex("""^P/S([0-9]{3,4})$""").find(token)
         if (ps != null) return "PS${ps.groupValues[1].padStart(4, '0')}"
         val plain = Regex("""^([0-9]{3,4})$""").find(token)
-        return plain?.groupValues?.get(1)?.padStart(4, '0') ?: token
+        if (plain == null) return token
+        val digits = plain.groupValues[1].padStart(4, '0')
+        return when (fanucTypeHint) {
+            "SERVO" -> "SV$digits"
+            "SPINDLE" -> "SP$digits"
+            "P/S" -> "PS$digits"
+            "OVERTRAVEL" -> "OT$digits"
+            "OVERHEAT" -> "OH$digits"
+            "DATA" -> "DS$digits"
+            else -> digits
+        }
     }
 
     fun calculateBoltCircle(pcd: Double, holes: Int, startAngle: Double = 0.0) {
@@ -245,9 +264,21 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
                 ocrText = textResult.text
                 val labels = labelResult.map { it.text.lowercase() to it.confidence }.toMap()
                 ocrSummary = classifyPhoto(ocrText.lowercase(), labels)
+                if (selectedController.uppercase() == "FANUC") {
+                    val detection = FanucScreenAnalyzer.detect(ocrText)
+                    detectedFanucModel = detection.modelFamily ?: "n/a"
+                    detectedFanucAlarmType = detection.alarmType ?: "n/a"
+                    detectedAlarmCode = detection.rawCode ?: "n/a"
+                    if (!detection.modelFamily.isNullOrBlank()) {
+                        selectedModelFamily = detection.modelFamily
+                    }
+                }
             }.onFailure { err ->
                 ocrSummary = "Recognition failed: ${err.message}"
                 ocrText = ""
+                detectedFanucModel = "n/a"
+                detectedFanucAlarmType = "n/a"
+                detectedAlarmCode = "n/a"
             }
         }
     }

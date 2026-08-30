@@ -3,7 +3,6 @@ package com.starnet.core.data
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
-import com.starnet.core.domain.FanucAlarmCatalog
 import com.starnet.core.domain.AlarmKnowledge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -50,13 +49,7 @@ class AlarmKnowledgeRepository(
         if (dao.alarmCount() > 0) return@withContext
         val text = context.assets.open("alarm_seed_v1.json").bufferedReader().use { it.readText() }
         val seed = gson.fromJson(text, AlarmSeedFile::class.java)
-        val entities = (
-            seed.alarms.map { it.toEntity(seed.revision, gson) } +
-                FanucAlarmCatalog.build(seed.revision, gson)
-            )
-            .associateBy { it.key }
-            .values
-            .toList()
+        val entities = seed.alarms.map { it.toEntity(seed.revision, gson) }
         dao.upsertAlarms(entities)
         dao.upsertKbMeta(KbMetaEntity(revision = seed.revision, updatedAt = seed.generatedAt, source = "asset"))
     }
