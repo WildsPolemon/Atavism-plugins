@@ -169,5 +169,24 @@ export function createApp(jobStore: JobStore) {
     return res.status(202).json({ jobId: job.id, status: job.status });
   });
 
+  app.post("/api/auto-cnc/jobs/:id/operator-approval", async (req, res) => {
+    const job = await jobStore.get(req.params.id);
+    if (!job) {
+      return res.status(404).json({ error: "Job not found." });
+    }
+    if (!job.finalProgram) {
+      return res.status(409).json({ error: "Program is not ready for approval." });
+    }
+
+    const approve = Boolean(req.body?.approve);
+    job.finalProgram.operatorApproved = approve;
+    job.updatedAt = new Date().toISOString();
+    await jobStore.set(job);
+    return res.status(200).json({
+      jobId: job.id,
+      operatorApproved: job.finalProgram.operatorApproved
+    });
+  });
+
   return app;
 }

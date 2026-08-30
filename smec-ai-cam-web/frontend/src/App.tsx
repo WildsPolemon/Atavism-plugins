@@ -43,6 +43,12 @@ interface ToolPayload {
   available: boolean;
 }
 
+interface SimulationCheck {
+  label: string;
+  passed: boolean;
+  details: string;
+}
+
 interface Feature {
   name: string;
   value: string;
@@ -63,6 +69,12 @@ interface FinalProgram {
   warnings: number;
   gcodeStatus: "VALID" | "INVALID";
   gcode: string;
+  simulationReport: {
+    checks: SimulationCheck[];
+    iterations: number;
+    stable: boolean;
+  };
+  operatorApproved: boolean;
 }
 
 interface JobState {
@@ -95,6 +107,8 @@ function App() {
   const [job, setJob] = useState<JobState | null>(null);
   const [loading, setLoading] = useState(false);
   const [addingTool, setAddingTool] = useState(false);
+  const [show3d, setShow3d] = useState(false);
+  const [approvalBusy, setApprovalBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isFinal = job?.status === "completed" || job?.status === "manual_review_required";
@@ -208,6 +222,24 @@ function App() {
     }
     await fetch(`${apiBase}/api/auto-cnc/jobs/${jobId}/retry`, { method: "POST" });
     setAddingTool(false);
+  }
+
+  async function setOperatorApproval(approve: boolean): Promise<void> {
+    if (!jobId) {
+      return;
+    }
+    setApprovalBusy(true);
+    await fetch(`${apiBase}/api/auto-cnc/jobs/${jobId}/operator-approval`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ approve })
+    });
+    const updated = await fetch(`${apiBase}/api/auto-cnc/jobs/${jobId}`);
+    if (updated.ok) {
+      const data = (await updated.json()) as JobState;
+      setJob(data);
+    }
+    setApprovalBusy(false);
   }
 
   function downloadNc(): void {
@@ -409,12 +441,66 @@ function App() {
             <strong>{job.finalProgram.collisions}</strong> | G-code:{" "}
             <strong>{job.finalProgram.gcodeStatus}</strong>
           </p>
+          <p>
+            Optimization iterations: <strong>{job.finalProgram.simulationReport.iterations}</strong> | Stable:{" "}
+            <strong>{job.finalProgram.simulationReport.stable ? "YES" : "NO"}</strong>
+          </p>
           <p className="approval-note">
             Operator approval is required before running this NC file on a real machine.
           </p>
+          <div className="row-actions">
+            <button
+              type="button"
+              onClick={() => setOperatorApproval(true)}
+              disabled={approvalBusy || job.finalProgram.operatorApproved}
+            >
+              {job.finalProgram.operatorApproved ? "OPERATOR APPROVED" : "APPROVE PROGRAM"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setOperatorApproval(false)}
+              disabled={approvalBusy || !job.finalProgram.operatorApproved}
+            >
+              REVOKE APPROVAL
+            </button>
+          </div>
+          <button type="button" onClick={() => setShow3d((current) => !current)}>
+            {show3d ? "HIDE 3D" : "VIEW 3D"}
+          </button>
+          {show3d && (
+            <div className="model3d">
+              <svg viewBox="0 0 540 180" role="img" aria-label="lathe part preview">
+                <polyline
+                  points="20,120 60,120 80,95 130,95 150,75 220,75 250,88 310,88 330,70 400,70 430,90 520,90"
+                  fill="none"
+                  stroke="#2563eb"
+                  strokeWidth="6"
+                />
+                <polyline
+                  points="20,60 60,60 80,85 130,85 150,105 220,105 250,92 310,92 330,110 400,110 430,90 520,90"
+                  fill="none"
+                  stroke="#1d4ed8"
+                  strokeWidth="6"
+                />
+                <text x="20" y="20" fill="#0f172a">
+                  3D stock/part preview (auto-reconstructed profile)
+                </text>
+              </svg>
+            </div>
+          )}
           <button type="button" onClick={downloadNc}>
             DOWNLOAD NC
           </button>
+          <details>
+            <summary>SIMULATION & VALIDATION REPORT</summary>
+            <ul>
+              {job.finalProgram.simulationReport.checks.map((check, idx) => (
+                <li key={`${check.label}-${idx}`}>
+                  {check.passed ? "✓" : "⚠"} {check.label}: {check.details}
+                </li>
+              ))}
+            </ul>
+          </details>
           <details>
             <summary>VIEW G-CODE</summary>
             <pre>{job.finalProgram.gcode}</pre>

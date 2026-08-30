@@ -81,6 +81,18 @@ export interface AutoFixAttempt {
   fixed: boolean;
 }
 
+export interface SimulationCheck {
+  label: string;
+  passed: boolean;
+  details: string;
+}
+
+export interface SimulationReport {
+  checks: SimulationCheck[];
+  iterations: number;
+  stable: boolean;
+}
+
 export interface FinalProgram {
   machine: string;
   controller: string;
@@ -96,6 +108,8 @@ export interface FinalProgram {
   warnings: number;
   gcodeStatus: "VALID" | "INVALID";
   gcode: string;
+  simulationReport: SimulationReport;
+  operatorApproved: boolean;
 }
 
 export type JobStatus =

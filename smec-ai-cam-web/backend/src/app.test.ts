@@ -67,5 +67,11 @@ describe("AUTO CNC API", () => {
       throw new Error(`Expected completed status, got ${status}. Errors: ${JSON.stringify(finalState.body.errors)}`);
     }
     expect(status).toBe("completed");
+
+    const approveRes = await request(app)
+      .post(`/api/auto-cnc/jobs/${jobId}/operator-approval`)
+      .send({ approve: true });
+    expect(approveRes.status).toBe(200);
+    expect(approveRes.body.operatorApproved).toBe(true);
   }, 15000);
 });
