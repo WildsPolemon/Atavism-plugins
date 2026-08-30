@@ -72,7 +72,8 @@ export function createApp() {
       filename: file.originalname,
       mimeType: file.mimetype,
       sizeBytes: file.size,
-      kind: detectKind(file.mimetype, file.originalname)
+      kind: detectKind(file.mimetype, file.originalname),
+      contentBase64: file.buffer.toString("base64")
     }));
 
     const payload = parsed.data;

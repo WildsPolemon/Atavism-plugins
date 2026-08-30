@@ -5,6 +5,7 @@ export interface UploadArtifact {
   mimeType: string;
   sizeBytes: number;
   kind: UploadKind;
+  contentBase64: string;
 }
 
 export interface AutoCncRequest {
@@ -34,15 +35,30 @@ export interface PipelineStep {
 export interface DetectedFeature {
   name: string;
   value: string;
+  numericValue?: number;
+  unit?: "mm" | "deg" | "pitch" | "text";
 }
 
 export interface OperationPlan {
+  id: string;
+  type:
+    | "facing"
+    | "rough_turning"
+    | "finish_turning"
+    | "grooving"
+    | "threading"
+    | "drilling"
+    | "parting";
   name: string;
   tool: string;
+  toolId: string;
   rpm: number;
+  cuttingSpeed: number;
   feedPerRev: number;
+  feedRate: number;
   doc: number;
   passes: number;
+  estimatedSeconds: number;
 }
 
 export interface Recommendation {
@@ -57,6 +73,8 @@ export interface FinalProgram {
   material: string;
   operations: number;
   tools: number;
+  stock: string;
+  quantity: number;
   machiningTimeInitial: string;
   machiningTimeOptimized: string;
   saved: string;
@@ -82,6 +100,7 @@ export interface AutoCncJob {
   steps: PipelineStep[];
   attemptsUsed: number;
   maxAutoFixAttempts: number;
+  drawingText: string;
   detectedFeatures: DetectedFeature[];
   operations: OperationPlan[];
   recommendations: Recommendation[];

@@ -36,6 +36,8 @@ interface FinalProgram {
   material: string;
   operations: number;
   tools: number;
+  stock: string;
+  quantity: number;
   machiningTimeInitial: string;
   machiningTimeOptimized: string;
   saved: string;
@@ -249,6 +251,16 @@ function App() {
                 <small>{rec.impact}</small>
               </div>
             ))}
+            {job.warnings.length > 0 && (
+              <>
+                <h4>Warnings</h4>
+                <ul>
+                  {job.warnings.map((warning, idx) => (
+                    <li key={`${warning}-${idx}`}>{warning}</li>
+                  ))}
+                </ul>
+              </>
+            )}
           </article>
         </section>
       )}
@@ -295,6 +307,10 @@ function App() {
             Operations: <strong>{job.finalProgram.operations}</strong> | Tools:{" "}
             <strong>{job.finalProgram.tools}</strong> | Optimized Time:{" "}
             <strong>{job.finalProgram.machiningTimeOptimized}</strong>
+          </p>
+          <p>
+            Stock: <strong>{job.finalProgram.stock}</strong> | Quantity:{" "}
+            <strong>{job.finalProgram.quantity}</strong>
           </p>
           <p>
             Saved: <strong>{job.finalProgram.saved}</strong> | Collisions:{" "}
