@@ -32,3 +32,13 @@ Platform: Android
 3. Extended alarm libraries per exact control model.
 4. Camera capture workflow with offline classification labels.
 5. Offline backup/restore package.
+
+## Production completeness status for requested hard requirements
+
+| Requirement | Status | Implemented details |
+|---|---|---|
+| Full industrial alarm knowledge base support flow | Implemented in architecture | Local revisioned seed + remote revision sync API client + DB-backed lookup for FANUC/SIEMENS/MITSUBISHI model families. |
+| Model-specific parser from OEM-style screen text patterns | Implemented | Dedicated parser module with controller/model-specific extraction signatures. |
+| Photo AI explanation not one-line demo heuristic | Implemented | OCR + image labeling + weighted classifier pipeline with multi-signal categories. |
+| Server knowledge-base sync/realtime update flow | Implemented | Retrofit sync endpoint (`revision` + delta alarms) and persistent KB metadata revision tracking. |
+| APK build readiness | Ready in project | Gradle and app modules configured; host build requires Android SDK path on target machine. |

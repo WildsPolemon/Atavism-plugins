@@ -178,13 +178,28 @@ private fun DashboardScreen(checklist: List<ChecklistItemEntity>) {
 @Composable
 private fun AiDiagnosisScreen(vm: StarnetCoreViewModel) {
     var code by remember { mutableStateOf("") }
-    var controller by remember { mutableStateOf("FANUC") }
+    var controller by remember { mutableStateOf(vm.selectedController) }
+    var modelFamily by remember { mutableStateOf(vm.selectedModelFamily) }
+    var syncUrl by remember { mutableStateOf("https://kb.starnetcore.com/") }
     ScreenContainer {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             AppCard("AI Alarm Diagnostics", "Enter alarm code from controller screen.") {
                 OutlinedTextField(code, { code = it }, label = { Text("Alarm code") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(controller, { controller = it }, label = { Text("Controller") }, modifier = Modifier.fillMaxWidth())
-                Button(onClick = { vm.diagnoseAlarm(code, controller) }) { Text("Diagnose") }
+                OutlinedTextField(modelFamily, { modelFamily = it }, label = { Text("Model family (0i-TF/31i/828D/M80)") }, modifier = Modifier.fillMaxWidth())
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        vm.selectedController = controller
+                        vm.selectedModelFamily = modelFamily
+                        vm.diagnoseAlarm(code, controller, modelFamily)
+                    }) { Text("Diagnose") }
+                    Button(onClick = { vm.detectAlarmFromRecognizedText() }) { Text("Parse OCR Alarm") }
+                }
+                HorizontalDivider()
+                OutlinedTextField(syncUrl, { syncUrl = it }, label = { Text("Knowledge base sync URL") }, modifier = Modifier.fillMaxWidth())
+                Button(onClick = { vm.syncKnowledgeBase(syncUrl) }) { Text("Sync Knowledge Base") }
+                Text("KB status: ${vm.kbSyncStatus}", style = MaterialTheme.typography.bodySmall)
+                Text("Parser signature: ${vm.lastParserPattern}", style = MaterialTheme.typography.bodySmall)
             }
             AppCard("Diagnosis Result") {
                 val result = vm.alarmResult
@@ -224,6 +239,8 @@ private fun PhotoScreen(vm: StarnetCoreViewModel) {
                 Text("Summary: ${vm.ocrSummary}")
                 HorizontalDivider()
                 Text(vm.ocrText.ifBlank { "No extracted text yet." })
+                Spacer(Modifier.height(6.dp))
+                Text("Detected alarm parsing works with controller=${vm.selectedController}, model=${vm.selectedModelFamily}.", style = MaterialTheme.typography.bodySmall)
             }
         }
     }

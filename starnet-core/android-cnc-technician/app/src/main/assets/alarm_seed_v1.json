@@ -1,0 +1,195 @@
+{
+  "revision": 1,
+  "generatedAt": "2026-08-30T00:00:00Z",
+  "alarms": [
+    {
+      "controller": "FANUC",
+      "modelFamily": "0i-TF",
+      "code": "100",
+      "title": "Over Travel +X",
+      "severity": "critical",
+      "causes": [
+        "Work offset shift out of range",
+        "Incorrect tool geometry offset",
+        "Rapid move programmed outside soft limit"
+      ],
+      "actions": [
+        "Check machine coordinate and soft limit parameters",
+        "Verify G54/G55 work offsets",
+        "Run block-by-block with rapid override at 5%"
+      ]
+    },
+    {
+      "controller": "FANUC",
+      "modelFamily": "0i-TF",
+      "code": "101",
+      "title": "Over Travel -X",
+      "severity": "critical",
+      "causes": [
+        "Negative X move outside machine stroke",
+        "Incorrect diameter/radius mode expectation"
+      ],
+      "actions": [
+        "Confirm X is programmed in diameter mode",
+        "Check tool nose direction and compensation sign"
+      ]
+    },
+    {
+      "controller": "FANUC",
+      "modelFamily": "0i-TF",
+      "code": "P/S 087",
+      "title": "Thread Cycle Data Format Error",
+      "severity": "high",
+      "causes": [
+        "Invalid G76 argument format",
+        "Missing Q or P word in cycle",
+        "Pitch/feed mismatch"
+      ],
+      "actions": [
+        "Validate both G76 blocks",
+        "Check pitch value equals feed per rev",
+        "Dry run thread cycle above part"
+      ]
+    },
+    {
+      "controller": "FANUC",
+      "modelFamily": "31i",
+      "code": "SV0410",
+      "title": "Servo Excess Error",
+      "severity": "critical",
+      "causes": [
+        "Axis overloaded",
+        "Drive tuning mismatch",
+        "Encoder cable issue"
+      ],
+      "actions": [
+        "Inspect servo load graph",
+        "Check lubrication and ballscrew resistance",
+        "Run servo diagnostics page"
+      ]
+    },
+    {
+      "controller": "FANUC",
+      "modelFamily": "31i",
+      "code": "P/S 004",
+      "title": "Address Not Found",
+      "severity": "medium",
+      "causes": [
+        "Invalid G-code word for selected mode",
+        "Typo in CNC block"
+      ],
+      "actions": [
+        "Check block syntax near alarm line",
+        "Compare command with control manual"
+      ]
+    },
+    {
+      "controller": "SIEMENS",
+      "modelFamily": "828D",
+      "code": "700016",
+      "title": "Following Error Axis",
+      "severity": "critical",
+      "causes": [
+        "Excess axis lag",
+        "Drive overload",
+        "Mechanical binding"
+      ],
+      "actions": [
+        "Check diagnostics > drives > actual lag",
+        "Inspect axis mechanics",
+        "Verify servo tuning and backlash compensation"
+      ]
+    },
+    {
+      "controller": "SIEMENS",
+      "modelFamily": "828D",
+      "code": "14020",
+      "title": "Tool Data Missing",
+      "severity": "high",
+      "causes": [
+        "Tool offset entry missing",
+        "Invalid tool call"
+      ],
+      "actions": [
+        "Open tool table and verify active tool geometry",
+        "Check program T call against tool table"
+      ]
+    },
+    {
+      "controller": "SIEMENS",
+      "modelFamily": "840D",
+      "code": "611201",
+      "title": "Spindle Not Ready",
+      "severity": "high",
+      "causes": [
+        "Drive not enabled",
+        "Interlock condition active"
+      ],
+      "actions": [
+        "Check spindle drive ready signal",
+        "Verify chuck clamp and tailstock interlocks"
+      ]
+    },
+    {
+      "controller": "SIEMENS",
+      "modelFamily": "840D",
+      "code": "17110",
+      "title": "Program Interrupted by Limit",
+      "severity": "critical",
+      "causes": [
+        "Travel limit reached",
+        "Coordinate system wrong",
+        "Incorrect transformation"
+      ],
+      "actions": [
+        "Check active frame and offsets",
+        "Single-step from previous safe block"
+      ]
+    },
+    {
+      "controller": "MITSUBISHI",
+      "modelFamily": "M80",
+      "code": "P087",
+      "title": "Thread Command Parameter Error",
+      "severity": "high",
+      "causes": [
+        "Cycle parameter out of allowed range",
+        "Missing pitch setting"
+      ],
+      "actions": [
+        "Validate thread cycle format",
+        "Check first-pass and minimum-pass settings"
+      ]
+    },
+    {
+      "controller": "MITSUBISHI",
+      "modelFamily": "M80",
+      "code": "S52",
+      "title": "Spindle Servo Alarm",
+      "severity": "critical",
+      "causes": [
+        "Spindle overcurrent",
+        "Encoder feedback issue"
+      ],
+      "actions": [
+        "Inspect spindle alarm history",
+        "Check spindle load and drive cooling"
+      ]
+    },
+    {
+      "controller": "MITSUBISHI",
+      "modelFamily": "M70",
+      "code": "A10",
+      "title": "Absolute Position Data Lost",
+      "severity": "high",
+      "causes": [
+        "Battery low",
+        "Encoder absolute data invalid"
+      ],
+      "actions": [
+        "Check battery voltage",
+        "Run axis reference return and verify parameters"
+      ]
+    }
+  ]
+}

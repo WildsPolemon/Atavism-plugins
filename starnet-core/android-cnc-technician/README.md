@@ -50,6 +50,15 @@ Debug APK:
 
 - Current version stores data locally in Room database (`starnet_core.db`).
 - For production fleet use, add backend sync, role management, and backup/restore.
+
+## Alarm Knowledge Base Engine
+
+- Local seed file: `app/src/main/assets/alarm_seed_v1.json`
+- Room tables: `alarm_codes`, `kb_meta`
+- Model-specific parser module: `domain/AlarmParser.kt`
+- Remote sync client (revision + delta alarms):
+  - `GET /cnc-kb/revision`
+  - `GET /cnc-kb/alarms?fromRevision=<int>`
 # StarNet Каса — Android
 
 Нативна каса для Android 7+ (API 24) з підтримкою обладнання як у AinurPOS.

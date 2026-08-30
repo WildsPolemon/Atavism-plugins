@@ -17,42 +17,6 @@ data class ThreadReference(
     val tapDrill: String
 )
 
-val alarmKnowledgeBase = listOf(
-    AlarmKnowledge(
-        code = "100",
-        controller = "FANUC",
-        description = "Over travel alarm.",
-        causes = listOf("Incorrect work offset", "Tool compensation error", "Wrong approach move"),
-        checks = listOf(
-            "Check machine coordinate and soft limit settings.",
-            "Verify G54/G55 and work zero.",
-            "Run in single block with rapid override."
-        )
-    ),
-    AlarmKnowledge(
-        code = "410",
-        controller = "SIEMENS",
-        description = "Axis following error.",
-        causes = listOf("Drive tuning issue", "Excessive load", "Encoder signal drop"),
-        checks = listOf(
-            "Check servo load monitor.",
-            "Inspect axis mechanics and lubrication.",
-            "Verify encoder and drive diagnostics."
-        )
-    ),
-    AlarmKnowledge(
-        code = "P/S 087",
-        controller = "MITSUBISHI",
-        description = "Thread cycle format mismatch.",
-        causes = listOf("Invalid cycle parameter", "Pitch/feed mismatch", "Missing preparatory block"),
-        checks = listOf(
-            "Compare cycle parameters with controller manual.",
-            "Check spindle/feed sync command.",
-            "Dry run with reduced spindle speed."
-        )
-    )
-)
-
 val threadReferences = listOf(
     ThreadReference("Metric", "M6 x 1.0", "1.0", "6.0", "4.77", "5.0"),
     ThreadReference("Metric", "M8 x 1.25", "1.25", "8.0", "6.47", "6.8"),

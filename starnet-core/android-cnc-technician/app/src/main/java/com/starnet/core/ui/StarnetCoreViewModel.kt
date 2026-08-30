@@ -2,21 +2,28 @@ package com.starnet.core.ui
 
 import android.app.Application
 import android.net.Uri
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.label.ImageLabeling
+import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.starnet.core.data.AlarmKnowledgeRepository
 import com.starnet.core.data.ChecklistItemEntity
 import com.starnet.core.data.JournalEntryEntity
 import com.starnet.core.data.StarnetCoreDatabase
 import com.starnet.core.data.ToolEntity
 import com.starnet.core.domain.AlarmKnowledge
-import com.starnet.core.domain.alarmKnowledgeBase
+import com.starnet.core.domain.AlarmParser
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.PI
@@ -26,25 +33,49 @@ import kotlin.math.sin
 
 class StarnetCoreViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = StarnetCoreDatabase.get(application).dao()
+    private val repository = AlarmKnowledgeRepository(application, dao)
     val tools = dao.observeTools().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val checklist = dao.observeChecklist().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val journalEntries = dao.observeJournalEntries().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    var ocrText: String = ""
-    var ocrSummary: String = "No image analyzed yet."
-    var alarmResult: AlarmKnowledge? = null
-    var coordinateResult: List<String> = emptyList()
+    var ocrText by mutableStateOf("")
+    var ocrSummary by mutableStateOf("No image analyzed yet.")
+    var alarmResult by mutableStateOf<AlarmKnowledge?>(null)
+    var coordinateResult by mutableStateOf<List<String>>(emptyList())
+    var selectedController by mutableStateOf("FANUC")
+    var selectedModelFamily by mutableStateOf("0i-TF")
+    var lastParserPattern by mutableStateOf("n/a")
+    var kbSyncStatus by mutableStateOf("Seed not loaded")
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.ensureSeedLoaded()
+            kbSyncStatus = "Knowledge base loaded from local seed."
             if (checklist.value.isEmpty()) {
                 seedChecklist()
             }
         }
     }
 
+    fun syncKnowledgeBase(baseUrl: String) {
+        if (baseUrl.isBlank()) {
+            kbSyncStatus = "Sync URL is empty."
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            kbSyncStatus = "Sync in progress..."
+            val result = repository.syncFromServer(baseUrl.trim())
+            kbSyncStatus = if (result.isSuccess) {
+                "Knowledge base synced to revision ${result.getOrNull()}."
+            } else {
+                "Sync failed: ${result.exceptionOrNull()?.message}"
+            }
+        }
+    }
+
     fun seedChecklist() {
         viewModelScope.launch {
+            dao.deleteChecklist()
             listOf(
                 "Workpiece clamped",
                 "Tool setup verified",
@@ -122,13 +153,26 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    fun diagnoseAlarm(code: String, controller: String) {
+    fun diagnoseAlarm(code: String, controller: String, modelFamily: String) {
         val normalizedCode = code.trim().uppercase()
         val normalizedController = controller.trim().uppercase()
-        alarmResult = alarmKnowledgeBase.firstOrNull {
-            it.code.uppercase() == normalizedCode && it.controller.uppercase() == normalizedController
-        } ?: alarmKnowledgeBase.firstOrNull {
-            it.code.uppercase() == normalizedCode
+        val normalizedModel = modelFamily.trim().uppercase()
+        viewModelScope.launch(Dispatchers.IO) {
+            lastParserPattern = "manual input"
+            alarmResult = repository.findAlarm(normalizedController, normalizedModel, normalizedCode)
+        }
+    }
+
+    fun detectAlarmFromRecognizedText() {
+        val parsed = AlarmParser.parse(selectedController, selectedModelFamily, ocrText)
+        if (parsed == null) {
+            alarmResult = null
+            lastParserPattern = "No alarm signature matched."
+            return
+        }
+        lastParserPattern = parsed.matchedPattern
+        viewModelScope.launch(Dispatchers.IO) {
+            alarmResult = repository.findAlarm(selectedController, selectedModelFamily, parsed.code)
         }
     }
 
@@ -164,25 +208,61 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
 
     fun recognizeImage(uri: Uri) {
         val app = getApplication<Application>()
-        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-        val image = InputImage.fromFilePath(app, uri)
-        recognizer.process(image)
-            .addOnSuccessListener { text ->
-                ocrText = text.text
-                val lower = text.text.lowercase()
-                ocrSummary = when {
-                    lower.contains("alarm") || lower.contains("ps") ->
-                        "Possible CNC controller alarm screen detected."
-                    lower.contains("v") && lower.contains("a") && lower.contains("hydraulic") ->
-                        "Possible hydraulic or electrical sheet detected."
-                    lower.contains("m") && lower.contains("x") ->
-                        "Possible drawing/thread annotation detected."
-                    else -> "Image text extracted. Review manually."
-                }
-            }
-            .addOnFailureListener { err ->
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val image = InputImage.fromFilePath(app, uri)
+                val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+                val labeler = ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS)
+                val textResult = textRecognizer.process(image).await()
+                val labelResult = labeler.process(image).await()
+                ocrText = textResult.text
+                val labels = labelResult.map { it.text.lowercase() to it.confidence }.toMap()
+                ocrSummary = classifyPhoto(ocrText.lowercase(), labels)
+            }.onFailure { err ->
                 ocrSummary = "Recognition failed: ${err.message}"
                 ocrText = ""
             }
+        }
+    }
+
+    private fun classifyPhoto(text: String, labels: Map<String, Float>): String {
+        val score = mutableMapOf(
+            "cnc-screen" to 0f,
+            "nameplate" to 0f,
+            "electrical" to 0f,
+            "hydraulic" to 0f,
+            "part-photo" to 0f,
+            "drawing" to 0f
+        )
+
+        fun bump(key: String, value: Float) {
+            score[key] = (score[key] ?: 0f) + value
+        }
+
+        if (Regex("""\b(ALARM|P\/S|SV|M30|G01|G00)\b""").containsMatchIn(text.uppercase())) bump("cnc-screen", 2.4f)
+        if (Regex("""\b(SERIAL|MODEL|VOLT|KW|SMEC|FANUC|SIEMENS|MITSUBISHI)\b""").containsMatchIn(text.uppercase())) bump("nameplate", 2.1f)
+        if (Regex("""\b(380V|220V|PLC|CONTACTOR|RELAY|SCHEMATIC)\b""").containsMatchIn(text.uppercase())) bump("electrical", 2.3f)
+        if (Regex("""\b(HYDRAULIC|BAR|PUMP|VALVE|OIL)\b""").containsMatchIn(text.uppercase())) bump("hydraulic", 2.3f)
+        if (Regex("""\b(Ø|R[0-9]|M[0-9]+X|RA\s*[0-9])\b""").containsMatchIn(text.uppercase())) bump("drawing", 2.5f)
+
+        labels.forEach { (label, confidence) ->
+            when {
+                label.contains("machine") || label.contains("monitor") || label.contains("display") -> bump("cnc-screen", confidence)
+                label.contains("label") || label.contains("text") || label.contains("barcode") -> bump("nameplate", confidence)
+                label.contains("diagram") || label.contains("line") || label.contains("drawing") -> bump("drawing", confidence)
+                label.contains("metal") || label.contains("steel") || label.contains("tool") -> bump("part-photo", confidence)
+            }
+        }
+
+        val winner = score.maxByOrNull { it.value } ?: return "Image analyzed but category is uncertain."
+        return when (winner.key) {
+            "cnc-screen" -> "Detected CNC controller screen. Use AI Diagnostics to parse alarm text and resolve issue."
+            "nameplate" -> "Detected machine nameplate/spec plate. Capture controller model and serial data for setup profile."
+            "electrical" -> "Detected electrical schematic content. Verify voltage, relay chain and PLC I/O references."
+            "hydraulic" -> "Detected hydraulic scheme/context. Inspect pressure, valve states and pump condition."
+            "part-photo" -> "Detected part/tool photo. Use journal or tool database to save this process evidence."
+            "drawing" -> "Detected engineering drawing-style annotations. Use calculators/coordinates/thread reference for setup."
+            else -> "Image analyzed. Manual review recommended."
+        }
     }
 }
