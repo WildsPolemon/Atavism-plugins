@@ -220,7 +220,7 @@ private fun AiDiagnosisScreen(vm: StarnetCoreViewModel) {
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
-                    vm.tr("Loaded alarm codes", "Завантажено кодів помилок") + ": ${vm.kbAlarmCount}",
+                    vm.tr("Online alarm lookup URL", "URL онлайн пошуку alarm") + ": ${vm.alarmLookupBaseUrl}",
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(

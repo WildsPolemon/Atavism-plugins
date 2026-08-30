@@ -16,18 +16,21 @@ private interface KnowledgeApi {
     @GET("cnc-kb/revision")
     suspend fun revision(): RevisionResponse
 
-    @GET("cnc-kb/alarms")
-    suspend fun alarms(@Query("fromRevision") fromRevision: Int): AlarmSeedFile
+    @GET("cnc-kb/lookup")
+    suspend fun lookup(
+        @Query("controller") controller: String,
+        @Query("modelFamily") modelFamily: String,
+        @Query("code") code: String
+    ): AlarmLookupResponse
 }
 
 data class RevisionResponse(
     @SerializedName("revision") val revision: Int
 )
 
-data class AlarmSeedFile(
-    @SerializedName("revision") val revision: Int,
-    @SerializedName("generatedAt") val generatedAt: String,
-    @SerializedName("alarms") val alarms: List<AlarmSeedItem>
+data class AlarmLookupResponse(
+    @SerializedName("found") val found: Boolean,
+    @SerializedName("alarm") val alarm: AlarmSeedItem?
 )
 
 data class AlarmSeedItem(
@@ -46,62 +49,41 @@ class AlarmKnowledgeRepository(
     private val gson: Gson = Gson()
 ) {
     suspend fun ensureSeedLoaded() = withContext(Dispatchers.IO) {
-        if (dao.alarmCount() > 0) return@withContext
-        val text = context.assets.open("alarm_seed_v1.json").bufferedReader().use { it.readText() }
-        val seed = gson.fromJson(text, AlarmSeedFile::class.java)
-        val entities = seed.alarms.map { it.toEntity(seed.revision, gson) }
-        dao.upsertAlarms(entities)
-        dao.upsertKbMeta(KbMetaEntity(revision = seed.revision, updatedAt = seed.generatedAt, source = "asset"))
+        // Alarm diagnostics now run in online lookup mode.
+        // Keep compatibility with previous initialization calls.
+        return@withContext
     }
 
     suspend fun syncFromServer(baseUrl: String): Result<Int> = withContext(Dispatchers.IO) {
-        runCatching {
-            val currentRevision = dao.getKbMeta()?.revision ?: 0
-            val api = Retrofit.Builder()
-                .baseUrl(if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(OkHttpClient.Builder().build())
-                .build()
-                .create(KnowledgeApi::class.java)
-
-            val remoteRevision = api.revision().revision
-            if (remoteRevision <= currentRevision) return@runCatching currentRevision
-
-            val update = api.alarms(currentRevision)
-            dao.upsertAlarms(update.alarms.map { it.toEntity(update.revision, gson) })
-            dao.upsertKbMeta(
-                KbMetaEntity(
-                    revision = update.revision,
-                    updatedAt = update.generatedAt,
-                    source = "remote"
-                )
-            )
-            update.revision
-        }
+        runCatching { buildApi(baseUrl).revision().revision }
     }
 
+    suspend fun findAlarmOnline(baseUrl: String, controller: String, modelFamily: String, code: String): AlarmKnowledge? =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val response = buildApi(baseUrl).lookup(controller, modelFamily, code)
+                if (!response.found) return@runCatching null
+                response.alarm?.toDomain()
+            }.getOrNull()
+        }
+
     suspend fun findAlarm(controller: String, modelFamily: String, code: String): AlarmKnowledge? {
+        // Fallback for legacy local records if they already exist.
         val exact = dao.findAlarmExact(controller, modelFamily, code)
             ?: dao.findAlarmByControllerCode(controller, code)
             ?: dao.findAlarmByCode(code)
             ?: return null
         return exact.toDomain(gson)
     }
-}
 
-private fun AlarmSeedItem.toEntity(revision: Int, gson: Gson): AlarmCodeEntity {
-    val key = "${controller.uppercase()}|${modelFamily.uppercase()}|${code.uppercase()}"
-    return AlarmCodeEntity(
-        key = key,
-        controller = controller.uppercase(),
-        modelFamily = modelFamily.uppercase(),
-        code = code.uppercase(),
-        title = title,
-        severity = severity,
-        causesJson = gson.toJson(causes),
-        actionsJson = gson.toJson(actions),
-        revision = revision
-    )
+    private fun buildApi(baseUrl: String): KnowledgeApi {
+        return Retrofit.Builder()
+            .baseUrl(if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .client(OkHttpClient.Builder().build())
+            .build()
+            .create(KnowledgeApi::class.java)
+    }
 }
 
 private fun AlarmCodeEntity.toDomain(gson: Gson): AlarmKnowledge {
@@ -110,6 +92,16 @@ private fun AlarmCodeEntity.toDomain(gson: Gson): AlarmKnowledge {
     return AlarmKnowledge(
         code = code,
         controller = controller,
+        description = title,
+        causes = causes,
+        checks = actions
+    )
+}
+
+private fun AlarmSeedItem.toDomain(): AlarmKnowledge {
+    return AlarmKnowledge(
+        code = code.uppercase(),
+        controller = controller.uppercase(),
         description = title,
         causes = causes,
         checks = actions

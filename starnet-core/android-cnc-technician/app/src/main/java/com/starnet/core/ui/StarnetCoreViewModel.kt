@@ -46,8 +46,9 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     var coordinateResult by mutableStateOf<List<String>>(emptyList())
     var selectedController by mutableStateOf("FANUC")
     var selectedModelFamily by mutableStateOf("0i-TF")
+    var alarmLookupBaseUrl by mutableStateOf("https://kb.starnetcore.com/")
     var lastParserPattern by mutableStateOf("n/a")
-    var kbSyncStatus by mutableStateOf("Seed not loaded")
+    var kbSyncStatus by mutableStateOf("Online lookup mode enabled")
     var kbAlarmCount by mutableStateOf(0)
     var useUkrainian by mutableStateOf(true)
     var detectedFanucModel by mutableStateOf("n/a")
@@ -57,8 +58,8 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     init {
         viewModelScope.launch(Dispatchers.IO) {
             repository.ensureSeedLoaded()
-            kbSyncStatus = "Knowledge base loaded from local seed."
-            kbAlarmCount = dao.alarmCount()
+            kbSyncStatus = "Online lookup mode enabled"
+            kbAlarmCount = 0
             if (checklist.value.isEmpty()) {
                 seedChecklist()
             }
@@ -67,18 +68,19 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
 
     fun syncKnowledgeBase(baseUrl: String) {
         if (baseUrl.isBlank()) {
-            kbSyncStatus = "Sync URL is empty."
+            kbSyncStatus = "Lookup URL is empty."
             return
         }
         viewModelScope.launch(Dispatchers.IO) {
-            kbSyncStatus = "Sync in progress..."
+            kbSyncStatus = "Checking lookup server..."
             val result = repository.syncFromServer(baseUrl.trim())
             kbSyncStatus = if (result.isSuccess) {
-                "Knowledge base synced to revision ${result.getOrNull()}."
+                alarmLookupBaseUrl = baseUrl.trim()
+                "Lookup server ready (revision ${result.getOrNull()})."
             } else {
-                "Sync failed: ${result.exceptionOrNull()?.message}"
+                "Lookup server unavailable: ${result.exceptionOrNull()?.message}"
             }
-            kbAlarmCount = dao.alarmCount()
+            kbAlarmCount = 0
         }
     }
 
@@ -171,7 +173,12 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
         val normalizedModel = modelFamily.trim().uppercase()
         viewModelScope.launch(Dispatchers.IO) {
             lastParserPattern = "manual input"
-            alarmResult = repository.findAlarm(normalizedController, normalizedModel, normalizedCode)
+            alarmResult = repository.findAlarmOnline(
+                alarmLookupBaseUrl,
+                normalizedController,
+                normalizedModel,
+                normalizedCode
+            ) ?: repository.findAlarm(normalizedController, normalizedModel, normalizedCode)
         }
     }
 
@@ -189,11 +196,13 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
             } else {
                 selectedModelFamily
             }
-            alarmResult = repository.findAlarm(
+            val normalized = normalizeAlarmCode(parsed.code, selectedController, detectedFanucAlarmType)
+            alarmResult = repository.findAlarmOnline(
+                alarmLookupBaseUrl,
                 selectedController,
                 modelForLookup,
-                normalizeAlarmCode(parsed.code, selectedController, detectedFanucAlarmType)
-            )
+                normalized
+            ) ?: repository.findAlarm(selectedController, modelForLookup, normalized)
         }
     }
 
