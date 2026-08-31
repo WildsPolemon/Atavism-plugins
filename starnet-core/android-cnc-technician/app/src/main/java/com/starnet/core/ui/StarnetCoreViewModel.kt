@@ -43,6 +43,7 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     val journalEntries = dao.observeJournalEntries().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     var ocrText by mutableStateOf("")
+    var ocrPreview by mutableStateOf("No extracted text yet.")
     var ocrSummary by mutableStateOf("No image analyzed yet.")
     var alarmResult by mutableStateOf<AlarmKnowledge?>(null)
     var coordinateResult by mutableStateOf<List<String>>(emptyList())
@@ -325,15 +326,39 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
                         selectedModelFamily = detection.modelFamily
                     }
                 }
+                ocrPreview = buildOcrPreview(ocrText, ocrSummary, detectedAlarmConfidence)
             }.onFailure { err ->
                 ocrSummary = "Recognition failed: ${err.message}"
                 ocrText = ""
+                ocrPreview = "No extracted text yet."
                 detectedFanucModel = "n/a"
                 detectedFanucAlarmType = "n/a"
                 detectedAlarmCode = "n/a"
                 detectedAlarmConfidence = 0f
                 detectedAlarmCandidates = emptyList()
             }
+        }
+    }
+
+    private fun buildOcrPreview(rawText: String, summary: String, confidence: Float): String {
+        val cleaned = rawText
+            .replace("\r", "\n")
+            .lines()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .map { it.replace("\\s+".toRegex(), " ") }
+
+        val topLines = cleaned.take(8)
+        val compact = topLines.joinToString("\n")
+        val limited = if (compact.length > 420) compact.take(420) + "..." else compact
+        val cncRelevant = summary.contains("CNC", ignoreCase = true) ||
+            summary.contains("alarm", ignoreCase = true) ||
+            confidence >= 0.6f
+
+        return when {
+            limited.isBlank() -> "No extracted text yet."
+            !cncRelevant -> "Non-CNC photo detected. OCR text is noisy; use a clear CNC-screen photo for alarm diagnostics."
+            else -> limited
         }
     }
 

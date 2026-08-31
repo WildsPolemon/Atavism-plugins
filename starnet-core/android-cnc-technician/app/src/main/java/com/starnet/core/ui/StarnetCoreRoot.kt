@@ -298,7 +298,9 @@ private fun PhotoScreen(vm: StarnetCoreViewModel) {
                 val summary = if (vm.useUkrainian) vm.toUkr(vm.ocrSummary) else vm.ocrSummary
                 Text(vm.tr("Summary", "Підсумок") + ": $summary")
                 HorizontalDivider()
-                Text(vm.ocrText.ifBlank { vm.tr("No extracted text yet.", "Текст ще не розпізнано.") })
+                val preview = if (vm.useUkrainian) vm.toUkr(vm.ocrPreview) else vm.ocrPreview
+                Text(vm.tr("OCR preview", "OCR прев'ю") + ":")
+                Text(preview)
                 Spacer(Modifier.height(6.dp))
                 Text(
                     vm.tr("Detected model", "Визначена модель") + ": ${vm.detectedFanucModel}",
