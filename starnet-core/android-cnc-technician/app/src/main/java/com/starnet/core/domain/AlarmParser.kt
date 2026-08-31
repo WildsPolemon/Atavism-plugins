@@ -18,14 +18,14 @@ object AlarmParser {
 
     private fun parseFanuc(model: String, text: String): ParsedAlarm? {
         val patterns = mutableListOf(
-            Regex("""\b(PS|SV|SP|OT|OH|DS|PW|SW|SR|BG)\s*[-:/]?\s*([0-9]{3,4})\b"""),
-            Regex("""P/S\s*([0-9]{3,4})"""),
-            Regex("""SERVO\s*([0-9]{3,4})"""),
-            Regex("""ALARM\s*([0-9]{3,4})"""),
-            Regex("""\b([0-9]{3,4})\b""")
+            Regex("""\b(PS|SV|SP|OT|OH|DS|PW|SW|SR|BG)\s*[-:/]?\s*([0-9]{1,4})\b"""),
+            Regex("""P/S\s*([0-9]{1,4})"""),
+            Regex("""SERVO\s*([0-9]{1,4})"""),
+            Regex("""ALARM\s*([0-9]{1,4})"""),
+            Regex("""\b([0-9]{1,4})\b""")
         )
         if (model.contains("31I")) {
-            patterns.add(1, Regex("""APC\s*([0-9]{3,4})"""))
+            patterns.add(1, Regex("""APC\s*([0-9]{1,4})"""))
         }
         for (regex in patterns) {
             val m = regex.find(text) ?: continue
