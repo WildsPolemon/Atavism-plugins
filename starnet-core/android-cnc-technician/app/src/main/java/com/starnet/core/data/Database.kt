@@ -11,6 +11,7 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import kotlinx.coroutines.flow.Flow
+import java.io.File
 
 @Entity(tableName = "tools")
 data class ToolEntity(
@@ -137,11 +138,20 @@ abstract class StarnetCoreDatabase : RoomDatabase() {
 
         fun get(context: Context): StarnetCoreDatabase {
             return instance ?: synchronized(this) {
-                instance ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    StarnetCoreDatabase::class.java,
-                    "starnet_core.db"
-                ).fallbackToDestructiveMigration().build().also { instance = it }
+                instance ?: runCatching {
+                    // #region agent log
+                    File("/opt/cursor/logs/debug.log").appendText("""{"hypothesisId":"B","location":"Database.kt:get:start","message":"Room database builder starting","data":{},"timestamp":${System.currentTimeMillis()}}""" + "\n")
+                    // #endregion
+                    Room.databaseBuilder(
+                        context.applicationContext,
+                        StarnetCoreDatabase::class.java,
+                        "starnet_core.db"
+                    ).fallbackToDestructiveMigration().build().also { instance = it }
+                }.onFailure {
+                    // #region agent log
+                    File("/opt/cursor/logs/debug.log").appendText("""{"hypothesisId":"B","location":"Database.kt:get:failure","message":"Room database builder failed","data":{"error":"${it.javaClass.simpleName}:${it.message ?: "n/a"}"},"timestamp":${System.currentTimeMillis()}}""" + "\n")
+                    // #endregion
+                }.getOrThrow()
             }
         }
     }
