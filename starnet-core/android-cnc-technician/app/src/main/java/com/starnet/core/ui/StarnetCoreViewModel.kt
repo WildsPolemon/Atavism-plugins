@@ -21,6 +21,8 @@ import com.starnet.core.domain.AlarmCodeNormalizer
 import com.starnet.core.domain.AlarmKnowledge
 import com.starnet.core.domain.AlarmParser
 import com.starnet.core.domain.FanucScreenAnalyzer
+import com.starnet.core.domain.PhotoAlarmAnalyzer
+import com.starnet.core.domain.PhotoAssessmentType
 import com.starnet.core.domain.UkrainianTranslator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
@@ -312,21 +314,34 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
                 val labelResult = labeler.process(image).await()
                 ocrText = textResult.text
                 val labels = labelResult.map { it.text.lowercase() to it.confidence }.toMap()
-                ocrSummary = classifyPhoto(ocrText.lowercase(), labels)
+                val assessment = PhotoAlarmAnalyzer.assess(
+                    ocrText = ocrText,
+                    labels = labels,
+                    controller = selectedController,
+                    modelFamily = selectedModelFamily
+                )
+                ocrSummary = assessment.summary
                 if (selectedController.uppercase() == "FANUC") {
                     val detection = FanucScreenAnalyzer.detect(ocrText)
                     detectedFanucModel = detection.modelFamily ?: "n/a"
-                    detectedFanucAlarmType = detection.alarmType ?: "n/a"
-                    detectedAlarmCode = detection.rawCode ?: "n/a"
-                    detectedAlarmConfidence = detection.confidence
-                    detectedAlarmCandidates = detection.candidateCodes.map {
-                        AlarmCodeNormalizer.normalize(selectedController, it, detection.alarmType)
+                    if (assessment.hasAlarm) {
+                        detectedFanucAlarmType = detection.alarmType ?: "n/a"
+                        detectedAlarmCode = detection.rawCode ?: "n/a"
+                        detectedAlarmConfidence = detection.confidence
+                        detectedAlarmCandidates = detection.candidateCodes.map {
+                            AlarmCodeNormalizer.normalize(selectedController, it, detection.alarmType)
+                        }
+                    } else {
+                        detectedFanucAlarmType = "n/a"
+                        detectedAlarmCode = "n/a"
+                        detectedAlarmConfidence = 0f
+                        detectedAlarmCandidates = emptyList()
                     }
                     if (!detection.modelFamily.isNullOrBlank()) {
                         selectedModelFamily = detection.modelFamily
                     }
                 }
-                ocrPreview = buildOcrPreview(ocrText, ocrSummary, detectedAlarmConfidence)
+                ocrPreview = buildOcrPreview(assessment.relevantLines, assessment.type)
             }.onFailure { err ->
                 ocrSummary = "Recognition failed: ${err.message}"
                 ocrText = ""
@@ -340,70 +355,14 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    private fun buildOcrPreview(rawText: String, summary: String, confidence: Float): String {
-        val cleaned = rawText
-            .replace("\r", "\n")
-            .lines()
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .map { it.replace("\\s+".toRegex(), " ") }
-
-        val topLines = cleaned.take(8)
-        val compact = topLines.joinToString(" | ")
-        val limited = if (compact.length > 220) compact.take(220) + "..." else compact
-        val cncRelevant = summary.contains("CNC", ignoreCase = true) ||
-            summary.contains("alarm", ignoreCase = true) ||
-            confidence >= 0.6f
-
-        return when {
-            limited.isBlank() -> "No extracted text yet."
-            !cncRelevant -> "Non-CNC/alarm context photo detected. OCR text is noisy; use a clear CNC-screen alarm photo for diagnostics."
-            else -> limited
-        }
-    }
-
-    private fun classifyPhoto(text: String, labels: Map<String, Float>): String {
-        val score = mutableMapOf(
-            "cnc-screen" to 0f,
-            "nameplate" to 0f,
-            "electrical" to 0f,
-            "hydraulic" to 0f,
-            "part-photo" to 0f,
-            "drawing" to 0f
-        )
-
-        fun bump(key: String, value: Float) {
-            score[key] = (score[key] ?: 0f) + value
-        }
-
-        if (Regex("""\b(ALARM|P\/S|SV|M30|G0[0-3]|G5[4-9]|MDI|AUTO|HANDLE|PROGRAM|RUN\s*TIME|ABSOLUTE|RELATIVE|PARTS)\b""").containsMatchIn(text.uppercase())) {
-            bump("cnc-screen", 3.0f)
-        }
-        if (Regex("""\b(SERIAL\s*NO|MODEL\s*NO|VOLT|KW|RATED|MANUFACTURE|FANUC\s*LTD)\b""").containsMatchIn(text.uppercase())) {
-            bump("nameplate", 1.8f)
-        }
-        if (Regex("""\b(380V|220V|PLC|CONTACTOR|RELAY|SCHEMATIC)\b""").containsMatchIn(text.uppercase())) bump("electrical", 2.3f)
-        if (Regex("""\b(HYDRAULIC|BAR|PUMP|VALVE|OIL)\b""").containsMatchIn(text.uppercase())) bump("hydraulic", 2.3f)
-        if (Regex("""\b(Ø|R[0-9]|M[0-9]+X|RA\s*[0-9])\b""").containsMatchIn(text.uppercase())) bump("drawing", 2.5f)
-
-        labels.forEach { (label, confidence) ->
-            when {
-                label.contains("machine") || label.contains("monitor") || label.contains("display") -> bump("cnc-screen", confidence)
-                label.contains("label") || label.contains("text") || label.contains("barcode") -> bump("nameplate", confidence)
-                label.contains("diagram") || label.contains("line") || label.contains("drawing") -> bump("drawing", confidence)
-                label.contains("metal") || label.contains("steel") || label.contains("tool") -> bump("part-photo", confidence)
-            }
-        }
-
-        val winner = score.maxByOrNull { it.value } ?: return "Image analyzed but category is uncertain."
-        return when (winner.key) {
-            "cnc-screen" -> "Detected CNC controller screen. Use AI Diagnostics to parse alarm text and resolve issue."
-            "nameplate" -> "Detected machine nameplate/spec plate. Capture controller model and serial data for setup profile."
-            "electrical" -> "Detected electrical schematic content. Verify voltage, relay chain and PLC I/O references."
-            "hydraulic" -> "Detected hydraulic scheme/context. Inspect pressure, valve states and pump condition."
-            "part-photo" -> "Detected part/tool photo. Use journal or tool database to save this process evidence."
-            "drawing" -> "Detected engineering drawing-style annotations. Use calculators/coordinates/thread reference for setup."
-            else -> "Image analyzed. Manual review recommended."
+    private fun buildOcrPreview(lines: List<String>, type: PhotoAssessmentType): String {
+        if (lines.isEmpty()) return "No extracted text yet."
+        val compact = lines.joinToString("\n• ", prefix = "• ")
+        val limited = if (compact.length > 360) compact.take(360) + "..." else compact
+        return when (type) {
+            PhotoAssessmentType.CNC_ALARM_SCREEN -> limited
+            PhotoAssessmentType.CNC_SCREEN_NO_ALARM -> limited
+            PhotoAssessmentType.NON_CNC_OR_UNCLEAR -> "No clear alarm lines found. Capture only the CNC alarm zone for a precise diagnosis."
         }
     }
 }
