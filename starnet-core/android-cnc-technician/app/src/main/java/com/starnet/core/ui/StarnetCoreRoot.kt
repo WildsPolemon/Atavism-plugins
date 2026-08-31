@@ -346,21 +346,21 @@ private fun CalculatorsScreen(vm: StarnetCoreViewModel) {
 
     ScreenContainer {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            AppCard("Turning Calculator") {
-                OutlinedTextField(vc.toString(), { vc = it.toDoubleOrNull() ?: vc }, label = { Text("Cutting speed m/min") })
-                OutlinedTextField(diameter.toString(), { diameter = it.toDoubleOrNull() ?: diameter }, label = { Text("Diameter mm") })
+            AppCard(vm.tr("Turning Calculator", "Калькулятор точіння")) {
+                OutlinedTextField(vc.toString(), { vc = it.toDoubleOrNull() ?: vc }, label = { Text(vm.tr("Cutting speed m/min", "Швидкість різання м/хв")) })
+                OutlinedTextField(diameter.toString(), { diameter = it.toDoubleOrNull() ?: diameter }, label = { Text(vm.tr("Diameter mm", "Діаметр мм")) })
                 Text("RPM: ${vm.calculateTurningRpm(vc, diameter)}", fontWeight = FontWeight.SemiBold)
             }
-            AppCard("Milling Calculator") {
+            AppCard(vm.tr("Milling Calculator", "Калькулятор фрезерування")) {
                 OutlinedTextField(rpm.toString(), { rpm = it.toDoubleOrNull() ?: rpm }, label = { Text("RPM") })
-                OutlinedTextField(teeth.toString(), { teeth = it.toIntOrNull() ?: teeth }, label = { Text("Teeth") })
-                OutlinedTextField(fz.toString(), { fz = it.toDoubleOrNull() ?: fz }, label = { Text("Feed per tooth mm") })
-                Text("Feed rate mm/min: ${"%.1f".format(vm.calculateMillingFeed(rpm, teeth, fz))}", fontWeight = FontWeight.SemiBold)
+                OutlinedTextField(teeth.toString(), { teeth = it.toIntOrNull() ?: teeth }, label = { Text(vm.tr("Teeth", "Кількість зубів")) })
+                OutlinedTextField(fz.toString(), { fz = it.toDoubleOrNull() ?: fz }, label = { Text(vm.tr("Feed per tooth mm", "Подача на зуб мм")) })
+                Text(vm.tr("Feed rate mm/min", "Подача мм/хв") + ": ${"%.1f".format(vm.calculateMillingFeed(rpm, teeth, fz))}", fontWeight = FontWeight.SemiBold)
             }
-            AppCard("Drilling Calculator") {
-                OutlinedTextField(drillDepth.toString(), { drillDepth = it.toDoubleOrNull() ?: drillDepth }, label = { Text("Depth mm") })
-                OutlinedTextField(drillFeed.toString(), { drillFeed = it.toDoubleOrNull() ?: drillFeed }, label = { Text("Feed mm/min") })
-                Text("Machining time min: ${"%.3f".format(vm.calculateDrillingTime(drillDepth, drillFeed))}", fontWeight = FontWeight.SemiBold)
+            AppCard(vm.tr("Drilling Calculator", "Калькулятор свердління")) {
+                OutlinedTextField(drillDepth.toString(), { drillDepth = it.toDoubleOrNull() ?: drillDepth }, label = { Text(vm.tr("Depth mm", "Глибина мм")) })
+                OutlinedTextField(drillFeed.toString(), { drillFeed = it.toDoubleOrNull() ?: drillFeed }, label = { Text(vm.tr("Feed mm/min", "Подача мм/хв")) })
+                Text(vm.tr("Machining time min", "Час обробки хв") + ": ${"%.3f".format(vm.calculateDrillingTime(drillDepth, drillFeed))}", fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -374,14 +374,17 @@ private fun CoordinatesScreen(vm: StarnetCoreViewModel) {
 
     ScreenContainer {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            AppCard("Coordinate Calculator", "PCD, circle split and drilling coordinates.") {
+            AppCard(vm.tr("Coordinate Calculator", "Калькулятор координат"), vm.tr("PCD, circle split and drilling coordinates.", "PCD, поділ кола та координати отворів.")) {
                 OutlinedTextField(pcd.toString(), { pcd = it.toDoubleOrNull() ?: pcd }, label = { Text("PCD mm") })
-                OutlinedTextField(holes.toString(), { holes = it.toIntOrNull() ?: holes }, label = { Text("Holes count") })
-                OutlinedTextField(startAngle.toString(), { startAngle = it.toDoubleOrNull() ?: startAngle }, label = { Text("Start angle °") })
-                Button(onClick = { vm.calculateBoltCircle(pcd, holes, startAngle) }) { Text("Generate X/Y Coordinates") }
+                OutlinedTextField(holes.toString(), { holes = it.toIntOrNull() ?: holes }, label = { Text(vm.tr("Holes count", "Кількість отворів")) })
+                OutlinedTextField(startAngle.toString(), { startAngle = it.toDoubleOrNull() ?: startAngle }, label = { Text(vm.tr("Start angle °", "Початковий кут °")) })
+                Button(onClick = { vm.calculateBoltCircle(pcd, holes, startAngle) }) { Text(vm.tr("Generate X/Y Coordinates", "Згенерувати X/Y координати")) }
             }
-            AppCard("Generated Points") {
-                vm.coordinateResult.ifEmpty { listOf("No points generated.") }.forEach { Text(it) }
+            AppCard(vm.tr("Generated Points", "Згенеровані точки")) {
+                vm.coordinateResult.ifEmpty { listOf(vm.tr("No points generated.", "Точки ще не згенеровано.")) }
+                    .forEach { line ->
+                        Text(if (vm.useUkrainian) vm.toUkr(line) else line)
+                    }
             }
         }
     }
@@ -397,11 +400,17 @@ private fun ThreadsScreen(vm: StarnetCoreViewModel) {
                 }
             }
             items(threadReferences) { ref ->
-                AppCard("${ref.family}: ${ref.designation}") {
-                    Text("Pitch: ${ref.pitch}")
-                    Text("Major: ${ref.majorDia} mm")
-                    Text("Minor: ${ref.minorDia} mm")
-                    Text("Tap drill: ${ref.tapDrill} mm")
+                val family = when (ref.family) {
+                    "Metric" -> vm.tr("Metric", "Метрична")
+                    "Pipe" -> vm.tr("Pipe", "Трубна")
+                    "Inch" -> vm.tr("Inch", "Дюймова")
+                    else -> ref.family
+                }
+                AppCard("$family: ${ref.designation}") {
+                    Text(vm.tr("Pitch", "Крок") + ": ${ref.pitch}")
+                    Text(vm.tr("Major", "Зовнішній діаметр") + ": ${ref.majorDia} mm")
+                    Text(vm.tr("Minor", "Внутрішній діаметр") + ": ${ref.minorDia} mm")
+                    Text(vm.tr("Tap drill", "Свердло під різьбу") + ": ${ref.tapDrill} mm")
                 }
             }
         }
@@ -422,31 +431,31 @@ private fun ToolsScreen(vm: StarnetCoreViewModel, tools: List<ToolEntity>) {
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
-                AppCard("Tool Database", "Create your local tool catalog.") {
-                    OutlinedTextField(toolNumber, { toolNumber = it }, label = { Text("Tool number T") })
-                    OutlinedTextField(type, { type = it }, label = { Text("Type") })
-                    OutlinedTextField(insert, { insert = it }, label = { Text("Insert") })
-                    OutlinedTextField(holder, { holder = it }, label = { Text("Holder") })
-                    OutlinedTextField(diameter, { diameter = it }, label = { Text("Diameter mm") })
-                    OutlinedTextField(material, { material = it }, label = { Text("Material") })
-                    OutlinedTextField(photoUri, { photoUri = it }, label = { Text("Photo URI") })
-                    OutlinedTextField(notes, { notes = it }, label = { Text("Notes") })
+                AppCard(vm.tr("Tool Database", "База інструменту"), vm.tr("Create your local tool catalog.", "Створіть власний локальний каталог інструменту.")) {
+                    OutlinedTextField(toolNumber, { toolNumber = it }, label = { Text(vm.tr("Tool number T", "Номер інструменту T")) })
+                    OutlinedTextField(type, { type = it }, label = { Text(vm.tr("Type", "Тип")) })
+                    OutlinedTextField(insert, { insert = it }, label = { Text(vm.tr("Insert", "Пластина")) })
+                    OutlinedTextField(holder, { holder = it }, label = { Text(vm.tr("Holder", "Державка")) })
+                    OutlinedTextField(diameter, { diameter = it }, label = { Text(vm.tr("Diameter mm", "Діаметр мм")) })
+                    OutlinedTextField(material, { material = it }, label = { Text(vm.tr("Material", "Матеріал")) })
+                    OutlinedTextField(photoUri, { photoUri = it }, label = { Text(vm.tr("Photo URI", "Посилання на фото")) })
+                    OutlinedTextField(notes, { notes = it }, label = { Text(vm.tr("Notes", "Примітки")) })
                     Button(onClick = {
                         vm.addTool(toolNumber, type, insert, holder, diameter.toDoubleOrNull() ?: 0.0, material, photoUri, notes)
                         toolNumber = ""
                         insert = ""
                         holder = ""
                         notes = ""
-                    }) { Text("Save Tool") }
+                    }) { Text(vm.tr("Save Tool", "Зберегти інструмент")) }
                 }
             }
             items(tools) { tool ->
                 AppCard("${tool.toolNumber} • ${tool.type}") {
-                    Text("Insert: ${tool.insertName}")
-                    Text("Holder: ${tool.holder}")
-                    Text("Diameter: ${tool.diameterMm} mm")
-                    Text("Material: ${tool.material}")
-                    if (tool.notes.isNotBlank()) Text("Notes: ${tool.notes}")
+                    Text(vm.tr("Insert", "Пластина") + ": ${tool.insertName}")
+                    Text(vm.tr("Holder", "Державка") + ": ${tool.holder}")
+                    Text(vm.tr("Diameter", "Діаметр") + ": ${tool.diameterMm} mm")
+                    Text(vm.tr("Material", "Матеріал") + ": ${tool.material}")
+                    if (tool.notes.isNotBlank()) Text(vm.tr("Notes", "Примітки") + ": ${tool.notes}")
                 }
             }
         }
@@ -461,22 +470,22 @@ private fun ChecklistScreen(vm: StarnetCoreViewModel, items: List<ChecklistItemE
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
-                AppCard("Setup Checklist", "Completed: $done/$total") {
-                    OutlinedTextField(customItem, { customItem = it }, label = { Text("Custom checklist line") })
+                AppCard(vm.tr("Setup Checklist", "Чеклист наладки"), vm.tr("Completed", "Виконано") + ": $done/$total") {
+                    OutlinedTextField(customItem, { customItem = it }, label = { Text(vm.tr("Custom checklist line", "Власний пункт чеклиста")) })
                     Row {
                         Button(onClick = {
                             vm.addChecklistItem(customItem)
                             customItem = ""
-                        }) { Text("Add") }
+                        }) { Text(vm.tr("Add", "Додати")) }
                         Spacer(Modifier.width(8.dp))
-                        TextButton(onClick = { vm.seedChecklist() }) { Text("Reset defaults") }
+                        TextButton(onClick = { vm.seedChecklist() }) { Text(vm.tr("Reset defaults", "Скинути за замовчуванням")) }
                     }
                 }
             }
             items(items) { line ->
-                AppCard(line.title) {
+                AppCard(if (vm.useUkrainian) vm.toUkr(line.title) else line.title) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(if (line.isChecked) "Done" else "Pending")
+                        Text(if (line.isChecked) vm.tr("Done", "Готово") else vm.tr("Pending", "Очікує"))
                         Checkbox(checked = line.isChecked, onCheckedChange = { vm.toggleChecklist(line.id, it) })
                     }
                 }
@@ -498,30 +507,30 @@ private fun JournalScreen(vm: StarnetCoreViewModel, entries: List<JournalEntryEn
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
-                AppCard("Work Journal", "Save setup details, issues and final solution.") {
-                    OutlinedTextField(part, { part = it }, label = { Text("Part number") })
-                    OutlinedTextField(machine, { machine = it }, label = { Text("Machine") })
-                    OutlinedTextField(program, { program = it }, label = { Text("Program") })
-                    OutlinedTextField(tool, { tool = it }, label = { Text("Tool info") })
-                    OutlinedTextField(problems, { problems = it }, label = { Text("Problems") })
-                    OutlinedTextField(solutions, { solutions = it }, label = { Text("Solutions") })
-                    OutlinedTextField(photo, { photo = it }, label = { Text("Photo URI") })
+                AppCard(vm.tr("Work Journal", "Журнал робіт"), vm.tr("Save setup details, issues and final solution.", "Зберігайте деталі наладки, проблеми та фінальне рішення.")) {
+                    OutlinedTextField(part, { part = it }, label = { Text(vm.tr("Part number", "Номер деталі")) })
+                    OutlinedTextField(machine, { machine = it }, label = { Text(vm.tr("Machine", "Верстат")) })
+                    OutlinedTextField(program, { program = it }, label = { Text(vm.tr("Program", "Програма")) })
+                    OutlinedTextField(tool, { tool = it }, label = { Text(vm.tr("Tool info", "Інфо про інструмент")) })
+                    OutlinedTextField(problems, { problems = it }, label = { Text(vm.tr("Problems", "Проблеми")) })
+                    OutlinedTextField(solutions, { solutions = it }, label = { Text(vm.tr("Solutions", "Рішення")) })
+                    OutlinedTextField(photo, { photo = it }, label = { Text(vm.tr("Photo URI", "Посилання на фото")) })
                     Button(onClick = {
                         vm.addJournalEntry(part, machine, program, tool, problems, solutions, photo)
                         part = ""
                         program = ""
                         problems = ""
                         solutions = ""
-                    }) { Text("Save Journal Record") }
+                    }) { Text(vm.tr("Save Journal Record", "Зберегти запис журналу")) }
                 }
             }
             items(entries) { entry ->
                 AppCard("${entry.partNumber} • ${entry.machine}") {
-                    Text("Program: ${entry.programName}")
-                    Text("Tool: ${entry.toolInfo}")
-                    Text("Problems: ${entry.problems}")
-                    Text("Solutions: ${entry.solutions}")
-                    Text("Time: ${entry.createdAt}", style = MaterialTheme.typography.bodySmall)
+                    Text(vm.tr("Program", "Програма") + ": ${entry.programName}")
+                    Text(vm.tr("Tool", "Інструмент") + ": ${entry.toolInfo}")
+                    Text(vm.tr("Problems", "Проблеми") + ": ${entry.problems}")
+                    Text(vm.tr("Solutions", "Рішення") + ": ${entry.solutions}")
+                    Text(vm.tr("Time", "Час") + ": ${entry.createdAt}", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
