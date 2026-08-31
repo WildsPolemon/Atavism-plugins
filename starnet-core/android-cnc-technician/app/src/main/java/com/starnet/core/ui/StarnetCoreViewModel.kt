@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.PI
@@ -37,26 +36,8 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 class StarnetCoreViewModel(application: Application) : AndroidViewModel(application) {
-    private val dao = runCatching {
-        // #region agent log
-        File("/opt/cursor/logs/debug.log").appendText("""{"hypothesisId":"B","location":"StarnetCoreViewModel.kt:dao:init:start","message":"Creating DAO","data":{},"timestamp":${System.currentTimeMillis()}}""" + "\n")
-        // #endregion
-        StarnetCoreDatabase.get(application).dao()
-    }.onFailure {
-        // #region agent log
-        File("/opt/cursor/logs/debug.log").appendText("""{"hypothesisId":"B","location":"StarnetCoreViewModel.kt:dao:init:failure","message":"DAO init failed","data":{"error":"${it.javaClass.simpleName}:${it.message ?: "n/a"}"},"timestamp":${System.currentTimeMillis()}}""" + "\n")
-        // #endregion
-    }.getOrThrow()
-    private val repository = runCatching {
-        // #region agent log
-        File("/opt/cursor/logs/debug.log").appendText("""{"hypothesisId":"D","location":"StarnetCoreViewModel.kt:repo:init:start","message":"Creating AlarmKnowledgeRepository","data":{},"timestamp":${System.currentTimeMillis()}}""" + "\n")
-        // #endregion
-        AlarmKnowledgeRepository(application, dao)
-    }.onFailure {
-        // #region agent log
-        File("/opt/cursor/logs/debug.log").appendText("""{"hypothesisId":"D","location":"StarnetCoreViewModel.kt:repo:init:failure","message":"Repository init failed","data":{"error":"${it.javaClass.simpleName}:${it.message ?: "n/a"}"},"timestamp":${System.currentTimeMillis()}}""" + "\n")
-        // #endregion
-    }.getOrThrow()
+    private val dao = StarnetCoreDatabase.get(application).dao()
+    private val repository = AlarmKnowledgeRepository(application, dao)
     val tools = dao.observeTools().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val checklist = dao.observeChecklist().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val journalEntries = dao.observeJournalEntries().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -79,9 +60,6 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     var detectedAlarmCandidates by mutableStateOf<List<String>>(emptyList())
 
     init {
-        // #region agent log
-        File("/opt/cursor/logs/debug.log").appendText("""{"hypothesisId":"A","location":"StarnetCoreViewModel.kt:init","message":"ViewModel init entered","data":{"selectedController":"$selectedController","selectedModelFamily":"$selectedModelFamily"},"timestamp":${System.currentTimeMillis()}}""" + "\n")
-        // #endregion
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 repository.ensureSeedLoaded()
@@ -91,9 +69,6 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
             if (checklist.value.isEmpty()) {
                 seedChecklist()
             }
-            // #region agent log
-            File("/opt/cursor/logs/debug.log").appendText("""{"hypothesisId":"A","location":"StarnetCoreViewModel.kt:init:exit","message":"ViewModel init IO block completed","data":{"kbSyncStatus":"$kbSyncStatus","kbAlarmCount":$kbAlarmCount},"timestamp":${System.currentTimeMillis()}}""" + "\n")
-            // #endregion
         }
     }
 
