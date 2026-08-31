@@ -167,8 +167,8 @@ private fun AppCard(title: String, subtitle: String? = null, body: @Composable (
 @Composable
 private fun DashboardScreen(vm: StarnetCoreViewModel, checklist: List<ChecklistItemEntity>) {
     val done = checklist.count { it.isChecked }
-    val total = checklist.size.coerceAtLeast(1)
-    val percent = (done * 100) / total
+    val total = checklist.size
+    val percent = if (total == 0) 0 else (done * 100) / total
 
     ScreenContainer {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -474,20 +474,36 @@ private fun ToolsScreen(vm: StarnetCoreViewModel, tools: List<ToolEntity>) {
 @Composable
 private fun ChecklistScreen(vm: StarnetCoreViewModel, items: List<ChecklistItemEntity>) {
     var customItem by remember { mutableStateOf("") }
+    var section by remember { mutableStateOf("") }
+    var machine by remember { mutableStateOf("") }
+    var plan by remember { mutableStateOf("") }
     val done = items.count { it.isChecked }
-    val total = items.size.coerceAtLeast(1)
+    val total = items.size
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
                 AppCard(vm.tr("Setup Checklist", "Чеклист наладки"), vm.tr("Completed", "Виконано") + ": $done/$total") {
+                    OutlinedTextField(section, { section = it }, label = { Text(vm.tr("Section", "Дільниця")) })
+                    OutlinedTextField(machine, { machine = it }, label = { Text(vm.tr("Machine", "Верстат")) })
+                    OutlinedTextField(plan, { plan = it }, label = { Text(vm.tr("Work plan", "План роботи")) })
                     OutlinedTextField(customItem, { customItem = it }, label = { Text(vm.tr("Custom checklist line", "Власний пункт чеклиста")) })
                     Row {
                         Button(onClick = {
-                            vm.addChecklistItem(customItem)
+                            vm.addChecklistItem(customItem, section, machine, plan)
                             customItem = ""
+                            section = ""
+                            machine = ""
+                            plan = ""
                         }) { Text(vm.tr("Add", "Додати")) }
                         Spacer(Modifier.width(8.dp))
-                        TextButton(onClick = { vm.seedChecklist() }) { Text(vm.tr("Reset defaults", "Скинути за замовчуванням")) }
+                        TextButton(onClick = { vm.clearChecklist() }) { Text(vm.tr("Clear all", "Очистити все")) }
+                    }
+                }
+            }
+            if (items.isEmpty()) {
+                item {
+                    AppCard(vm.tr("Empty checklist", "Порожній чеклист")) {
+                        Text(vm.tr("Checklist is empty. Create your own lines.", "Чеклист порожній. Створіть власні пункти."))
                     }
                 }
             }
@@ -495,7 +511,12 @@ private fun ChecklistScreen(vm: StarnetCoreViewModel, items: List<ChecklistItemE
                 AppCard(if (vm.useUkrainian) vm.toUkr(line.title) else line.title) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (line.isChecked) vm.tr("Done", "Готово") else vm.tr("Pending", "Очікує"))
-                        Checkbox(checked = line.isChecked, onCheckedChange = { vm.toggleChecklist(line.id, it) })
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Checkbox(checked = line.isChecked, onCheckedChange = { vm.toggleChecklist(line.id, it) })
+                            TextButton(onClick = { vm.deleteChecklistItem(line.id) }) {
+                                Text(vm.tr("Delete", "Видалити"))
+                            }
+                        }
                     }
                 }
             }

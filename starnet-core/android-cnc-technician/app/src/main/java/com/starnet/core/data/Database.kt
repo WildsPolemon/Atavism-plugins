@@ -83,8 +83,14 @@ interface StarnetCoreDao {
     @Query("DELETE FROM checklist_items")
     suspend fun deleteChecklist()
 
+    @Query("DELETE FROM checklist_items WHERE id = :id")
+    suspend fun deleteChecklistItem(id: Int)
+
     @Query("SELECT * FROM checklist_items ORDER BY id ASC")
     fun observeChecklist(): Flow<List<ChecklistItemEntity>>
+
+    @Query("SELECT * FROM checklist_items ORDER BY id ASC")
+    suspend fun getChecklistSnapshot(): List<ChecklistItemEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addJournalEntry(entry: JournalEntryEntity)

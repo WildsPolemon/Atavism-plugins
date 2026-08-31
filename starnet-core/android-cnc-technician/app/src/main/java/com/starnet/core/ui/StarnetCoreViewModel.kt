@@ -20,6 +20,7 @@ import com.starnet.core.data.ToolEntity
 import com.starnet.core.domain.AlarmCodeNormalizer
 import com.starnet.core.domain.AlarmKnowledge
 import com.starnet.core.domain.AlarmParser
+import com.starnet.core.domain.ChecklistFormatter
 import com.starnet.core.domain.FanucScreenAnalyzer
 import com.starnet.core.domain.PhotoAlarmAnalyzer
 import com.starnet.core.domain.PhotoAssessmentType
@@ -67,12 +68,10 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 repository.ensureSeedLoaded()
+                clearLegacySeedChecklistIfNeeded()
             }
             kbSyncStatus = "AI local mode enabled. Cloud lookup optional."
             kbAlarmCount = 0
-            if (checklist.value.isEmpty()) {
-                seedChecklist()
-            }
         }
     }
 
@@ -97,30 +96,22 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     fun tr(en: String, uk: String): String = if (useUkrainian) uk else en
     fun toUkr(source: String): String = UkrainianTranslator.toUkrainian(source)
 
-    fun seedChecklist() {
-        viewModelScope.launch {
-            dao.deleteChecklist()
-            listOf(
-                "Workpiece clamped",
-                "Tool setup verified",
-                "Offsets entered",
-                "Work zero confirmed",
-                "Program reviewed",
-                "Dry run completed",
-                "Single block test completed"
-            ).forEach { item ->
-                dao.upsertChecklistItem(ChecklistItemEntity(title = item))
-            }
-        }
-    }
-
     fun toggleChecklist(id: Int, checked: Boolean) {
         viewModelScope.launch { dao.setChecklistChecked(id, checked) }
     }
 
-    fun addChecklistItem(title: String) {
-        if (title.isBlank()) return
-        viewModelScope.launch { dao.upsertChecklistItem(ChecklistItemEntity(title = title.trim())) }
+    fun clearChecklist() {
+        viewModelScope.launch { dao.deleteChecklist() }
+    }
+
+    fun deleteChecklistItem(id: Int) {
+        viewModelScope.launch { dao.deleteChecklistItem(id) }
+    }
+
+    fun addChecklistItem(title: String, section: String = "", machine: String = "", plan: String = "") {
+        val finalTitle = ChecklistFormatter.composeTitle(section, machine, plan, title)
+        if (finalTitle.isBlank()) return
+        viewModelScope.launch { dao.upsertChecklistItem(ChecklistItemEntity(title = finalTitle)) }
     }
 
     fun addTool(
@@ -373,6 +364,24 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
             PhotoAssessmentType.CNC_ALARM_SCREEN -> limited
             PhotoAssessmentType.CNC_SCREEN_NO_ALARM -> limited
             PhotoAssessmentType.NON_CNC_OR_UNCLEAR -> "No clear alarm lines found. Capture only the CNC alarm zone for a precise diagnosis."
+        }
+    }
+
+    private suspend fun clearLegacySeedChecklistIfNeeded() {
+        val defaults = setOf(
+            "Workpiece clamped",
+            "Tool setup verified",
+            "Offsets entered",
+            "Work zero confirmed",
+            "Program reviewed",
+            "Dry run completed",
+            "Single block test completed"
+        )
+        val current = dao.getChecklistSnapshot()
+        if (current.isEmpty()) return
+        val currentTitles = current.map { it.title.trim() }.toSet()
+        if (current.size == defaults.size && currentTitles == defaults) {
+            dao.deleteChecklist()
         }
     }
 }
