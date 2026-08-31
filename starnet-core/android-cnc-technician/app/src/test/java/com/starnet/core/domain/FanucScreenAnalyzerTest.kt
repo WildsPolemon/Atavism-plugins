@@ -1,6 +1,7 @@
 package com.starnet.core.domain
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -25,5 +26,14 @@ class FanucScreenAnalyzerTest {
         assertEquals("SERVO", result.alarmType)
         assertEquals("411", result.rawCode)
         assertTrue(result.candidateCodes.contains("411"))
+    }
+
+    @Test
+    fun `does not report alarm code on plain cnc screen without alarm context`() {
+        val ocr = "PARTS COUNT\nCYCLE TIME\nG54\nMDI\nPROGRAM\nABSOLUTE RELATIVE"
+        val result = FanucScreenAnalyzer.detect(ocr)
+        assertNull(result.rawCode)
+        assertNull(result.alarmType)
+        assertTrue(result.candidateCodes.isEmpty())
     }
 }

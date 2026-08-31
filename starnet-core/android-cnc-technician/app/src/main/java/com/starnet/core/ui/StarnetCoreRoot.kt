@@ -326,8 +326,8 @@ private fun PhotoScreen(vm: StarnetCoreViewModel) {
                 }
                 Text(
                     vm.tr(
-                        "Detected alarm parsing works with controller=${vm.selectedController}, model=${vm.selectedModelFamily}.",
-                        "Парсер alarm працює для controller=${vm.selectedController}, model=${vm.selectedModelFamily}."
+                        "Alarm parsing profile: controller=${vm.selectedController}, model=${vm.selectedModelFamily}.",
+                        "Профіль розбору alarm: controller=${vm.selectedController}, model=${vm.selectedModelFamily}."
                     ),
                     style = MaterialTheme.typography.bodySmall
                 )

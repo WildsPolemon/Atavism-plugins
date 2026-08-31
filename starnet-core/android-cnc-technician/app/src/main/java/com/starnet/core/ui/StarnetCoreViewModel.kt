@@ -349,15 +349,15 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
             .map { it.replace("\\s+".toRegex(), " ") }
 
         val topLines = cleaned.take(8)
-        val compact = topLines.joinToString("\n")
-        val limited = if (compact.length > 420) compact.take(420) + "..." else compact
+        val compact = topLines.joinToString(" | ")
+        val limited = if (compact.length > 220) compact.take(220) + "..." else compact
         val cncRelevant = summary.contains("CNC", ignoreCase = true) ||
             summary.contains("alarm", ignoreCase = true) ||
             confidence >= 0.6f
 
         return when {
             limited.isBlank() -> "No extracted text yet."
-            !cncRelevant -> "Non-CNC photo detected. OCR text is noisy; use a clear CNC-screen photo for alarm diagnostics."
+            !cncRelevant -> "Non-CNC/alarm context photo detected. OCR text is noisy; use a clear CNC-screen alarm photo for diagnostics."
             else -> limited
         }
     }
@@ -376,8 +376,12 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
             score[key] = (score[key] ?: 0f) + value
         }
 
-        if (Regex("""\b(ALARM|P\/S|SV|M30|G01|G00)\b""").containsMatchIn(text.uppercase())) bump("cnc-screen", 2.4f)
-        if (Regex("""\b(SERIAL|MODEL|VOLT|KW|SMEC|FANUC|SIEMENS|MITSUBISHI)\b""").containsMatchIn(text.uppercase())) bump("nameplate", 2.1f)
+        if (Regex("""\b(ALARM|P\/S|SV|M30|G0[0-3]|G5[4-9]|MDI|AUTO|HANDLE|PROGRAM|RUN\s*TIME|ABSOLUTE|RELATIVE|PARTS)\b""").containsMatchIn(text.uppercase())) {
+            bump("cnc-screen", 3.0f)
+        }
+        if (Regex("""\b(SERIAL\s*NO|MODEL\s*NO|VOLT|KW|RATED|MANUFACTURE|FANUC\s*LTD)\b""").containsMatchIn(text.uppercase())) {
+            bump("nameplate", 1.8f)
+        }
         if (Regex("""\b(380V|220V|PLC|CONTACTOR|RELAY|SCHEMATIC)\b""").containsMatchIn(text.uppercase())) bump("electrical", 2.3f)
         if (Regex("""\b(HYDRAULIC|BAR|PUMP|VALVE|OIL)\b""").containsMatchIn(text.uppercase())) bump("hydraulic", 2.3f)
         if (Regex("""\b(Ø|R[0-9]|M[0-9]+X|RA\s*[0-9])\b""").containsMatchIn(text.uppercase())) bump("drawing", 2.5f)

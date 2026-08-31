@@ -42,11 +42,12 @@ object FanucScreenAnalyzer {
     }
 
     private fun detectAlarmType(text: String): String? {
+        val hasAlarmContext = hasAlarmContext(text)
         return when {
             Regex("""\bSV\b|\bSERVO\b""").containsMatchIn(text) -> "SERVO"
             Regex("""\bSP\b|\bSPINDLE\b|\bRIGID\s*TAP\b""").containsMatchIn(text) -> "SPINDLE"
-            Regex("""\bP/?S\b|\bPROGRAM\b|\bSETTING\b""").containsMatchIn(text) -> "P/S"
-            Regex("""\bPMC\b|\bLADDER\b""").containsMatchIn(text) -> "PMC"
+            Regex("""\bP/?S\b|\bPS\b""").containsMatchIn(text) -> "P/S"
+            hasAlarmContext && Regex("""\bPMC\b|\bLADDER\b""").containsMatchIn(text) -> "PMC"
             Regex("""\bOT\b|\bOVER\s*TRAVEL\b""").containsMatchIn(text) -> "OVERTRAVEL"
             Regex("""\bOH\b|\bOVERHEAT\b""").containsMatchIn(text) -> "OVERHEAT"
             Regex("""\bDS\b|\bAPC\b""").containsMatchIn(text) -> "DATA"
@@ -55,6 +56,7 @@ object FanucScreenAnalyzer {
     }
 
     private fun detectCode(text: String): String? {
+        val hasAlarmContext = hasAlarmContext(text)
         val prefixed = Regex("""\b(PS|SV|SP|OT|OH|DS|PW|SW|SR|BG|APC)\s*[-:/]?\s*([0-9]{3,4})\b""")
             .find(text)
         if (prefixed != null) {
@@ -64,11 +66,13 @@ object FanucScreenAnalyzer {
         }
         val psLegacy = Regex("""\bP/S\s*([0-9]{3,4})\b""").find(text)
         if (psLegacy != null) return "PS${psLegacy.groupValues[1]}"
+        if (!hasAlarmContext) return null
         val plain = Regex("""\b([0-9]{3,4})\b""").find(text)
         return plain?.groupValues?.get(1)
     }
 
     private fun detectCandidateCodes(text: String): List<String> {
+        val hasAlarmContext = hasAlarmContext(text)
         val prefixedMatches = Regex("""\b(PS|SV|SP|OT|OH|DS|PW|SW|SR|BG|APC)\s*[-:/]?\s*([0-9]{3,4})\b""")
             .findAll(text)
             .map {
@@ -78,6 +82,7 @@ object FanucScreenAnalyzer {
             }
             .toList()
         if (prefixedMatches.isNotEmpty()) return prefixedMatches.distinct().take(3)
+        if (!hasAlarmContext) return emptyList()
 
         return Regex("""\b([0-9]{3,4})\b""")
             .findAll(text)
@@ -95,5 +100,9 @@ object FanucScreenAnalyzer {
         if (rawCode != null) score += 0.35f
         if (candidates.size > 1) score += 0.1f
         return score.coerceIn(0f, 1f)
+    }
+
+    private fun hasAlarmContext(text: String): Boolean {
+        return Regex("""\b(ALARM|ALM|ERROR|ERR|FAULT|WARNING)\b""").containsMatchIn(text)
     }
 }
