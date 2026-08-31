@@ -1,5 +1,7 @@
 package com.starnet.core.ui
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -39,6 +41,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,6 +53,10 @@ import com.starnet.core.data.ChecklistItemEntity
 import com.starnet.core.data.JournalEntryEntity
 import com.starnet.core.data.ToolEntity
 import com.starnet.core.domain.threadReferences
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 private enum class CoreTab {
     Dashboard,
@@ -477,6 +484,10 @@ private fun ChecklistScreen(vm: StarnetCoreViewModel, items: List<ChecklistItemE
     var section by remember { mutableStateOf("") }
     var machine by remember { mutableStateOf("") }
     var plan by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    var selectedDate by remember { mutableStateOf<Long?>(null) }
+    var selectedHour by remember { mutableStateOf<Int?>(null) }
+    var selectedMinute by remember { mutableStateOf<Int?>(null) }
     val done = items.count { it.isChecked }
     val total = items.size
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -487,14 +498,64 @@ private fun ChecklistScreen(vm: StarnetCoreViewModel, items: List<ChecklistItemE
                     OutlinedTextField(machine, { machine = it }, label = { Text(vm.tr("Machine", "Верстат")) })
                     OutlinedTextField(plan, { plan = it }, label = { Text(vm.tr("Work plan", "План роботи")) })
                     OutlinedTextField(customItem, { customItem = it }, label = { Text(vm.tr("Custom checklist line", "Власний пункт чеклиста")) })
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = {
+                            val now = Calendar.getInstance()
+                            DatePickerDialog(
+                                context,
+                                { _, year, month, dayOfMonth ->
+                                    val picked = Calendar.getInstance()
+                                    picked.set(Calendar.YEAR, year)
+                                    picked.set(Calendar.MONTH, month)
+                                    picked.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                                    picked.set(Calendar.HOUR_OF_DAY, 0)
+                                    picked.set(Calendar.MINUTE, 0)
+                                    picked.set(Calendar.SECOND, 0)
+                                    picked.set(Calendar.MILLISECOND, 0)
+                                    selectedDate = picked.timeInMillis
+                                },
+                                now.get(Calendar.YEAR),
+                                now.get(Calendar.MONTH),
+                                now.get(Calendar.DAY_OF_MONTH)
+                            ).show()
+                        }) { Text(vm.tr("Pick date", "Обрати дату")) }
+                        Button(onClick = {
+                            val now = Calendar.getInstance()
+                            TimePickerDialog(
+                                context,
+                                { _, hour, minute ->
+                                    selectedHour = hour
+                                    selectedMinute = minute
+                                },
+                                now.get(Calendar.HOUR_OF_DAY),
+                                now.get(Calendar.MINUTE),
+                                true
+                            ).show()
+                        }) { Text(vm.tr("Pick time", "Обрати час")) }
+                    }
+                    Text(
+                        vm.tr("Reminder", "Нагадування") + ": " +
+                            formatSelectedReminder(vm, selectedDate, selectedHour, selectedMinute),
+                        style = MaterialTheme.typography.bodySmall
+                    )
                     Row {
                         Button(onClick = {
-                            vm.addChecklistItem(customItem, section, machine, plan)
+                            val dueAt = buildReminderEpochMillis(selectedDate, selectedHour, selectedMinute)
+                            vm.addChecklistItem(customItem, section, machine, plan, dueAt)
                             customItem = ""
                             section = ""
                             machine = ""
                             plan = ""
+                            selectedDate = null
+                            selectedHour = null
+                            selectedMinute = null
                         }) { Text(vm.tr("Add", "Додати")) }
+                        Spacer(Modifier.width(8.dp))
+                        TextButton(onClick = {
+                            selectedDate = null
+                            selectedHour = null
+                            selectedMinute = null
+                        }) { Text(vm.tr("Clear reminder", "Очистити нагадування")) }
                         Spacer(Modifier.width(8.dp))
                         TextButton(onClick = { vm.clearChecklist() }) { Text(vm.tr("Clear all", "Очистити все")) }
                     }
@@ -510,7 +571,15 @@ private fun ChecklistScreen(vm: StarnetCoreViewModel, items: List<ChecklistItemE
             items(items) { line ->
                 AppCard(if (vm.useUkrainian) vm.toUkr(line.title) else line.title) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(if (line.isChecked) vm.tr("Done", "Готово") else vm.tr("Pending", "Очікує"))
+                        Column {
+                            Text(if (line.isChecked) vm.tr("Done", "Готово") else vm.tr("Pending", "Очікує"))
+                            if (line.dueAtMillis != null) {
+                                Text(
+                                    vm.tr("Due", "Термін") + ": " + formatMillis(line.dueAtMillis),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Checkbox(checked = line.isChecked, onCheckedChange = { vm.toggleChecklist(line.id, it) })
                             TextButton(onClick = { vm.deleteChecklistItem(line.id) }) {
@@ -522,6 +591,26 @@ private fun ChecklistScreen(vm: StarnetCoreViewModel, items: List<ChecklistItemE
             }
         }
     }
+}
+
+private fun buildReminderEpochMillis(dateMillis: Long?, hour: Int?, minute: Int?): Long? {
+    if (dateMillis == null || hour == null || minute == null) return null
+    val cal = Calendar.getInstance()
+    cal.timeInMillis = dateMillis
+    cal.set(Calendar.HOUR_OF_DAY, hour)
+    cal.set(Calendar.MINUTE, minute)
+    cal.set(Calendar.SECOND, 0)
+    cal.set(Calendar.MILLISECOND, 0)
+    return cal.timeInMillis
+}
+
+private fun formatMillis(millis: Long): String {
+    return SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(millis))
+}
+
+private fun formatSelectedReminder(vm: StarnetCoreViewModel, dateMillis: Long?, hour: Int?, minute: Int?): String {
+    val due = buildReminderEpochMillis(dateMillis, hour, minute) ?: return vm.tr("Not set", "Не задано")
+    return formatMillis(due)
 }
 
 @Composable

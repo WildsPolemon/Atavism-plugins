@@ -29,6 +29,10 @@ data class ToolEntity(
 data class ChecklistItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val title: String,
+    val section: String = "",
+    val machine: String = "",
+    val workPlan: String = "",
+    val dueAtMillis: Long? = null,
     val isChecked: Boolean = false
 )
 
@@ -76,6 +80,9 @@ interface StarnetCoreDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertChecklistItem(item: ChecklistItemEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertChecklistItem(item: ChecklistItemEntity): Long
 
     @Query("UPDATE checklist_items SET isChecked = :checked WHERE id = :id")
     suspend fun setChecklistChecked(id: Int, checked: Boolean)
@@ -131,7 +138,7 @@ interface StarnetCoreDao {
         AlarmCodeEntity::class,
         KbMetaEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class StarnetCoreDatabase : RoomDatabase() {

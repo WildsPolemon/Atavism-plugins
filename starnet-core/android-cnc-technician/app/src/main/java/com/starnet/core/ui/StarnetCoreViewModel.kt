@@ -25,6 +25,7 @@ import com.starnet.core.domain.FanucScreenAnalyzer
 import com.starnet.core.domain.PhotoAlarmAnalyzer
 import com.starnet.core.domain.PhotoAssessmentType
 import com.starnet.core.domain.UkrainianTranslator
+import com.starnet.core.notifications.ChecklistReminderScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -97,21 +98,68 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     fun toUkr(source: String): String = UkrainianTranslator.toUkrainian(source)
 
     fun toggleChecklist(id: Int, checked: Boolean) {
-        viewModelScope.launch { dao.setChecklistChecked(id, checked) }
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            dao.setChecklistChecked(id, checked)
+            val item = dao.getChecklistSnapshot().firstOrNull { it.id == id }
+            if (checked) {
+                ChecklistReminderScheduler.cancelReminder(app, id)
+            } else if (item?.dueAtMillis != null) {
+                ChecklistReminderScheduler.scheduleReminder(
+                    context = app,
+                    itemId = id,
+                    title = item.title,
+                    dueAtMillis = item.dueAtMillis
+                )
+            }
+        }
     }
 
     fun clearChecklist() {
-        viewModelScope.launch { dao.deleteChecklist() }
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            dao.getChecklistSnapshot().forEach { ChecklistReminderScheduler.cancelReminder(app, it.id) }
+            dao.deleteChecklist()
+        }
     }
 
     fun deleteChecklistItem(id: Int) {
-        viewModelScope.launch { dao.deleteChecklistItem(id) }
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            ChecklistReminderScheduler.cancelReminder(app, id)
+            dao.deleteChecklistItem(id)
+        }
     }
 
-    fun addChecklistItem(title: String, section: String = "", machine: String = "", plan: String = "") {
+    fun addChecklistItem(
+        title: String,
+        section: String = "",
+        machine: String = "",
+        plan: String = "",
+        dueAtMillis: Long? = null
+    ) {
         val finalTitle = ChecklistFormatter.composeTitle(section, machine, plan, title)
         if (finalTitle.isBlank()) return
-        viewModelScope.launch { dao.upsertChecklistItem(ChecklistItemEntity(title = finalTitle)) }
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            val insertedId = dao.insertChecklistItem(
+                ChecklistItemEntity(
+                    title = finalTitle,
+                    section = section.trim(),
+                    machine = machine.trim(),
+                    workPlan = plan.trim(),
+                    dueAtMillis = dueAtMillis
+                )
+            ).toInt()
+            if (dueAtMillis != null) {
+                ChecklistReminderScheduler.scheduleReminder(
+                    context = app,
+                    itemId = insertedId,
+                    title = finalTitle,
+                    dueAtMillis = dueAtMillis
+                )
+            }
+        }
     }
 
     fun addTool(
