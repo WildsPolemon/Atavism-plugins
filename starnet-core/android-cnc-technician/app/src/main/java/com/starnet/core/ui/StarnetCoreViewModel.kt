@@ -17,6 +17,7 @@ import com.starnet.core.data.ChecklistItemEntity
 import com.starnet.core.data.JournalEntryEntity
 import com.starnet.core.data.StarnetCoreDatabase
 import com.starnet.core.data.ToolEntity
+import com.starnet.core.domain.AlarmCodeNormalizer
 import com.starnet.core.domain.AlarmKnowledge
 import com.starnet.core.domain.AlarmParser
 import com.starnet.core.domain.FanucScreenAnalyzer
@@ -54,6 +55,8 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     var detectedFanucModel by mutableStateOf("n/a")
     var detectedFanucAlarmType by mutableStateOf("n/a")
     var detectedAlarmCode by mutableStateOf("n/a")
+    var detectedAlarmConfidence by mutableStateOf(0f)
+    var detectedAlarmCandidates by mutableStateOf<List<String>>(emptyList())
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
@@ -168,7 +171,7 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun diagnoseAlarm(code: String, controller: String, modelFamily: String) {
-        val normalizedCode = normalizeAlarmCode(code.trim().uppercase(), controller.trim().uppercase())
+        val normalizedCode = AlarmCodeNormalizer.normalize(controller.trim().uppercase(), code.trim().uppercase())
         val normalizedController = controller.trim().uppercase()
         val normalizedModel = modelFamily.trim().uppercase()
         viewModelScope.launch(Dispatchers.IO) {
@@ -196,38 +199,13 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
             } else {
                 selectedModelFamily
             }
-            val normalized = normalizeAlarmCode(parsed.code, selectedController, detectedFanucAlarmType)
+            val normalized = AlarmCodeNormalizer.normalize(selectedController, parsed.code, detectedFanucAlarmType)
             alarmResult = repository.findAlarmOnline(
                 alarmLookupBaseUrl,
                 selectedController,
                 modelForLookup,
                 normalized
             ) ?: repository.findAlarm(selectedController, modelForLookup, normalized)
-        }
-    }
-
-    private fun normalizeAlarmCode(raw: String, controller: String, fanucTypeHint: String? = null): String {
-        if (controller != "FANUC") return raw
-        val token = raw.replace("\\s+".toRegex(), "")
-        val prefixed = Regex("""^(PS|SV|SP|OT|OH|DS|PW|SW|SR|BG|APC)([0-9]{3,4})$""").find(token)
-        if (prefixed != null) {
-            val prefix = prefixed.groupValues[1]
-            val digits = prefixed.groupValues[2].padStart(4, '0')
-            return if (prefix == "APC") "DS$digits" else "$prefix$digits"
-        }
-        val ps = Regex("""^P/S([0-9]{3,4})$""").find(token)
-        if (ps != null) return "PS${ps.groupValues[1].padStart(4, '0')}"
-        val plain = Regex("""^([0-9]{3,4})$""").find(token)
-        if (plain == null) return token
-        val digits = plain.groupValues[1].padStart(4, '0')
-        return when (fanucTypeHint) {
-            "SERVO" -> "SV$digits"
-            "SPINDLE" -> "SP$digits"
-            "P/S" -> "PS$digits"
-            "OVERTRAVEL" -> "OT$digits"
-            "OVERHEAT" -> "OH$digits"
-            "DATA" -> "DS$digits"
-            else -> digits
         }
     }
 
@@ -278,6 +256,10 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
                     detectedFanucModel = detection.modelFamily ?: "n/a"
                     detectedFanucAlarmType = detection.alarmType ?: "n/a"
                     detectedAlarmCode = detection.rawCode ?: "n/a"
+                    detectedAlarmConfidence = detection.confidence
+                    detectedAlarmCandidates = detection.candidateCodes.map {
+                        AlarmCodeNormalizer.normalize(selectedController, it, detection.alarmType)
+                    }
                     if (!detection.modelFamily.isNullOrBlank()) {
                         selectedModelFamily = detection.modelFamily
                     }
@@ -288,6 +270,8 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
                 detectedFanucModel = "n/a"
                 detectedFanucAlarmType = "n/a"
                 detectedAlarmCode = "n/a"
+                detectedAlarmConfidence = 0f
+                detectedAlarmCandidates = emptyList()
             }
         }
     }

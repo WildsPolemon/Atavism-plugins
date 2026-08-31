@@ -291,6 +291,16 @@ private fun PhotoScreen(vm: StarnetCoreViewModel) {
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
+                    vm.tr("Detection confidence", "Впевненість розпізнавання") + ": ${(vm.detectedAlarmConfidence * 100).toInt()}%",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                if (vm.detectedAlarmCandidates.isNotEmpty()) {
+                    Text(
+                        vm.tr("Suggested alarm codes", "Ймовірні коди") + ": ${vm.detectedAlarmCandidates.joinToString()}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Text(
                     vm.tr(
                         "Detected alarm parsing works with controller=${vm.selectedController}, model=${vm.selectedModelFamily}.",
                         "Парсер alarm працює для controller=${vm.selectedController}, model=${vm.selectedModelFamily}."

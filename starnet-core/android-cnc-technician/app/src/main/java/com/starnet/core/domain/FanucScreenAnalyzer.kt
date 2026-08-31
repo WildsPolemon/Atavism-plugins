@@ -3,7 +3,9 @@ package com.starnet.core.domain
 data class FanucOcrDetection(
     val modelFamily: String?,
     val alarmType: String?,
-    val rawCode: String?
+    val rawCode: String?,
+    val confidence: Float,
+    val candidateCodes: List<String>
 )
 
 object FanucScreenAnalyzer {
@@ -12,10 +14,14 @@ object FanucScreenAnalyzer {
         val model = detectModelFamily(text)
         val alarmType = detectAlarmType(text)
         val rawCode = detectCode(text)
+        val candidates = detectCandidateCodes(text)
+        val confidence = scoreConfidence(model, alarmType, rawCode, candidates)
         return FanucOcrDetection(
             modelFamily = model,
             alarmType = alarmType,
-            rawCode = rawCode
+            rawCode = rawCode,
+            confidence = confidence,
+            candidateCodes = candidates
         )
     }
 
@@ -60,5 +66,34 @@ object FanucScreenAnalyzer {
         if (psLegacy != null) return "PS${psLegacy.groupValues[1]}"
         val plain = Regex("""\b([0-9]{3,4})\b""").find(text)
         return plain?.groupValues?.get(1)
+    }
+
+    private fun detectCandidateCodes(text: String): List<String> {
+        val prefixedMatches = Regex("""\b(PS|SV|SP|OT|OH|DS|PW|SW|SR|BG|APC)\s*[-:/]?\s*([0-9]{3,4})\b""")
+            .findAll(text)
+            .map {
+                val prefix = it.groupValues[1]
+                val digits = it.groupValues[2]
+                "$prefix$digits"
+            }
+            .toList()
+        if (prefixedMatches.isNotEmpty()) return prefixedMatches.distinct().take(3)
+
+        return Regex("""\b([0-9]{3,4})\b""")
+            .findAll(text)
+            .map { it.groupValues[1] }
+            .filter { it != "2024" && it != "2025" && it != "2026" }
+            .distinct()
+            .take(3)
+            .toList()
+    }
+
+    private fun scoreConfidence(model: String?, alarmType: String?, rawCode: String?, candidates: List<String>): Float {
+        var score = 0f
+        if (model != null) score += 0.3f
+        if (alarmType != null) score += 0.25f
+        if (rawCode != null) score += 0.35f
+        if (candidates.size > 1) score += 0.1f
+        return score.coerceIn(0f, 1f)
     }
 }
