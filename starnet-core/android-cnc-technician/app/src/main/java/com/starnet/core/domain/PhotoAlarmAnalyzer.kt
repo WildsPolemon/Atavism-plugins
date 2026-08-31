@@ -10,7 +10,9 @@ data class PhotoAssessment(
     val type: PhotoAssessmentType,
     val summary: String,
     val relevantLines: List<String>,
-    val hasAlarm: Boolean
+    val hasAlarm: Boolean,
+    val confidence: Float,
+    val detectedCode: String?
 )
 
 object PhotoAlarmAnalyzer {
@@ -25,31 +27,41 @@ object PhotoAlarmAnalyzer {
             .containsMatchIn(upper)
         val parserMatch = AlarmParser.parse(controller, modelFamily, upper)
         val fanucDetection = if (controller.uppercase() == "FANUC") FanucScreenAnalyzer.detect(upper) else null
-        val hasAlarm = alarmContext && (parserMatch != null || fanucDetection?.rawCode != null)
+        val detectedCode = parserMatch?.code ?: fanucDetection?.rawCode
+        val hasCode = !detectedCode.isNullOrBlank()
 
         val cncScore = buildCncScore(upper, labels)
+        val likelyCnc = cncScore >= 2.5f
+        val hasAlarm = likelyCnc && alarmContext && hasCode
+        val confidence = scoreConfidence(cncScore, alarmContext, hasCode, hasAlarm)
         val relevant = extractRelevantLines(ocrText, hasAlarm)
 
         return when {
-            cncScore >= 2.5f && hasAlarm -> PhotoAssessment(
+            hasAlarm -> PhotoAssessment(
                 type = PhotoAssessmentType.CNC_ALARM_SCREEN,
                 summary = "CNC alarm screen detected. Alarm context found.",
                 relevantLines = relevant,
-                hasAlarm = true
+                hasAlarm = true,
+                confidence = confidence,
+                detectedCode = detectedCode
             )
 
-            cncScore >= 2.5f -> PhotoAssessment(
+            likelyCnc -> PhotoAssessment(
                 type = PhotoAssessmentType.CNC_SCREEN_NO_ALARM,
                 summary = "CNC screen detected. No alarm text found on this photo.",
                 relevantLines = relevant,
-                hasAlarm = false
+                hasAlarm = false,
+                confidence = confidence,
+                detectedCode = null
             )
 
             else -> PhotoAssessment(
                 type = PhotoAssessmentType.NON_CNC_OR_UNCLEAR,
                 summary = "No clear CNC alarm screen detected. Use a sharper CNC screen photo for diagnostics.",
                 relevantLines = relevant,
-                hasAlarm = false
+                hasAlarm = false,
+                confidence = confidence,
+                detectedCode = null
             )
         }
     }
@@ -85,5 +97,14 @@ object PhotoAlarmAnalyzer {
         val filtered = lines.filter { keywords.containsMatchIn(it) }.take(6)
         if (filtered.isNotEmpty()) return filtered
         return lines.take(4)
+    }
+
+    private fun scoreConfidence(cncScore: Float, alarmContext: Boolean, hasCode: Boolean, hasAlarm: Boolean): Float {
+        var score = 0f
+        score += (cncScore / 5f).coerceIn(0f, 0.7f)
+        if (alarmContext) score += 0.15f
+        if (hasCode) score += 0.15f
+        if (hasAlarm) score += 0.1f
+        return score.coerceIn(0f, 1f)
     }
 }

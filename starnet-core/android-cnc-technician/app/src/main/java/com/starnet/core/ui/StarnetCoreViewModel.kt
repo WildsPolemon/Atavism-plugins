@@ -61,6 +61,7 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     var detectedAlarmCode by mutableStateOf("n/a")
     var detectedAlarmConfidence by mutableStateOf(0f)
     var detectedAlarmCandidates by mutableStateOf<List<String>>(emptyList())
+    var lastPhotoHasAlarm by mutableStateOf(false)
 
     init {
         viewModelScope.launch {
@@ -193,6 +194,11 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun detectAlarmFromRecognizedText() {
+        if (!lastPhotoHasAlarm) {
+            alarmResult = null
+            lastParserPattern = "No alarm signature matched."
+            return
+        }
         val parsed = AlarmParser.parse(selectedController, selectedModelFamily, ocrText)
         if (parsed == null) {
             alarmResult = null
@@ -321,25 +327,28 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
                     modelFamily = selectedModelFamily
                 )
                 ocrSummary = assessment.summary
+                lastPhotoHasAlarm = assessment.hasAlarm
                 if (selectedController.uppercase() == "FANUC") {
                     val detection = FanucScreenAnalyzer.detect(ocrText)
                     detectedFanucModel = detection.modelFamily ?: "n/a"
                     if (assessment.hasAlarm) {
                         detectedFanucAlarmType = detection.alarmType ?: "n/a"
-                        detectedAlarmCode = detection.rawCode ?: "n/a"
-                        detectedAlarmConfidence = detection.confidence
+                        detectedAlarmCode = assessment.detectedCode ?: detection.rawCode ?: "n/a"
+                        detectedAlarmConfidence = assessment.confidence
                         detectedAlarmCandidates = detection.candidateCodes.map {
                             AlarmCodeNormalizer.normalize(selectedController, it, detection.alarmType)
                         }
                     } else {
                         detectedFanucAlarmType = "n/a"
                         detectedAlarmCode = "n/a"
-                        detectedAlarmConfidence = 0f
+                        detectedAlarmConfidence = assessment.confidence
                         detectedAlarmCandidates = emptyList()
                     }
                     if (!detection.modelFamily.isNullOrBlank()) {
                         selectedModelFamily = detection.modelFamily
                     }
+                } else {
+                    detectedAlarmConfidence = assessment.confidence
                 }
                 ocrPreview = buildOcrPreview(assessment.relevantLines, assessment.type)
             }.onFailure { err ->
@@ -351,6 +360,7 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
                 detectedAlarmCode = "n/a"
                 detectedAlarmConfidence = 0f
                 detectedAlarmCandidates = emptyList()
+                lastPhotoHasAlarm = false
             }
         }
     }

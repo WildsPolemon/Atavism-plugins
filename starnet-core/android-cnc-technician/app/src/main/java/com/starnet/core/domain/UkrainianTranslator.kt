@@ -28,6 +28,7 @@ object UkrainianTranslator {
         "CNC screen detected. No alarm text found on this photo." to "Виявлено екран ЧПУ. На цьому фото тексту alarm не знайдено.",
         "No clear CNC alarm screen detected. Use a sharper CNC screen photo for diagnostics." to "Чіткий екран ЧПУ з alarm не виявлено. Для діагностики зробіть чіткіше фото екрана ЧПУ.",
         "No clear alarm lines found. Capture only the CNC alarm zone for a precise diagnosis." to "Чіткі рядки alarm не знайдено. Зніміть лише зону alarm на екрані ЧПУ для точної діагностики.",
+        "Alarm parsing profile" to "Профіль розбору alarm",
         "No alarm signature matched." to "Сигнатуру alarm не знайдено.",
         "manual input" to "ручне введення",
         "Invalid values." to "Некоректні значення.",

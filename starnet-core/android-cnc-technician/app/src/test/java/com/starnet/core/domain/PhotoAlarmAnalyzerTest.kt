@@ -2,6 +2,7 @@ package com.starnet.core.domain
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -31,6 +32,7 @@ class PhotoAlarmAnalyzerTest {
         )
         assertEquals(PhotoAssessmentType.CNC_SCREEN_NO_ALARM, result.type)
         assertFalse(result.hasAlarm)
+        assertNull(result.detectedCode)
     }
 
     @Test
@@ -44,5 +46,19 @@ class PhotoAlarmAnalyzerTest {
         )
         assertEquals(PhotoAssessmentType.NON_CNC_OR_UNCLEAR, result.type)
         assertFalse(result.hasAlarm)
+    }
+
+    @Test
+    fun `does not treat warning word without code as alarm`() {
+        val ocr = "FANUC SCREEN\nWARNING MESSAGE\nPARTS COUNT\nCYCLE TIME"
+        val result = PhotoAlarmAnalyzer.assess(
+            ocrText = ocr,
+            labels = mapOf("display" to 0.9f),
+            controller = "FANUC",
+            modelFamily = "0I-TF"
+        )
+        assertEquals(PhotoAssessmentType.CNC_SCREEN_NO_ALARM, result.type)
+        assertFalse(result.hasAlarm)
+        assertNull(result.detectedCode)
     }
 }

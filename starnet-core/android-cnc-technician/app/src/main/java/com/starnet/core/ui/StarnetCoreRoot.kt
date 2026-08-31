@@ -318,6 +318,13 @@ private fun PhotoScreen(vm: StarnetCoreViewModel) {
                     vm.tr("Detection confidence", "Впевненість розпізнавання") + ": ${(vm.detectedAlarmConfidence * 100).toInt()}%",
                     style = MaterialTheme.typography.bodySmall
                 )
+                Text(
+                    vm.tr("Alarm detected", "Alarm виявлено") + ": " + vm.tr(
+                        if (vm.lastPhotoHasAlarm) "Yes" else "No",
+                        if (vm.lastPhotoHasAlarm) "Так" else "Ні"
+                    ),
+                    style = MaterialTheme.typography.bodySmall
+                )
                 if (vm.detectedAlarmCandidates.isNotEmpty()) {
                     Text(
                         vm.tr("Suggested alarm codes", "Ймовірні коди") + ": ${vm.detectedAlarmCandidates.joinToString()}",
