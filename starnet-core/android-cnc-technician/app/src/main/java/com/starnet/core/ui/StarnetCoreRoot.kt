@@ -51,17 +51,17 @@ import com.starnet.core.data.JournalEntryEntity
 import com.starnet.core.data.ToolEntity
 import com.starnet.core.domain.threadReferences
 
-private enum class CoreTab(val title: String) {
-    Dashboard("Dashboard"),
-    AiDiagnosis("AI Diagnostics"),
-    Photo("Photo Vision"),
-    Calculators("Calculators"),
-    Coordinates("Coordinates"),
-    Threads("Thread Ref"),
-    Tools("Tools"),
-    Checklist("Checklist"),
-    Journal("Journal"),
-    Plan("Checklist Audit")
+private enum class CoreTab {
+    Dashboard,
+    AiDiagnosis,
+    Photo,
+    Calculators,
+    Coordinates,
+    Threads,
+    Tools,
+    Checklist,
+    Journal,
+    Plan
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,7 +79,10 @@ fun StarnetCoreRoot(vm: StarnetCoreViewModel = viewModel()) {
                 title = {
                     Column {
                         Text("Starnet Core", fontWeight = FontWeight.Bold)
-                        Text("Valchuk Ivan • CNC Setup Assistant", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            vm.tr("Valchuk Ivan • CNC Setup Assistant", "Valchuk Ivan • CNC помічник наладки"),
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                 },
                 actions = {
@@ -95,24 +98,40 @@ fun StarnetCoreRoot(vm: StarnetCoreViewModel = viewModel()) {
                     Tab(
                         selected = selectedTab == tab,
                         onClick = { selectedTab = tab },
-                        text = { Text(tab.title) }
+                        text = { Text(tabTitle(vm, tab)) }
                     )
                 }
             }
 
             when (selectedTab) {
-                CoreTab.Dashboard -> DashboardScreen(checklist)
+                CoreTab.Dashboard -> DashboardScreen(vm, checklist)
                 CoreTab.AiDiagnosis -> AiDiagnosisScreen(vm)
                 CoreTab.Photo -> PhotoScreen(vm)
                 CoreTab.Calculators -> CalculatorsScreen(vm)
                 CoreTab.Coordinates -> CoordinatesScreen(vm)
-                CoreTab.Threads -> ThreadsScreen()
+                CoreTab.Threads -> ThreadsScreen(vm)
                 CoreTab.Tools -> ToolsScreen(vm, tools)
                 CoreTab.Checklist -> ChecklistScreen(vm, checklist)
                 CoreTab.Journal -> JournalScreen(vm, journal)
-                CoreTab.Plan -> PlanScreen()
+                CoreTab.Plan -> PlanScreen(vm)
             }
         }
+    }
+}
+
+@Composable
+private fun tabTitle(vm: StarnetCoreViewModel, tab: CoreTab): String {
+    return when (tab) {
+        CoreTab.Dashboard -> vm.tr("Dashboard", "Панель")
+        CoreTab.AiDiagnosis -> vm.tr("AI Diagnostics", "AI Діагностика")
+        CoreTab.Photo -> vm.tr("Photo Vision", "Фото Аналіз")
+        CoreTab.Calculators -> vm.tr("Calculators", "Калькулятори")
+        CoreTab.Coordinates -> vm.tr("Coordinates", "Координати")
+        CoreTab.Threads -> vm.tr("Thread Ref", "Різьби")
+        CoreTab.Tools -> vm.tr("Tools", "Інструмент")
+        CoreTab.Checklist -> vm.tr("Checklist", "Чеклист")
+        CoreTab.Journal -> vm.tr("Journal", "Журнал")
+        CoreTab.Plan -> vm.tr("Checklist Audit", "Аудит")
     }
 }
 
@@ -146,7 +165,7 @@ private fun AppCard(title: String, subtitle: String? = null, body: @Composable (
 }
 
 @Composable
-private fun DashboardScreen(checklist: List<ChecklistItemEntity>) {
+private fun DashboardScreen(vm: StarnetCoreViewModel, checklist: List<ChecklistItemEntity>) {
     val done = checklist.count { it.isChecked }
     val total = checklist.size.coerceAtLeast(1)
     val percent = (done * 100) / total
@@ -154,26 +173,29 @@ private fun DashboardScreen(checklist: List<ChecklistItemEntity>) {
     ScreenContainer {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             AppCard(
-                title = "CNC Setup Assistant",
-                subtitle = "FANUC / Siemens / Mitsubishi support with practical daily modules."
+                title = vm.tr("CNC Setup Assistant", "CNC Помічник Наладки"),
+                subtitle = vm.tr(
+                    "FANUC / Siemens / Mitsubishi support with practical daily modules.",
+                    "Підтримка FANUC / Siemens / Mitsubishi з практичними щоденними модулями."
+                )
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_starnet_core_logo),
                     contentDescription = "Starnet Core Logo",
                     modifier = Modifier.height(72.dp)
                 )
-                Text("Checklist progress: $done/$total ($percent%)")
-                Text("Use tabs for diagnostics, photo OCR, calculators, tools and journal.")
+                Text(vm.tr("Checklist progress", "Прогрес чеклиста") + ": $done/$total ($percent%)")
+                Text(vm.tr("Use tabs for diagnostics, photo OCR, calculators, tools and journal.", "Використовуйте вкладки для діагностики, OCR фото, калькуляторів, інструменту та журналу."))
             }
-            AppCard(title = "Quick Functions") {
-                Text("• AI alarm diagnostics")
-                Text("• Photo recognition and explanation")
-                Text("• Turning / milling / drilling calculators")
-                Text("• Coordinate calculator (PCD / holes / circle split)")
-                Text("• Thread quick reference")
-                Text("• Tool database")
-                Text("• Setup checklist + custom lines")
-                Text("• Work journal with problem/solution history")
+            AppCard(title = vm.tr("Quick Functions", "Швидкі функції")) {
+                Text("• " + vm.tr("AI alarm diagnostics", "AI діагностика аварій"))
+                Text("• " + vm.tr("Photo recognition and explanation", "Розпізнавання фото та пояснення"))
+                Text("• " + vm.tr("Turning / milling / drilling calculators", "Калькулятори точіння / фрезерування / свердління"))
+                Text("• " + vm.tr("Coordinate calculator (PCD / holes / circle split)", "Калькулятор координат (PCD / отвори / поділ кола)"))
+                Text("• " + vm.tr("Thread quick reference", "Швидкий довідник різьб"))
+                Text("• " + vm.tr("Tool database", "База інструменту"))
+                Text("• " + vm.tr("Setup checklist + custom lines", "Чеклист наладки + свої пункти"))
+                Text("• " + vm.tr("Work journal with problem/solution history", "Журнал робіт з історією проблем/рішень"))
             }
         }
     }
@@ -211,12 +233,12 @@ private fun AiDiagnosisScreen(vm: StarnetCoreViewModel) {
                 OutlinedTextField(
                     syncUrl,
                     { syncUrl = it },
-                    label = { Text(vm.tr("Knowledge base sync URL", "URL синхронізації бази знань")) },
+                    label = { Text(vm.tr("Cloud lookup URL (optional)", "URL cloud-пошуку (необов'язково)")) },
                     modifier = Modifier.fillMaxWidth()
                 )
-                Button(onClick = { vm.syncKnowledgeBase(syncUrl) }) { Text(vm.tr("Sync Knowledge Base", "Синхронізувати базу знань")) }
+                Button(onClick = { vm.syncKnowledgeBase(syncUrl) }) { Text(vm.tr("Check Cloud Lookup", "Перевірити cloud-пошук")) }
                 Text(
-                    vm.tr("KB status", "Статус БЗ") + ": " + (if (vm.useUkrainian) vm.toUkr(vm.kbSyncStatus) else vm.kbSyncStatus),
+                    vm.tr("AI mode status", "Статус AI режиму") + ": " + (if (vm.useUkrainian) vm.toUkr(vm.kbSyncStatus) else vm.kbSyncStatus),
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
@@ -366,12 +388,12 @@ private fun CoordinatesScreen(vm: StarnetCoreViewModel) {
 }
 
 @Composable
-private fun ThreadsScreen() {
+private fun ThreadsScreen(vm: StarnetCoreViewModel) {
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
-                AppCard("Thread Quick Reference", "Metric / Pipe / Inch") {
-                    Text("Includes pitch, major/minor diameters and tap drill suggestions.")
+                AppCard(vm.tr("Thread Quick Reference", "Швидкий довідник різьб"), vm.tr("Metric / Pipe / Inch", "Метрична / Трубна / Дюймова")) {
+                    Text(vm.tr("Includes pitch, major/minor diameters and tap drill suggestions.", "Містить крок, основні/внутрішні діаметри та рекомендовані свердла під різьбу."))
                 }
             }
             items(threadReferences) { ref ->
@@ -507,24 +529,24 @@ private fun JournalScreen(vm: StarnetCoreViewModel, entries: List<JournalEntryEn
 }
 
 @Composable
-private fun PlanScreen() {
+private fun PlanScreen(vm: StarnetCoreViewModel) {
     ScreenContainer {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            AppCard("Checklist Mapping (Your Request vs Implemented)") {
-                Text("1. AI diagnostics: Done")
-                Text("2. Photo recognition: Done")
-                Text("3. CNC calculators: Done")
-                Text("4. Coordinate calculator: Done")
-                Text("5. Thread references: Done")
-                Text("6. Tool database: Done")
-                Text("7. Setup checklist: Done")
-                Text("8. Work journal: Done")
+            AppCard(vm.tr("Checklist Mapping (Your Request vs Implemented)", "Мапа чеклиста (Ваш запит vs Реалізація)")) {
+                Text("1. " + vm.tr("AI diagnostics: Done", "AI діагностика: Готово"))
+                Text("2. " + vm.tr("Photo recognition: Done", "Розпізнавання фото: Готово"))
+                Text("3. " + vm.tr("CNC calculators: Done", "CNC калькулятори: Готово"))
+                Text("4. " + vm.tr("Coordinate calculator: Done", "Калькулятор координат: Готово"))
+                Text("5. " + vm.tr("Thread references: Done", "Довідник різьб: Готово"))
+                Text("6. " + vm.tr("Tool database: Done", "База інструменту: Готово"))
+                Text("7. " + vm.tr("Setup checklist: Done", "Чеклист наладки: Готово"))
+                Text("8. " + vm.tr("Work journal: Done", "Журнал робіт: Готово"))
             }
-            AppCard("Next Professional Upgrade Pack") {
-                Text("• Sync with cloud backend and team accounts")
-                Text("• Full alarm library import by control model")
-                Text("• Offline/online photo classifier for schematic types")
-                Text("• Search/filter and export for tool/journal/checklist data")
+            AppCard(vm.tr("Next Professional Upgrade Pack", "Наступний пакет професійного апгрейду")) {
+                Text("• " + vm.tr("Sync with cloud backend and team accounts", "Синхронізація з cloud backend і командними акаунтами"))
+                Text("• " + vm.tr("Full alarm library import by control model", "Повний імпорт бібліотеки alarm за моделями контролера"))
+                Text("• " + vm.tr("Offline/online photo classifier for schematic types", "Offline/online класифікатор фото для типів схем"))
+                Text("• " + vm.tr("Search/filter and export for tool/journal/checklist data", "Пошук/фільтр та експорт даних інструменту/журналу/чеклистів"))
             }
         }
     }

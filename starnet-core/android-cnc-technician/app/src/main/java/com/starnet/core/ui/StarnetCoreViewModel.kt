@@ -50,7 +50,7 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
     var selectedModelFamily by mutableStateOf("0i-TF")
     var alarmLookupBaseUrl by mutableStateOf("https://kb.starnetcore.com/")
     var lastParserPattern by mutableStateOf("n/a")
-    var kbSyncStatus by mutableStateOf("Online lookup mode enabled")
+    var kbSyncStatus by mutableStateOf("AI local mode enabled. Cloud lookup optional.")
     var kbAlarmCount by mutableStateOf(0)
     var useUkrainian by mutableStateOf(true)
     var detectedFanucModel by mutableStateOf("n/a")
@@ -64,7 +64,7 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
             withContext(Dispatchers.IO) {
                 repository.ensureSeedLoaded()
             }
-            kbSyncStatus = "Online lookup mode enabled"
+            kbSyncStatus = "AI local mode enabled. Cloud lookup optional."
             kbAlarmCount = 0
             if (checklist.value.isEmpty()) {
                 seedChecklist()
@@ -74,17 +74,17 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
 
     fun syncKnowledgeBase(baseUrl: String) {
         if (baseUrl.isBlank()) {
-            kbSyncStatus = "Lookup URL is empty."
+            kbSyncStatus = "Cloud lookup URL is empty. AI local mode is still active."
             return
         }
         viewModelScope.launch(Dispatchers.IO) {
-            kbSyncStatus = "Checking lookup server..."
+            kbSyncStatus = "Checking cloud lookup server..."
             val result = repository.syncFromServer(baseUrl.trim())
             kbSyncStatus = if (result.isSuccess) {
                 alarmLookupBaseUrl = baseUrl.trim()
-                "Lookup server ready (revision ${result.getOrNull()})."
+                "Cloud lookup server ready (revision ${result.getOrNull()})."
             } else {
-                "Lookup server unavailable: ${result.exceptionOrNull()?.message}"
+                "Cloud lookup unavailable, using AI local mode: ${result.exceptionOrNull()?.message}"
             }
             kbAlarmCount = 0
         }
@@ -185,6 +185,7 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
                 normalizedModel,
                 normalizedCode
             ) ?: repository.findAlarm(normalizedController, normalizedModel, normalizedCode)
+                ?: buildLocalAiDiagnosis(normalizedController, normalizedModel, normalizedCode, detectedFanucAlarmType)
         }
     }
 
@@ -209,7 +210,64 @@ class StarnetCoreViewModel(application: Application) : AndroidViewModel(applicat
                 modelForLookup,
                 normalized
             ) ?: repository.findAlarm(selectedController, modelForLookup, normalized)
+                ?: buildLocalAiDiagnosis(selectedController, modelForLookup, normalized, detectedFanucAlarmType)
         }
+    }
+
+    private fun buildLocalAiDiagnosis(
+        controller: String,
+        modelFamily: String,
+        normalizedCode: String,
+        fanucTypeHint: String?
+    ): AlarmKnowledge {
+        val type = when {
+            normalizedCode.startsWith("SV") || fanucTypeHint == "SERVO" -> "SERVO"
+            normalizedCode.startsWith("SP") || fanucTypeHint == "SPINDLE" -> "SPINDLE"
+            normalizedCode.startsWith("PS") || fanucTypeHint == "P/S" -> "P/S"
+            normalizedCode.startsWith("OT") || fanucTypeHint == "OVERTRAVEL" -> "OVERTRAVEL"
+            normalizedCode.startsWith("OH") || fanucTypeHint == "OVERHEAT" -> "OVERHEAT"
+            normalizedCode.startsWith("DS") || fanucTypeHint == "DATA" -> "DATA"
+            else -> "GENERAL"
+        }
+
+        val (causes, checks) = when (type) {
+            "SERVO" -> Pair(
+                listOf("Axis overload or mechanical binding", "Encoder/feedback issue", "Amplifier ready/power chain issue"),
+                listOf("Check alarm history and axis suffix", "Inspect axis movement, lubrication, and brake", "Check drive/encoder cables and servo amplifier status LEDs")
+            )
+            "SPINDLE" -> Pair(
+                listOf("Spindle load too high", "Spindle amplifier communication fault", "Position coder mismatch or cable issue"),
+                listOf("Reduce load and retry low-speed test", "Verify spindle amp alarms and cable integrity", "Check spindle orientation/coder parameters")
+            )
+            "P/S" -> Pair(
+                listOf("Program format/modality error", "Unsupported option command", "Parameter/state mismatch"),
+                listOf("Locate offending block on alarm screen", "Verify postprocessor/control variant", "Check recent parameter changes then reset")
+            )
+            "OVERTRAVEL" -> Pair(
+                listOf("Soft/hard limit exceeded", "Incorrect work offset/tool offset", "Wrong reference return state"),
+                listOf("Jog out in safe direction", "Check G54/offsets and stroke limit params", "Perform reference return if required")
+            )
+            "OVERHEAT" -> Pair(
+                listOf("Cabinet cooling issue", "Motor/amp thermal load", "Blocked airflow or fan fault"),
+                listOf("Inspect fans and filters", "Lower duty/load and monitor temperature", "Check ambient temperature and cabinet ventilation")
+            )
+            "DATA" -> Pair(
+                listOf("APC battery low/zero", "Reference position lost", "Data/communication inconsistency"),
+                listOf("Check APC battery with machine-safe procedure", "Run reference return", "Verify detector/cable communication path")
+            )
+            else -> Pair(
+                listOf("Alarm category unclear from OCR/manual input", "Controller-specific condition", "Machine-builder ladder condition"),
+                listOf("Capture full alarm line from CNC screen", "Retry with model/type selection", "Escalate with controller model + alarm screenshot")
+            )
+        }
+
+        return AlarmKnowledge(
+            code = normalizedCode,
+            controller = controller,
+            description = "AI local diagnosis for $controller $modelFamily, code $normalizedCode, type $type.",
+            causes = causes,
+            checks = checks
+        )
     }
 
     fun calculateBoltCircle(pcd: Double, holes: Int, startAngle: Double = 0.0) {
